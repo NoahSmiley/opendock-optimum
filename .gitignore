@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+frontend/
+apps/*/node_modules/
+apps/*/dist/
+apps/backend/data/state.json
+packages/*/dist/

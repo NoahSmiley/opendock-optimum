@@ -1,0 +1,70 @@
+
+import "dotenv/config";
+import cors from "cors";
+import express from "express";
+import cookieParser from "cookie-parser";
+import { store } from "./state";
+import { DeployService } from "./deployService";
+import { BuildService } from "./buildService";
+import { MonitorService } from "./monitorService";
+import { createProjectsRouter } from "./routes/projects";
+import { createKanbanRouter } from "./routes/kanban";
+import { authRouter } from "./routes/auth";
+import { dal } from "./dal";
+
+export interface CreateAppOptions {
+  startMonitor?: boolean;
+}
+
+export function createApp(options: CreateAppOptions = {}) {
+  const allowedOrigins = process.env.OPENDOCK_WEB_ORIGIN
+    ? process.env.OPENDOCK_WEB_ORIGIN.split(",").map((value) => value.trim()).filter(Boolean)
+    : ["http://localhost:5173", "http://localhost:5174"];
+
+  const app = express();
+  app.use(express.json({ limit: "5mb" }));
+  app.use(express.urlencoded({ extended: false }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+      },
+      credentials: true,
+      allowedHeaders: ["content-type", "x-opendock-csrf", "accept"],
+      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    }),
+  );
+  app.use(cookieParser());
+
+  const deployer = new DeployService();
+  const builds = new BuildService(deployer);
+  const monitor = new MonitorService();
+  const shouldStartMonitor = options.startMonitor ?? process.env.NODE_ENV !== "test";
+  if (shouldStartMonitor) {
+    monitor.start();
+  }
+
+  console.log(`[dal] using ${dal.kind} data provider`);
+
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  app.get("/api/state", (_req, res) => {
+    res.json(store.snapshot());
+  });
+
+  app.use("/api/auth", authRouter);
+  app.use("/api/projects", createProjectsRouter(builds));
+  app.use("/api/kanban", createKanbanRouter());
+
+  return app;
+}

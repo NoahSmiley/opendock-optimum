@@ -1,0 +1,583 @@
+
+OpenDock — MVP Build Plan & Task Script for GPT Codex
+Author: <You>
+Date: 2025‑10‑20
+
+You are GPT Codex acting as a senior full‑stack TypeScript engineer.
+Goal: extend the existing OpenDock monorepo into a polished, hobbyist‑friendly DevOps workbench with a clean, “Apple‑like” kanban system, user accounts, and a simple simulated CI/CD. Implement the MVP below incrementally, keeping the repo stable and fast to run locally.
+
+--------------------------------------------------------------------
+0) CONTEXT (what already exists)
+--------------------------------------------------------------------
+Monorepo (pnpm or npm workspaces assumed):
+
+apps/opendock   — React 19 + Vite “shell” (docs, dashboard, roadmap) with Shadcn‑inspired UI and AppLayout (theme toggling, collapsible nav, external links to boards).
+apps/boards     — React + Tailwind fullscreen kanban workspace.
+apps/backend    — Express API reading/writing JSON files, simulating projects, builds, deployments, and kanban.
+packages/shared — Shared TypeScript types + lightweight fetch helper for data‑contract parity.
+
+Design intent: very simple, clean, uncluttered (think “if Apple made it”), dark mode uses true blacks/neutral palette; native scrollbars; minimal borders.
+
+Non‑goals for MVP: real cloud builds, deep Git integrations, K8s orchestration. We simulate those.
+
+--------------------------------------------------------------------
+1) HIGH‑LEVEL REQUIREMENTS (MVP)
+--------------------------------------------------------------------
+A. Authentication & Users
+   - Email + password (bcrypt) with session tokens stored in DB.
+   - httpOnly, Secure cookies; CSRF protection via double‑submit token.
+   - Optional GitHub OAuth (nice‑to‑have, behind a flag).
+   - Basic roles: owner, admin, member, viewer (RBAC v1).
+
+B. Data Layer
+   - Keep current JSON storage working for existing demo data.
+   - Introduce a pluggable DAL (Data Access Layer) with two providers:
+        1) jsonProvider (existing) — default for demo.
+        2) sqlProvider (new) — Prisma with SQLite (dev) and Postgres (prod).
+   - Start by using SQL only for auth+sessions; add projects/boards later.
+
+C. Kanban v1 (clean “Jira‑lite”)
+   - Boards (per project), columns, tickets, comments, labels, assignees.
+   - Reorder by drag‑and‑drop with @dnd-kit/core.
+   - Real‑time sync within the board via Server‑Sent Events (SSE) channel.
+   - Keyboard shortcuts (N new ticket, / quick search, E edit, ⌘K command palette).
+
+D. Projects Dashboard
+   - Project list + quick stats (open tickets, last build, last deploy).
+   - Project detail: overview, board link, builds, deployments, env vars (sim).
+
+E. Simulated CI/CD
+   - “Build” and “Deploy” entities with simple state machine:
+        queued → running → succeeded|failed (timestamps, logs).
+   - Background worker (in‑process) that advances jobs on a timer and writes logs.
+   - Redeploy endpoint (already exists) wired to the new job runner.
+   - Streaming logs over SSE (append every ~300–800ms).
+
+F. Docs & Onboarding
+   - First‑run guided setup: create account, create project, open board.
+   - Empty states with friendly copy; subtle micro‑interactions.
+
+G. Quality Bar
+   - Type‑safe end‑to‑end: Zod validation at the edges, shared types in packages/shared.
+   - Unit tests (Vitest), API tests (Supertest), E2E (Playwright) for critical flows.
+   - Prettier + ESLint stable config; strict TS everywhere.
+
+--------------------------------------------------------------------
+2) CODING PRINCIPLES
+--------------------------------------------------------------------
+- Prefer small, composable modules; keep public APIs boring and clear.
+- Everything async/await; never swallow errors—return typed error shapes.
+- Add “definition of done” checklists per feature.
+- Great empty states, sensible defaults, respectful animations (no jank).
+- Accessibility (focus states, landmarks, labels, reduced motion).
+
+--------------------------------------------------------------------
+3) PLANNED DIRECTORY/FILE ADDITIONS
+--------------------------------------------------------------------
+apps/backend/
+  src/
+    app.ts
+    server.ts
+    env.ts
+    dal/
+      index.ts                // DAL interface + provider switch
+      json/                   // existing JSON persistence (leave as‑is)
+      sql/
+        prisma/
+          schema.prisma
+        client.ts             // PrismaClient singleton
+        user.repo.ts          // Users + sessions
+        project.repo.ts       // Later: projects, boards, tickets, builds
+    auth/
+      passwords.ts            // bcrypt hash/verify + password rules
+      sessions.ts             // create/verify/rotate sessions
+      csrf.ts                 // double‑submit token helpers
+      middleware.ts           // authRequired, withRole, attachUser
+      oauth/                  // (optional) GitHub
+    routes/
+      auth.routes.ts
+      users.routes.ts
+      projects.routes.ts
+      boards.routes.ts
+      tickets.routes.ts
+      builds.routes.ts
+      deploys.routes.ts
+      sse.routes.ts           // board + logs streams
+    jobs/
+      runner.ts               // in‑process job runner + event bus
+      build.worker.ts
+      deploy.worker.ts
+    events/
+      bus.ts                  // tiny typed event emitter
+      types.ts
+    lib/
+      errors.ts               // typed API errors
+      zod.ts                  // shared zod schemas (import from packages/shared when possible)
+
+apps/opendock/
+  src/
+    auth/
+      AuthProvider.tsx        // session fetch, refresh, CSRF handling
+      useAuth.ts
+      ProtectedRoute.tsx
+    pages/auth/
+      Login.tsx
+      Register.tsx
+    pages/projects/
+      ProjectsIndex.tsx
+      ProjectDetail.tsx
+    pages/builds/BuildLogs.tsx
+    components/kanban/
+      TicketCard.tsx
+      Column.tsx
+      BoardHeader.tsx
+    components/ui/             // build on top of shadcn‑like primitives
+      CommandPalette.tsx
+      Kbd.tsx
+    utils/sse.ts               // helper to subscribe to SSE streams
+
+apps/boards/
+  src/
+    state/board.store.ts       // zustand or jotai store
+    dnd/                       // @dnd-kit utilities
+    api/
+      board.api.ts
+    pages/Board.tsx
+    components/…               // Column, Ticket, Composer, QuickSearch
+    utils/sse.ts
+
+packages/shared/
+  src/types.ts                 // expand with below domain types
+  src/api.ts                   // fetch helper with CSRF + cookie handling
+  src/schemas.ts               // zod schemas that mirror types
+
+--------------------------------------------------------------------
+4) DOMAIN MODEL (Types & Zod)
+--------------------------------------------------------------------
+TypeScript types (packages/shared/src/types.ts):
+
+export type ID = string;
+
+export type Role = 'owner' | 'admin' | 'member' | 'viewer';
+
+export type User = {
+  id: ID;
+  email: string;
+  displayName: string;
+  avatarUrl?: string;
+  role: Role;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Session = {
+  id: ID;
+  userId: ID;
+  tokenHash: string;         // hash of random token stored in cookie
+  userAgent?: string;
+  ip?: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Project = {
+  id: ID;
+  name: string;
+  key: string;               // short key e.g. "OD"
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Board = {
+  id: ID;
+  projectId: ID;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Column = {
+  id: ID;
+  boardId: ID;
+  name: string;
+  order: number;
+  wipLimit?: number;
+};
+
+export type TicketPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent';
+
+export type Ticket = {
+  id: ID;
+  boardId: ID;
+  columnId: ID;
+  key: string;               // e.g. OD‑42
+  title: string;
+  description?: string;
+  priority: TicketPriority;
+  assigneeId?: ID;
+  labels: string[];
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Comment = {
+  id: ID;
+  ticketId: ID;
+  authorId: ID;
+  body: string;
+  createdAt: string;
+};
+
+export type BuildStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+export type DeployStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export type Build = {
+  id: ID;
+  projectId: ID;
+  number: number;
+  status: BuildStatus;
+  startedAt?: string;
+  finishedAt?: string;
+  logCursor: number;         // used by log streamer
+};
+
+export type Deployment = {
+  id: ID;
+  projectId: ID;
+  buildId: ID;
+  status: DeployStatus;
+  startedAt?: string;
+  finishedAt?: string;
+};
+
+Zod schemas should mirror these and live in packages/shared/src/schemas.ts.
+Use z.string().datetime() for ISO timestamps and z.enum([...]) for enums.
+
+--------------------------------------------------------------------
+5) PRISMA SCHEMA (apps/backend/src/dal/sql/prisma/schema.prisma)
+--------------------------------------------------------------------
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = env("DATABASE_PROVIDER") // "sqlite" or "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  passwordHash String
+  displayName String
+  avatarUrl   String?
+  role        String   @default("member")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sessions    Session[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  tokenHash  String   @unique
+  userAgent  String?
+  ip         String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Future models (commented until migration):
+// model Project { … }
+// model Board   { … }
+// model Column  { … }
+// model Ticket  { … }
+// model Build   { … }
+// model Deployment { … }
+
+Notes:
+- Default dev DB: SQLite file at prisma/dev.db
+- For production, support Postgres via DATABASE_URL and provider=postgresql
+
+--------------------------------------------------------------------
+6) AUTHN/AUTHZ DETAILS
+--------------------------------------------------------------------
+Password rules:
+- min 8 chars, at least 1 letter and 1 number. Use zod refinement.
+- Store bcrypt hash with cost 12–13. Never store plaintext.
+
+Session cookie:
+- Name: "od.sid"
+- httpOnly, Secure (on HTTPS), SameSite=Lax
+- Expires: 30 days; rotate on each login; revoke on logout
+- Value: random 32‑byte token (base64url). Store only its SHA‑256 hash in DB.
+- CSRF: issue "od.csrf" non‑httpOnly cookie with a random token. Require header "x-csrf-token" to match cookie value for all mutating requests. Exempt GET and SSE.
+
+RBAC v1:
+- Roles: owner>admin>member>viewer. Scope project‑wide for now.
+- Middleware withRole('admin' | 'owner') for sensitive routes.
+
+--------------------------------------------------------------------
+7) BACKEND ROUTES (Express)
+--------------------------------------------------------------------
+Prefix all with /api.
+
+Auth
+- POST   /auth/register   { email, password, displayName } → 201 { user }
+- POST   /auth/login      { email, password } → 200 { user }
+- POST   /auth/logout     → 204
+- GET    /auth/me         → 200 { user } (from session) or 401
+
+Projects
+- GET    /projects        → 200 Project[]
+- POST   /projects        → 201 Project
+- GET    /projects/:id    → 200 Project
+- PATCH  /projects/:id    → 200 Project
+- DELETE /projects/:id    → 204
+
+Boards & Tickets
+- GET    /projects/:id/board               → 200 { board, columns, tickets }
+- POST   /projects/:id/board/columns       → 201 Column
+- PATCH  /boards/:boardId/columns/:colId   → 200 Column
+- POST   /boards/:boardId/tickets          → 201 Ticket
+- PATCH  /tickets/:id                      → 200 Ticket
+- POST   /tickets/:id/comments             → 201 Comment
+- POST   /boards/:boardId/reorder          → 204 (columns & tickets reorders)
+
+Builds & Deployments
+- POST   /projects/:id/builds              → 201 Build (status=queued)
+- GET    /projects/:id/builds              → 200 Build[]
+- GET    /builds/:id                       → 200 Build
+- POST   /builds/:id/retry                 → 201 Build
+- POST   /builds/:id/deploy                → 201 Deployment (queued)
+- GET    /deploys/:id                      → 200 Deployment
+
+Streaming (SSE)
+- GET /sse/board/:boardId                  → event: "board:update" JSON payloads
+- GET /sse/build/:buildId/logs             → event: "log:append" { lines: string[] }
+- Always set headers: Content-Type: text/event-stream, Cache-Control: no-cache
+
+Errors
+- Error JSON shape: { error: { code: string; message: string; details?: any } }
+- Use proper status codes; never leak stack traces in production.
+
+--------------------------------------------------------------------
+8) FRONTEND IMPLEMENTATION NOTES
+--------------------------------------------------------------------
+Shared Fetch Helper (packages/shared/src/api.ts)
+- Wrap fetch with:
+   - credentials: "include" (cookies)
+   - CSRF header automatic for non‑GET
+   - JSON parsing with typed results
+   - Narrow error types
+
+AuthProvider (apps/opendock/src/auth/AuthProvider.tsx)
+- On mount, call /api/auth/me; store user in context.
+- Provide login(email,password), register, logout methods.
+- Expose hasRole(role) helper.
+- Render children only after auth state resolves (loading spinner).
+
+ProtectedRoute
+- Redirect to /auth/login if not authenticated.
+
+Kanban (apps/boards)
+- Use @dnd-kit/core for drag‑and‑drop.
+- Board store manages columns[], tickets[] with optimistic updates.
+- Subscribe to /api/sse/board/:boardId; reconcile events with store.
+- On drop, call /boards/:boardId/reorder with new column/ticket orders.
+- Ticket composer supports markdown preview (optional).
+
+Command Palette
+- ⌘K opens palette (projects, tickets, actions); simple fuzzy search.
+
+Build Logs
+- Subscribe to /api/sse/build/:buildId/logs and append lines to a virtualized list (e.g., react-virtuoso). Provide copy/download button.
+
+Design Tokens (Tailwind + CSS variables)
+- Radius: 12 for cards, 8 for inputs, 16 for modals.
+- Spacing: 8‑pt grid.
+- Typography: system UI, weight transitions on focus/hover only.
+- Motion: prefers‑reduced‑motion respected; durations 120–220ms.
+- Shadows: very soft, low elevation; avoid heavy borders (use subtle dividers).
+- Color: neutral‑1000 true black in dark; neutrals for surfaces; accent via brand‑blue.
+
+Empty States
+- Illustrations optional; faster path: friendly headings + 1 CTA.
+
+--------------------------------------------------------------------
+9) JOB RUNNER & EVENTS
+--------------------------------------------------------------------
+In‑process job runner (apps/backend/src/jobs/runner.ts)
+- Keep a queue in memory (persist minimal state to JSON/DB for restart).
+- Poll every second:
+   - take queued builds → running → emit "build:started"
+   - write logs in chunks (randomized pseudo output)
+   - complete as succeeded/failed (skew 85/15), emit "build:finished"
+- For deployments, similar flow, but require buildId.
+- Event bus emits typed events; SSE route subscribes and fans out per topic.
+
+--------------------------------------------------------------------
+10) STEP‑BY‑STEP EXECUTION PLAN (safe increments)
+--------------------------------------------------------------------
+Milestone 1 — Auth & Sessions (SQL only)
+[ ] Add Prisma files; env config; DATABASE_URL for SQLite by default.
+[ ] Implement user.repo + session handling; bcrypt password hashing.
+[ ] Add routes: /auth/register, /auth/login, /auth/logout, /auth/me.
+[ ] Wire middleware: attachUser (from session), authRequired, withRole.
+[ ] Frontend: Login/Register pages + AuthProvider.
+[ ] Tests: unit (password rules), API (auth flows).
+
+Milestone 2 — Projects + Dashboard (JSON provider still ok)
+[ ] Define Zod schemas & types for Project.
+[ ] Implement projects.routes CRUD via DAL (works with jsonProvider first).
+[ ] Shell UI: ProjectsIndex + ProjectDetail; empty states + create flow.
+[ ] Tests: API + E2E (create project).
+
+Milestone 3 — Kanban v1 (Columns, Tickets, DnD)
+[ ] DAL for Board/Column/Ticket (start with jsonProvider; add SQL later).
+[ ] Routes for board load, ticket CRUD, reorder endpoint.
+[ ] Boards app: state store, components, keyboard shortcuts, @dnd-kit.
+[ ] SSE: board updates; optimistic UI with rollback on error.
+[ ] Tests: E2E drag‑drop; API for reorder consistency.
+
+Milestone 4 — CI/CD Sim + Logs
+[ ] Build/Deploy models (json first); job runner; SSE logs stream.
+[ ] Project detail shows builds/deployments, trigger buttons.
+[ ] Tests: API build lifecycle; log stream happy path.
+
+Milestone 5 — Polish & A11y
+[ ] Command palette; focus traps; ARIA labels.
+[ ] Theming review; reduced‑motion; color contrast checks.
+[ ] Docs onboarding; first‑run wizard.
+
+Nice‑to‑have Next:
+[ ] Switch Board/Project storage to SQL provider.
+[ ] GitHub OAuth; API keys; personal access tokens.
+
+--------------------------------------------------------------------
+11) SAMPLE CODE SKETCHES (ESSENTIAL PARTS)
+--------------------------------------------------------------------
+// apps/backend/src/auth/passwords.ts
+import bcrypt from 'bcryptjs';
+export async function hashPassword(pw: string) { return bcrypt.hash(pw, 12); }
+export async function verifyPassword(pw: string, hash: string) { return bcrypt.compare(pw, hash); }
+
+// apps/backend/src/auth/sessions.ts
+import { randomBytes, createHash } from 'crypto';
+import { prisma } from '../dal/sql/client';
+const COOKIE = 'od.sid';
+export function newToken() { return randomBytes(32).toString('base64url'); }
+export function tokenHash(token: string) { return createHash('sha256').update(token).digest('base64url'); }
+export async function createSession(userId: string, ua?: string, ip?: string) {
+  const token = newToken();
+  const hash = tokenHash(token);
+  const expiresAt = new Date(Date.now() + 1000*60*60*24*30);
+  await prisma.session.create({ data: { userId, tokenHash: hash, userAgent: ua, ip, expiresAt } });
+  return { token, expiresAt };
+}
+
+// apps/backend/src/auth/middleware.ts (sketch)
+import type { Request, Response, NextFunction } from 'express';
+import { prisma } from '../dal/sql/client';
+import { tokenHash } from './sessions';
+export async function attachUser(req: Request, _res: Response, next: NextFunction) {
+  const token = req.cookies?.['od.sid']; if (!token) return next();
+  const sess = await prisma.session.findUnique({ where: { tokenHash: tokenHash(token) }, include: { user: true } });
+  if (sess && sess.expiresAt > new Date()) (req as any).user = sess.user;
+  return next();
+}
+export function authRequired(req: Request, res: Response, next: NextFunction) {
+  if (!(req as any).user) return res.status(401).json({ error: { code: 'UNAUTHENTICATED', message: 'Login required.' }});
+  next();
+}
+
+// apps/backend/src/routes/auth.routes.ts (sketch)
+router.post('/auth/register', zodBody(RegisterSchema), async (req, res) => {
+  const { email, password, displayName } = req.body;
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) return res.status(409).json({ error: { code: 'EMAIL_TAKEN', message: 'Email already in use' }});
+  const passwordHash = await hashPassword(password);
+  const user = await prisma.user.create({ data: { email, passwordHash, displayName } });
+  const { token, expiresAt } = await createSession(user.id, req.get('user-agent') ?? '', req.ip);
+  res.cookie('od.sid', token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', expires: expiresAt });
+  res.status(201).json({ user: strip(user, ['passwordHash']) });
+});
+
+--------------------------------------------------------------------
+12) ACCEPTANCE CHECKLISTS (Definition of Done)
+--------------------------------------------------------------------
+Auth
+- [ ] Can register, login, logout; session persists across refresh.
+- [ ] CSRF token required on POST/PATCH/DELETE; 403 on mismatch.
+- [ ] Passwords hashed; no sensitive data in responses.
+- [ ] Basic rate limiting (e.g., 20/min on auth routes).
+
+Projects
+- [ ] CRUD works with DAL jsonProvider; types validated with Zod.
+- [ ] UI shows friendly empty state + create project dialog.
+
+Kanban
+- [ ] Create/edit/move tickets; reorder columns; undo last action (per session).
+- [ ] SSE updates reflect across two browser windows within 1s.
+- [ ] Keyboard shortcuts listed in “?” help.
+
+CI/CD
+- [ ] Trigger build; see logs streaming; deploy build; final states consistent.
+- [ ] Refreshing the page continues log tail without duplication.
+
+Quality
+- [ ] Vitest unit tests >= 20, Playwright happy path for auth → project → board.
+- [ ] Lint passes; typecheck passes; no console errors in devtools.
+
+--------------------------------------------------------------------
+13) RUN & DEV SCRIPTS
+--------------------------------------------------------------------
+Add scripts in root and backend package.json:
+- "dev": "pnpm -r dev"
+- backend:
+  "db:generate": "prisma generate",
+  "db:push": "prisma db push",
+  "db:studio": "prisma studio",
+  "seed": "ts-node src/seed.ts"
+
+Local setup (SQLite):
+1) cd apps/backend
+2) set DATABASE_PROVIDER=sqlite and DATABASE_URL="file:./prisma/dev.db"
+3) pnpm db:generate && pnpm db:push
+4) pnpm dev
+
+--------------------------------------------------------------------
+14) SECURITY & PRIVACY NOTES
+--------------------------------------------------------------------
+- HTTP headers: set HSTS (prod), X‑Content‑Type‑Options, X‑Frame‑Options DENY, Referrer‑Policy: no‑referrer.
+- CORS: explicit origin allow‑list for the two frontends during dev.
+- Avoid logging PII; never log passwords/tokens; redact email in error logs.
+- Cookie secrets and session salts via env vars; do not commit to repo.
+
+--------------------------------------------------------------------
+15) ROADMAP (Beyond MVP)
+--------------------------------------------------------------------
+- Switch all domain storage to SQL provider; add migrations.
+- GitHub App for PR webhooks to auto‑queue “builds” (sim).
+- Personal access tokens + API keys; scoped tokens per project.
+- Notifications center (in‑app + browser).
+- Attachments on tickets via local disk/S3 compatible storage.
+- Teams/Organizations & invitations.
+- Simple metrics (lead time, cycle time) per board.
+
+--------------------------------------------------------------------
+INSTRUCTIONS TO YOU (GPT Codex)
+--------------------------------------------------------------------
+- Work milestone by milestone. Never break existing demo flows.
+- When creating new files, keep paths exactly as listed above.
+- Prefer minimal dependencies. For DnD use @dnd-kit; for SSE use native EventSource.
+- Write concise, well‑typed code. Add TODOs where trade‑offs are made.
+- When in doubt, choose DX and clarity over cleverness.

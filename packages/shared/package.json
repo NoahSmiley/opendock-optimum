@@ -1,0 +1,21 @@
+{
+  "name": "@opendock/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./dist/types.js",
+    "./api": "./dist/api.js",
+    ".": "./dist/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "types": ["dist/types.d.ts"],
+      "api": ["dist/api.d.ts"],
+      "*": ["dist/index.d.ts"]
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}

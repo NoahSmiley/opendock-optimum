@@ -1,0 +1,15 @@
+{
+  "name": "opendock-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev:opendock": "npm --workspace apps/opendock run dev",
+    "dev:boards": "npm --workspace apps/boards run dev",
+    "dev:backend": "npm --workspace apps/backend run dev"
+  }
+}
