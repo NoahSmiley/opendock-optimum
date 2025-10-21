@@ -1,5 +1,10 @@
 import { createJsonDal } from "./json";
 import { createSqlDal } from "./sql";
+import type { ProjectsRepository } from "./projects.types";
+import type { KanbanRepository } from "./kanban.types";
+
+export type { ProjectsRepository, ProjectOverview } from "./projects.types";
+export type { KanbanRepository } from "./kanban.types";
 
 export type DalProviderName = "json" | "sql";
 
@@ -44,6 +49,8 @@ export interface AuthRepository {
 export interface DataAccessLayer {
   kind: DalProviderName;
   auth: AuthRepository;
+  projects: ProjectsRepository;
+  kanban: KanbanRepository;
 }
 
 const providerName = normalizeProvider(process.env.OPENDOCK_DAL);

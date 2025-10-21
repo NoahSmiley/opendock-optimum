@@ -6,6 +6,8 @@ import type {
   AuthUserWithPassword,
   DataAccessLayer,
 } from "../index";
+import { StateProjectsRepository } from "../stateProjectsRepository";
+import { StateKanbanRepository } from "../stateKanbanRepository";
 import { prisma } from "./client";
 
 function mapUser(user: { id: string; email: string; displayName: string | null; role: string; createdAt: Date; updatedAt: Date }): AuthUser {
@@ -73,11 +75,15 @@ class PrismaAuthRepository implements AuthRepository {
   async createSession(input: { userId: string; tokenHash: string; userAgent: string; ipAddress: string; expiresAt: Date }): Promise<AuthSession> {
     const session = await prisma.session.create({
       data: {
-        userId: input.userId,
         tokenHash: input.tokenHash,
         userAgent: input.userAgent,
         ipAddress: input.ipAddress,
         expiresAt: input.expiresAt,
+        user: {
+          connect: {
+            id: input.userId,
+          },
+        },
       },
     });
     return mapSession(session);
@@ -104,5 +110,7 @@ export function createSqlDal(): DataAccessLayer {
   return {
     kind: "sql",
     auth: new PrismaAuthRepository(),
+    projects: new StateProjectsRepository(),
+    kanban: new StateKanbanRepository(),
   };
 }

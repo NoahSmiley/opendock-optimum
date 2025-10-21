@@ -1,4 +1,5 @@
-﻿import { createContext, useContext, useEffect, useMemo, useState } from "react";
+﻿/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 type Theme = "light" | "dark";
 const STORAGE_KEY = "boards-theme";

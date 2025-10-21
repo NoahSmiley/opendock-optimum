@@ -83,6 +83,20 @@ export class StateStore {
     return JSON.parse(JSON.stringify(this.state));
   }
 
+  reset(overrides: Partial<AppState> = {}): void {
+    this.state = {
+      projects: overrides.projects ? [...overrides.projects] : [],
+      builds: overrides.builds ? [...overrides.builds] : [],
+      deployments: overrides.deployments ? [...overrides.deployments] : [],
+      kanbanBoards: overrides.kanbanBoards ? [...overrides.kanbanBoards] : [],
+      kanbanColumns: overrides.kanbanColumns ? [...overrides.kanbanColumns] : [],
+      kanbanTickets: overrides.kanbanTickets ? [...overrides.kanbanTickets] : [],
+      kanbanSprints: overrides.kanbanSprints ? [...overrides.kanbanSprints] : [],
+      kanbanUsers: overrides.kanbanUsers ? [...overrides.kanbanUsers] : [],
+    };
+    this.persist();
+  }
+
   listProjects(): Project[] {
     return [...this.state.projects];
   }
@@ -116,7 +130,15 @@ export class StateStore {
     project.name = updates.name ?? project.name;
     project.branch = updates.branch ?? project.branch;
     if (updates.buildConfig) {
-      project.buildConfig = { ...(project.buildConfig ?? {}), ...updates.buildConfig };
+      const current = { ...(project.buildConfig ?? {}) };
+      (Object.entries(updates.buildConfig) as [keyof BuildConfig, BuildConfig[keyof BuildConfig]][]).forEach(([key, value]) => {
+        if (value === undefined) {
+          delete current[key];
+        } else {
+          current[key] = value;
+        }
+      });
+      project.buildConfig = Object.keys(current).length > 0 ? current : undefined;
     }
     this.persist();
     return project;
@@ -239,7 +261,7 @@ export class StateStore {
     return user;
   }
 
-  createBoard(input: { name: string; description?: string; projectId?: string; members?: { name: string; email?: string }[] }): KanbanBoard {
+  createBoard(input: { name: string; description?: string; projectId?: string; members?: { name: string; email?: string }[] }): KanbanBoardSnapshot {
     const memberIds = (input.members ?? []).map((member) => this.upsertUser(member).id);
     const board: KanbanBoard = {
       id: randomUUID(),
@@ -259,7 +281,11 @@ export class StateStore {
       this.createColumn(board.id, { title, order: index });
     });
     this.persist();
-    return this.boardSnapshot(board.id)!.board;
+    const snapshot = this.boardSnapshot(board.id);
+    if (!snapshot) {
+      throw new Error("Failed to create board snapshot");
+    }
+    return snapshot;
   }
 
   createColumn(boardId: string, input: { title: string; order?: number }): KanbanColumn {
@@ -370,6 +396,3 @@ export class StateStore {
 }
 
 export const store = new StateStore();
-
-
-

@@ -91,7 +91,8 @@ export class BuildService {
 
   private async simulateStep(buildId: string, message: string, duration: number) {
     store.appendBuildLog(buildId, `${message}...`);
-    await new Promise((resolve) => setTimeout(resolve, duration));
+    const delay = process.env.NODE_ENV === "test" ? Math.min(duration, 10) : duration;
+    await new Promise((resolve) => setTimeout(resolve, delay));
     store.appendBuildLog(buildId, `${message} complete`);
   }
 }

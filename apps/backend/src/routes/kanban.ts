@@ -1,106 +1,157 @@
 import { Router } from "express";
-import type { KanbanColumn } from "@opendock/shared/types";
-import { store } from "../state";
+import {
+  KanbanCreateBoardSchema,
+  KanbanCreateColumnSchema,
+  KanbanCreateSprintSchema,
+  KanbanCreateTicketSchema,
+  KanbanReorderTicketSchema,
+  KanbanUpdateTicketSchema,
+} from "@opendock/shared/kanban";
 import { authRequired, requireCsrfProtection } from "../auth";
+import { dal } from "../dal";
+import { kanbanEvents } from "../events";
+
+function validationError(error: unknown) {
+  if (error && typeof error === "object" && "flatten" in error && typeof (error as { flatten: () => unknown }).flatten === "function") {
+    const issue = (error as { flatten: () => { fieldErrors: unknown } }).flatten();
+    return {
+      error: {
+        code: "INVALID_PAYLOAD",
+        message: "Request validation failed.",
+        details: issue.fieldErrors,
+      },
+    };
+  }
+  return {
+    error: {
+      code: "INVALID_PAYLOAD",
+      message: "Request validation failed.",
+    },
+  };
+}
 
 export function createKanbanRouter(): Router {
   const router = Router();
 
-  router.get("/boards", (_req, res) => {
-    const boards = store.listBoards().map((board) => {
-      const snapshot = store.boardSnapshot(board.id);
-      return snapshot?.board ?? board;
-    });
-    res.json({ boards, users: store.listUsers() });
+  router.get("/boards", async (_req, res) => {
+    const [boards, users] = await Promise.all([dal.kanban.listBoards(), dal.kanban.listUsers()]);
+    const hydrated = await Promise.all(
+      boards.map(async (board) => (await dal.kanban.boardSnapshot(board.id))?.board ?? board),
+    );
+    res.json({ boards: hydrated, users });
   });
 
-  router.post("/boards", authRequired, requireCsrfProtection, (req, res) => {
-    const { name, description, projectId, members } = req.body ?? {};
-    if (!name) {
-      res.status(400).json({ error: "name is required" });
+  router.post("/boards", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanCreateBoardSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
       return;
     }
-    const snapshot = store.createBoard({ name, description, projectId, members });
-    res.status(201).json(store.boardSnapshot(snapshot.id));
+    const snapshot = await dal.kanban.createBoard(parsed.data);
+    res.status(201).json(snapshot);
   });
 
-  router.post("/boards/:boardId/columns", authRequired, requireCsrfProtection, (req, res) => {
-    const { title } = req.body ?? {};
-    if (!title) {
-      res.status(400).json({ error: "title is required" });
+  router.get("/boards/:boardId/stream", authRequired, async (req, res) => {
+    const boardId = req.params.boardId;
+    const snapshot = await dal.kanban.boardSnapshot(boardId);
+    if (!snapshot) {
+      res.status(404).json({ error: { code: "BOARD_NOT_FOUND", message: "Board not found." } });
       return;
     }
-    const board = store.boardSnapshot(req.params.boardId);
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    (res as typeof res & { flushHeaders?: () => void }).flushHeaders?.();
+
+    res.write(`event: board-snapshot\ndata: ${JSON.stringify({ boardId, snapshot })}\n\n`);
+
+    const unsubscribe = kanbanEvents.subscribe(boardId, res);
+    const cleanup = () => {
+      unsubscribe();
+      res.end();
+    };
+    req.on("close", cleanup);
+    req.on("error", cleanup);
+  });
+
+  router.post("/boards/:boardId/columns", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanCreateColumnSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+
+    const board = await dal.kanban.boardSnapshot(req.params.boardId);
     if (!board) {
-      res.status(404).json({ error: "Board not found" });
+      res.status(404).json({
+        error: { code: "BOARD_NOT_FOUND", message: "Board not found." },
+      });
       return;
     }
-    const column = store.createColumn(req.params.boardId, { title });
+
+    const column = await dal.kanban.createColumn(board.board.id, parsed.data);
     res.status(201).json({ column });
   });
 
-  router.post("/boards/:boardId/sprints", authRequired, requireCsrfProtection, (req, res) => {
-    const { name, goal, startDate, endDate, status } = req.body ?? {};
-    if (!name || !startDate || !endDate) {
-      res.status(400).json({ error: "name, startDate, and endDate are required" });
+  router.post("/boards/:boardId/sprints", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanCreateSprintSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
       return;
     }
-    const board = store.boardSnapshot(req.params.boardId);
+    const board = await dal.kanban.boardSnapshot(req.params.boardId);
     if (!board) {
-      res.status(404).json({ error: "Board not found" });
+      res.status(404).json({ error: { code: "BOARD_NOT_FOUND", message: "Board not found." } });
       return;
     }
-    const sprint = store.createSprint(req.params.boardId, { name, goal, startDate, endDate, status });
+    const sprint = await dal.kanban.createSprint(board.board.id, parsed.data);
     res.status(201).json({ sprint });
   });
 
-  router.post("/boards/:boardId/tickets", authRequired, requireCsrfProtection, (req, res) => {
-    const { columnId, title, description, assigneeIds, tags, estimate, priority, sprintId } = req.body ?? {};
-    if (!columnId || !title) {
-      res.status(400).json({ error: "columnId and title are required" });
+  router.post("/boards/:boardId/tickets", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanCreateTicketSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
       return;
     }
-    const board = store.boardSnapshot(req.params.boardId);
+    const board = await dal.kanban.boardSnapshot(req.params.boardId);
     if (!board) {
-      res.status(404).json({ error: "Board not found" });
+      res.status(404).json({ error: { code: "BOARD_NOT_FOUND", message: "Board not found." } });
       return;
     }
-    const columnExists = board.columns.some((column: KanbanColumn) => column.id === columnId);
+    const columnExists = board.columns.some((column) => column.id === parsed.data.columnId);
     if (!columnExists) {
-      res.status(400).json({ error: "Invalid columnId" });
+      res.status(400).json({ error: { code: "COLUMN_NOT_FOUND", message: "Column not found on this board." } });
       return;
     }
-    const ticket = store.createTicket(req.params.boardId, {
-      columnId,
-      title,
-      description,
-      assigneeIds,
-      tags,
-      estimate,
-      priority,
-      sprintId,
-    });
+    const ticket = await dal.kanban.createTicket(board.board.id, parsed.data);
     res.status(201).json({ ticket });
   });
 
-  router.patch("/tickets/:ticketId", authRequired, requireCsrfProtection, (req, res) => {
-    const ticket = store.updateTicket(req.params.ticketId, req.body ?? {});
+  router.patch("/tickets/:ticketId", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanUpdateTicketSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+    const ticket = await dal.kanban.updateTicket(req.params.ticketId, parsed.data);
     if (!ticket) {
-      res.status(404).json({ error: "Ticket not found" });
+      res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
       return;
     }
     res.json({ ticket });
   });
 
-  router.patch("/boards/:boardId/tickets/reorder", authRequired, requireCsrfProtection, (req, res) => {
-    const { ticketId, toColumnId, toIndex } = req.body ?? {};
-    if (!ticketId || !toColumnId || typeof toIndex !== "number") {
-      res.status(400).json({ error: "ticketId, toColumnId, toIndex required" });
+  router.patch("/boards/:boardId/tickets/reorder", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanReorderTicketSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
       return;
     }
-    const snapshot = store.moveTicket(ticketId, toColumnId, Number(toIndex));
+    const snapshot = await dal.kanban.reorderTicket(req.params.boardId, parsed.data);
     if (!snapshot) {
-      res.status(400).json({ error: "Unable to move ticket" });
+      res.status(400).json({ error: { code: "REORDER_FAILED", message: "Unable to move ticket." } });
       return;
     }
     res.json(snapshot);
@@ -108,5 +159,3 @@ export function createKanbanRouter(): Router {
 
   return router;
 }
-
-

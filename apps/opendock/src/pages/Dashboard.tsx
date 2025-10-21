@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -9,10 +9,14 @@ import {
   GitBranch,
   PlayCircle,
   Server,
+  Loader2,
+  Plus,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BuildStatus, HealthStatus, ProjectsResponse } from "@opendock/shared/types";
-import { fetchProjects } from "@/lib/api";
+import type { ProjectCreateInput } from "@opendock/shared/projects";
+import { createProject, fetchProjects } from "@/lib/api";
 
 type DashboardState =
   | { status: "idle" | "loading"; projects: ProjectsResponse["projects"]; error?: undefined }
@@ -32,11 +36,58 @@ const deploymentStatusStyles: Record<HealthStatus, string> = {
   unknown: "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-200",
 };
 
+type CreateProjectFormState = {
+  name: string;
+  repoUrl: string;
+  branch: string;
+  installCommand: string;
+  buildCommand: string;
+  workspacePath: string;
+};
+
+type CreateProjectStatus =
+  | { status: "idle"; error?: undefined }
+  | { status: "saving"; error?: undefined }
+  | { status: "error"; error: string };
+
+const createFormDefaults = (): CreateProjectFormState => ({
+  name: "",
+  repoUrl: "",
+  branch: "main",
+  installCommand: "",
+  buildCommand: "",
+  workspacePath: "",
+});
+
 export default function DashboardPage() {
   const [{ projects, status, error }, setState] = useState<DashboardState>({
     status: "idle",
     projects: [],
   });
+  const [isCreateOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateProjectFormState>(() => createFormDefaults());
+  const [createStatus, setCreateStatus] = useState<CreateProjectStatus>({ status: "idle" });
+
+  const friendlyError = useCallback(
+    (err: unknown) =>
+      err instanceof Error ? err.message : "Unable to load projects right now. Please try again shortly.",
+    [],
+  );
+
+  const refreshProjects = useCallback(
+    async (options: { silent?: boolean } = {}) => {
+      if (!options.silent) {
+        setState((current) => ({ status: "loading", projects: current.projects }));
+      }
+      try {
+        const response = await fetchProjects();
+        setState({ status: "ready", projects: response.projects });
+      } catch (err) {
+        setState({ status: "error", error: friendlyError(err), projects: [] });
+      }
+    },
+    [friendlyError],
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -48,14 +99,91 @@ export default function DashboardPage() {
       })
       .catch((err: unknown) => {
         if (!isActive) return;
-        const message =
-          err instanceof Error ? err.message : "Unable to load projects right now. Please try again shortly.";
-        setState({ status: "error", error: message, projects: [] });
+        setState({ status: "error", error: friendlyError(err), projects: [] });
       });
     return () => {
       isActive = false;
     };
+  }, [friendlyError]);
+
+  const openCreate = useCallback(() => {
+    setCreateStatus({ status: "idle" });
+    setCreateForm(createFormDefaults());
+    setCreateOpen(true);
   }, []);
+
+  const closeCreate = useCallback(() => {
+    if (createStatus.status === "saving") return;
+    setCreateStatus({ status: "idle" });
+    setCreateOpen(false);
+  }, [createStatus.status]);
+
+  const handleCreateChange = useCallback((field: keyof CreateProjectFormState, value: string) => {
+    setCreateForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    if (createStatus.status === "error") {
+      setCreateStatus({ status: "idle" });
+    }
+  }, [createStatus.status]);
+
+  const handleCreateSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (createStatus.status === "saving") return;
+
+      const trimmed = {
+        name: createForm.name.trim(),
+        repoUrl: createForm.repoUrl.trim(),
+        branch: createForm.branch.trim(),
+        installCommand: createForm.installCommand.trim(),
+        buildCommand: createForm.buildCommand.trim(),
+        workspacePath: createForm.workspacePath.trim(),
+      };
+
+      if (!trimmed.name || !trimmed.repoUrl) {
+        setCreateStatus({ status: "error", error: "Project name and repository URL are required." });
+        return;
+      }
+
+      setCreateStatus({ status: "saving" });
+
+      const payload: ProjectCreateInput = {
+        name: trimmed.name,
+        repoUrl: trimmed.repoUrl,
+        branch: trimmed.branch || "main",
+      };
+
+      const buildConfig: ProjectCreateInput["buildConfig"] = {};
+      if (trimmed.installCommand) {
+        buildConfig.installCommand = trimmed.installCommand;
+      }
+      if (trimmed.buildCommand) {
+        buildConfig.buildCommand = trimmed.buildCommand;
+      }
+      if (trimmed.workspacePath) {
+        buildConfig.workspacePath = trimmed.workspacePath;
+      }
+      if (buildConfig && Object.keys(buildConfig).length > 0) {
+        payload.buildConfig = buildConfig;
+      }
+
+      try {
+        await createProject(payload);
+        setCreateStatus({ status: "idle" });
+        setCreateForm(createFormDefaults());
+        setCreateOpen(false);
+        await refreshProjects({ silent: true });
+      } catch (err) {
+        setCreateStatus({
+          status: "error",
+          error: err instanceof Error ? err.message : "Unable to connect that repository. Please try again.",
+        });
+      }
+    },
+    [createForm, createStatus.status, refreshProjects],
+  );
 
   const stats = useMemo(() => {
     const builds = projects.flatMap((project) => project.builds ?? []);
@@ -165,16 +293,36 @@ export default function DashboardPage() {
       </section>
 
       <section id="projects" className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Projects</h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-300">
               Latest builds and commit details from the last five runs.
             </p>
           </div>
-          <GitBranch className="hidden h-6 w-6 text-neutral-400 dark:text-neutral-500 md:block" />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openCreate}
+              disabled={createStatus.status === "saving" || isCreateOpen}
+              className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-neutral-200 dark:hover:bg-white/20"
+            >
+              <Plus className="h-4 w-4" />
+              Connect repository
+            </button>
+            <GitBranch className="hidden h-6 w-6 text-neutral-400 dark:text-neutral-500 md:block" />
+          </div>
         </div>
         <div className="space-y-3">
+          {isCreateOpen && (
+            <CreateProjectCard
+              form={createForm}
+              status={createStatus}
+              onChange={handleCreateChange}
+              onClose={closeCreate}
+              onSubmit={handleCreateSubmit}
+            />
+          )}
           {status === "loading" && (
             <div className="rounded-3xl border border-neutral-200 bg-white/60 p-6 text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/60 dark:text-neutral-300">
               Loading project activity…
@@ -185,9 +333,20 @@ export default function DashboardPage() {
               {error}
             </div>
           )}
-          {status === "ready" && projects.length === 0 && (
+          {status === "ready" && projects.length === 0 && !isCreateOpen && (
             <div className="rounded-3xl border border-dashed border-neutral-300 bg-white/40 p-6 text-sm text-neutral-500 dark:border-white/20 dark:bg-neutral-900/40 dark:text-neutral-300">
-              No repositories yet. Connect one to see build history and deployment details here.
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p>No repositories yet. Connect one to see build history and deployment details here.</p>
+                <button
+                  type="button"
+                  onClick={openCreate}
+                  disabled={isCreateOpen}
+                  className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/20 dark:bg-white/10 dark:text-neutral-100 dark:hover:bg-white/20"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Connect
+                </button>
+              </div>
             </div>
           )}
           {projects.map((project) => (
@@ -274,6 +433,153 @@ function StatCard({ icon: Icon, label, value, description, tone = "default" }: S
   );
 }
 
+interface CreateProjectCardProps {
+  form: CreateProjectFormState;
+  status: CreateProjectStatus;
+  onChange: (field: keyof CreateProjectFormState, value: string) => void;
+  onClose: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}
+
+function CreateProjectCard({ form, status, onChange, onClose, onSubmit }: CreateProjectCardProps) {
+  const isSaving = status.status === "saving";
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="space-y-6 rounded-3xl border border-neutral-200 bg-white/70 p-6 shadow-sm dark:border-white/10 dark:bg-neutral-900/70"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Connect a repository</h3>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300">
+            We&apos;ll queue the first build immediately and surface redeploys from here.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isSaving}
+          className="rounded-full border border-transparent p-1.5 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/10 dark:hover:text-neutral-100"
+          aria-label="Close create project form"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {status.status === "error" && status.error && (
+        <div className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
+          {status.error}
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-name">
+            Project name
+          </label>
+          <input
+            id="project-name"
+            name="name"
+            value={form.name}
+            onChange={(event) => onChange("name", event.target.value)}
+            required
+            disabled={isSaving}
+            autoFocus
+            placeholder="OpenDock"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-branch">
+            Default branch
+          </label>
+          <input
+            id="project-branch"
+            name="branch"
+            value={form.branch}
+            onChange={(event) => onChange("branch", event.target.value)}
+            disabled={isSaving}
+            placeholder="main"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+          />
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-repo">
+            Repository URL
+          </label>
+          <input
+            id="project-repo"
+            name="repoUrl"
+            value={form.repoUrl}
+            onChange={(event) => onChange("repoUrl", event.target.value)}
+            required
+            disabled={isSaving}
+            placeholder="https://github.com/example/opendock.git"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-install">
+            Install command
+          </label>
+          <input
+            id="project-install"
+            name="installCommand"
+            value={form.installCommand}
+            onChange={(event) => onChange("installCommand", event.target.value)}
+            disabled={isSaving}
+            placeholder="pnpm install"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-build">
+            Build command
+          </label>
+          <input
+            id="project-build"
+            name="buildCommand"
+            value={form.buildCommand}
+            onChange={(event) => onChange("buildCommand", event.target.value)}
+            disabled={isSaving}
+            placeholder="pnpm build"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+          />
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-workspace">
+            Workspace path <span className="text-xs font-normal text-neutral-400 dark:text-neutral-500">(optional)</span>
+          </label>
+          <input
+            id="project-workspace"
+            name="workspacePath"
+            value={form.workspacePath}
+            onChange={(event) => onChange("workspacePath", event.target.value)}
+            disabled={isSaving}
+            placeholder="apps/opendock"
+            className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          These commands power the first build and future redeploys. You can tweak them later.
+        </p>
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+        >
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {isSaving ? "Queueing build…" : "Save & queue build"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function ProjectCard({ project }: { project: ProjectsResponse["projects"][number] }) {
   const latestBuild = project.latestBuild;
   const latestCommit = latestBuild?.commit ?? project.latestCommit;
@@ -294,6 +600,13 @@ function ProjectCard({ project }: { project: ProjectsResponse["projects"][number
             {project.repoUrl}
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
+          <Link
+            to={`/projects/${project.id}`}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-600 underline-offset-4 transition hover:text-neutral-900 hover:underline dark:text-neutral-200 dark:hover:text-white"
+          >
+            View project
+            <ArrowRight className="h-3 w-3" />
+          </Link>
           {latestCommit && (
             <p className="text-sm text-neutral-500 dark:text-neutral-300">
               Latest commit <span className="font-mono text-xs">{latestCommit.sha.slice(0, 7)}</span> —{" "}

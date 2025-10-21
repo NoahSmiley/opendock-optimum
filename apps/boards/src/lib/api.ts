@@ -1,27 +1,36 @@
-﻿import type {
+import type {
   KanbanBoardsResponse,
   KanbanBoardSnapshot,
   KanbanColumn,
   KanbanSprint,
   KanbanTicket,
 } from "@opendock/shared/types";
-import { request } from "@opendock/shared/api";
+import { request, getApiBaseUrl } from "@opendock/shared/api";
+import { resolveCsrfHeaders } from "./auth-client";
 
 export const boardsApi = {
   listBoards: () => request<KanbanBoardsResponse>({ path: "/api/kanban/boards" }),
-  createBoard: (payload: { name: string; description?: string; members?: { name: string; email?: string }[] }) =>
-    request<KanbanBoardSnapshot>({
+  boardSnapshot: (boardId: string) =>
+    request<KanbanBoardSnapshot>({ path: `/api/kanban/boards/${boardId}` }),
+  createBoard: async (payload: { name: string; description?: string; members?: { name: string; email?: string }[] }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<KanbanBoardSnapshot>({
       path: "/api/kanban/boards",
       method: "POST",
       body: JSON.stringify(payload),
-    }),
-  createColumn: (boardId: string, title: string) =>
-    request<{ column: KanbanColumn }>({
+      headers,
+    });
+  },
+  createColumn: async (boardId: string, title: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ column: KanbanColumn }>({
       path: `/api/kanban/boards/${boardId}/columns`,
       method: "POST",
       body: JSON.stringify({ title }),
-    }),
-  createTicket: (boardId: string, payload: {
+      headers,
+    });
+  },
+  createTicket: async (boardId: string, payload: {
     columnId: string;
     title: string;
     description?: string;
@@ -30,28 +39,47 @@ export const boardsApi = {
     estimate?: number;
     priority?: "low" | "medium" | "high";
     sprintId?: string;
-  }) =>
-    request<{ ticket: KanbanTicket }>({
+  }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ ticket: KanbanTicket }>({
       path: `/api/kanban/boards/${boardId}/tickets`,
       method: "POST",
       body: JSON.stringify(payload),
-    }),
-  updateTicket: (ticketId: string, payload: Partial<KanbanTicket>) =>
-    request<{ ticket: KanbanTicket }>({
+      headers,
+    });
+  },
+  updateTicket: async (ticketId: string, payload: Partial<KanbanTicket>) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ ticket: KanbanTicket }>({
       path: `/api/kanban/tickets/${ticketId}`,
       method: "PATCH",
       body: JSON.stringify(payload),
-    }),
-  reorderTicket: (boardId: string, payload: { ticketId: string; toColumnId: string; toIndex: number }) =>
-    request<KanbanBoardSnapshot>({
+      headers,
+    });
+  },
+  reorderTicket: async (boardId: string, payload: { ticketId: string; toColumnId: string; toIndex: number }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<KanbanBoardSnapshot>({
       path: `/api/kanban/boards/${boardId}/tickets/reorder`,
       method: "PATCH",
       body: JSON.stringify(payload),
-    }),
-  createSprint: (boardId: string, payload: { name: string; goal?: string; startDate: string; endDate: string; status?: "planned" | "active" | "completed" }) =>
-    request<{ sprint: KanbanSprint }>({
+      headers,
+    });
+  },
+  createSprint: async (boardId: string, payload: { name: string; goal?: string; startDate: string; endDate: string; status?: "planned" | "active" | "completed" }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ sprint: KanbanSprint }>({
       path: `/api/kanban/boards/${boardId}/sprints`,
       method: "POST",
       body: JSON.stringify(payload),
-    }),
+      headers,
+    });
+  },
+  streamBoard: (boardId: string): EventSource => {
+    if (typeof window === "undefined" || typeof window.EventSource === "undefined") {
+      throw new Error("EventSource is not available in this environment");
+    }
+    const url = `${getApiBaseUrl()}/api/kanban/boards/${boardId}/stream`;
+    return new window.EventSource(url, { withCredentials: true });
+  },
 };

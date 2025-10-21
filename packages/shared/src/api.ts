@@ -2,11 +2,6 @@ type RequestOptions = RequestInit & { path: string };
 
 async function request<T>({ path, ...options }: RequestOptions): Promise<T> {
   const baseUrl = getBaseUrl();
-  console.log("[api] request path:", path);
-  console.log("[api] request options:", options);
-  console.log("[api] request body:", options.body);
-  console.log("[api] request body type:", typeof options.body);
-  
   const fetchOptions: RequestInit = {
     ...options,
     credentials: "include",
@@ -15,10 +10,7 @@ async function request<T>({ path, ...options }: RequestOptions): Promise<T> {
       ...options.headers,
     },
   };
-  
-  console.log("[api] final fetch options:", fetchOptions);
   const response = await fetch(`${baseUrl}${path}`, fetchOptions);
-  console.log("[api] response status:", response.status);
 
   if (!response.ok) {
     const detail = await response.text();
@@ -54,4 +46,8 @@ function getBaseUrl() {
     return typeof value === "string" ? value : undefined;
   })();
   return meta?.env?.VITE_API_URL ?? processEnvUrl ?? "http://localhost:4000";
+}
+
+export function getApiBaseUrl(): string {
+  return getBaseUrl();
 }

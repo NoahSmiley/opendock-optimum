@@ -1,100 +1,156 @@
-﻿import { Router } from "express";
-import { store } from "../state";
+import { Router } from "express";
+import { z } from "zod";
+import {
+  BranchNameSchema,
+  ProjectCreateSchema,
+  ProjectUpdateSchema,
+} from "@opendock/shared/projects";
+import type { ProjectsRepository } from "../dal";
 import { BuildService } from "../buildService";
 import { authRequired, requireCsrfProtection } from "../auth";
 
-export function createProjectsRouter(builds: BuildService): Router {
+const RedeploySchema = z
+  .object({
+    branch: BranchNameSchema.optional(),
+  })
+  .strict();
+
+function validationError(error: z.ZodError) {
+  return {
+    error: {
+      code: "INVALID_BODY",
+      message: "Request body validation failed.",
+      details: error.flatten().fieldErrors,
+    },
+  };
+}
+
+export function createProjectsRouter(builds: BuildService, projects: ProjectsRepository): Router {
   const router = Router();
 
-  router.get("/", (_req, res) => {
-    const projects = store.listProjects().map((project) => {
-      const projectBuilds = store.listBuilds(project.id);
-      const latestBuild = projectBuilds
-        .slice()
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-      const deployment = store.findDeploymentByProject(project.id);
-      return {
-        ...project,
-        latestBuild,
-        deployment,
-        builds: projectBuilds.slice(-5).reverse(),
-      };
-    });
-
-    res.json({ projects });
+  router.get("/", async (_req, res) => {
+    const result = await projects.listOverview(5);
+    res.json({ projects: result });
   });
 
-  router.post("/", authRequired, requireCsrfProtection, (req, res) => {
-    const { name, repoUrl, branch = "main", installCommand, buildCommand } = req.body ?? {};
-    if (!name || !repoUrl) {
-      res.status(400).json({ error: "name and repoUrl are required" });
+  router.post("/", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = ProjectCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
       return;
     }
 
-    if (store.findProjectByRepo(repoUrl)) {
-      res.status(409).json({ error: "Project already exists for this repository" });
+    const payload = parsed.data;
+    const existing = await projects.findByRepoUrl(payload.repoUrl);
+    if (existing) {
+      res.status(409).json({
+        error: {
+          code: "PROJECT_EXISTS",
+          message: "This repository is already connected to OpenDock.",
+        },
+      });
       return;
     }
 
-    const project = store.createProject({
-      name,
-      repoUrl,
-      branch,
-      buildConfig: {
-        installCommand,
-        buildCommand,
-      },
-    });
+    const project = await projects.create(payload);
 
     const build = builds.enqueue({
       projectId: project.id,
-      branch,
+      branch: payload.branch ?? project.branch,
       reason: "manual",
     });
 
     res.status(201).json({ project, initialBuildId: build.id });
   });
 
-  router.post("/:projectId/redeploy", authRequired, requireCsrfProtection, (req, res) => {
-    const project = store.findProject(req.params.projectId);
+  router.get("/:projectId", async (req, res) => {
+    const detail = await projects.findOverviewById(req.params.projectId, 10);
+    if (!detail) {
+      res.status(404).json({
+        error: {
+          code: "PROJECT_NOT_FOUND",
+          message: "Project not found.",
+        },
+      });
+      return;
+    }
+    res.json({ project: detail });
+  });
+
+  router.post("/:projectId/redeploy", authRequired, requireCsrfProtection, async (req, res) => {
+    const project = await projects.findById(req.params.projectId);
     if (!project) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({
+        error: {
+          code: "PROJECT_NOT_FOUND",
+          message: "Project not found.",
+        },
+      });
+      return;
+    }
+
+    const body = RedeploySchema.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json(validationError(body.error));
       return;
     }
 
     const build = builds.enqueue({
       projectId: project.id,
-      branch: req.body?.branch ?? project.branch,
+      branch: body.data.branch ?? project.branch,
       reason: "manual",
     });
 
     res.status(202).json({ build });
   });
 
-  router.get("/:projectId/logs", (req, res) => {
-    const project = store.findProject(req.params.projectId);
+  router.get("/:projectId/logs", async (req, res) => {
+    const project = await projects.findById(req.params.projectId);
     if (!project) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({
+        error: {
+          code: "PROJECT_NOT_FOUND",
+          message: "Project not found.",
+        },
+      });
       return;
     }
-    res.json({ builds: store.listBuilds(project.id) });
+
+    const buildList = await projects.listBuilds(project.id);
+    res.json({ builds: buildList });
   });
 
-  router.patch("/:projectId", authRequired, requireCsrfProtection, (req, res) => {
-    const project = store.updateProject(req.params.projectId, {
-      branch: req.body?.branch,
-      buildConfig: {
-        installCommand: req.body?.installCommand ?? undefined,
-        buildCommand: req.body?.buildCommand ?? undefined,
-      },
-    });
-    if (!project) {
-      res.status(404).json({ error: "Project not found" });
+  router.patch("/:projectId", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = ProjectUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
       return;
     }
-    res.json({ project });
+
+    const payload = parsed.data;
+    if (!payload.name && !payload.branch && !payload.buildConfig) {
+      res.status(400).json({
+        error: {
+          code: "NO_CHANGES",
+          message: "Provide at least one field to update.",
+        },
+      });
+      return;
+    }
+
+    const updated = await projects.update(req.params.projectId, payload);
+    if (!updated) {
+      res.status(404).json({
+        error: {
+          code: "PROJECT_NOT_FOUND",
+          message: "Project not found.",
+        },
+      });
+      return;
+    }
+
+    res.json({ project: updated });
   });
 
   return router;
 }
-

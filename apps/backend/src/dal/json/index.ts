@@ -6,6 +6,8 @@ import type {
   AuthUserWithPassword,
   DataAccessLayer,
 } from "../index";
+import { StateProjectsRepository } from "../stateProjectsRepository";
+import { StateKanbanRepository } from "../stateKanbanRepository";
 
 class UnsupportedAuthRepo implements AuthRepository {
   private error<T>(): Promise<T> {
@@ -47,5 +49,7 @@ export function createJsonDal(): DataAccessLayer {
   return {
     kind: "json",
     auth: new UnsupportedAuthRepo(),
+    projects: new StateProjectsRepository(),
+    kanban: new StateKanbanRepository(),
   };
 }

@@ -6,16 +6,26 @@
   "exports": {
     "./types": "./dist/types.js",
     "./api": "./dist/api.js",
+    "./projects": "./dist/projects.js",
+    "./kanban": "./dist/kanban.js",
     ".": "./dist/index.js"
   },
   "typesVersions": {
     "*": {
       "types": ["dist/types.d.ts"],
       "api": ["dist/api.d.ts"],
+      "projects": ["dist/projects.d.ts"],
+      "kanban": ["dist/kanban.d.ts"],
       "*": ["dist/index.d.ts"]
     }
   },
   "scripts": {
     "build": "tsc"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
   }
 }
