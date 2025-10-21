@@ -1,5 +1,7 @@
 import { rmSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 process.env.NODE_ENV = 'test';
 process.env.OPENDOCK_DAL = process.env.OPENDOCK_DAL ?? 'sql';
@@ -17,14 +19,20 @@ if (process.env.CLEAR_TEST_DB !== 'false') {
 }
 
 try {
-  execSync('npx prisma db push --accept-data-loss --schema=src/dal/sql/prisma/schema.prisma', {
+  const backendRoot = path.dirname(fileURLToPath(import.meta.url));
+  const prismaSchema = path.resolve(backendRoot, 'src/dal/sql/prisma/schema.prisma');
+  const command = `prisma db push --accept-data-loss --schema="${prismaSchema}"`;
+
+  execSync(command, {
     stdio: 'ignore',
+    cwd: backendRoot,
     env: {
       ...process.env,
       DATABASE_URL: process.env.DATABASE_URL ?? 'file:./test.db',
     },
   });
 } catch (error) {
-  console.error('Failed to push Prisma schema for tests', error);
+  console.error('Failed to push Prisma schema for tests');
+  console.error(error);
   throw error;
 }
