@@ -1,4 +1,4 @@
-﻿
+
 export type BuildStatus = "queued" | "running" | "success" | "failed";
 export type HealthStatus = "unknown" | "up" | "down";
 
@@ -92,6 +92,15 @@ export interface KanbanSprint {
   status: "planned" | "active" | "completed";
 }
 
+export interface KanbanComment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface KanbanTicket {
   id: string;
   boardId: string;
@@ -106,6 +115,7 @@ export interface KanbanTicket {
   createdAt: string;
   updatedAt: string;
   order: number;
+  comments?: KanbanComment[];
 }
 
 export interface KanbanBoard {

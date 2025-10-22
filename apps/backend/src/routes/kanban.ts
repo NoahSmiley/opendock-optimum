@@ -6,6 +6,7 @@ import {
   KanbanCreateTicketSchema,
   KanbanReorderTicketSchema,
   KanbanUpdateTicketSchema,
+  KanbanUpdateBoardSchema,
 } from "@opendock/shared/kanban";
 import { authRequired, requireCsrfProtection } from "../auth";
 import { dal } from "../dal";
@@ -50,6 +51,21 @@ export function createKanbanRouter(): Router {
     const snapshot = await dal.kanban.createBoard(parsed.data);
     res.status(201).json(snapshot);
   });
+
+  router.patch("/boards/:boardId", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanUpdateBoardSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+    const board = await dal.kanban.updateBoard(req.params.boardId, parsed.data);
+    if (!board) {
+      res.status(404).json({ error: { code: "BOARD_NOT_FOUND", message: "Board not found." } });
+      return;
+    }
+    res.json({ board });
+  });
+
 
   router.get("/boards/:boardId/stream", authRequired, async (req, res) => {
     const boardId = req.params.boardId;
@@ -155,6 +171,29 @@ export function createKanbanRouter(): Router {
       return;
     }
     res.json(snapshot);
+  });
+
+  router.post("/tickets/:ticketId/comments", authRequired, requireCsrfProtection, async (req, res) => {
+    const { content } = req.body;
+    if (!content || typeof content !== "string" || content.trim().length === 0) {
+      res.status(400).json({ error: { code: "INVALID_CONTENT", message: "Comment content is required." } });
+      return;
+    }
+    const comment = await dal.kanban.addComment(req.params.ticketId, (req as any).user?.id || "anonymous", content.trim());
+    if (!comment) {
+      res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
+      return;
+    }
+    res.status(201).json({ comment });
+  });
+
+  router.delete("/comments/:commentId", authRequired, requireCsrfProtection, async (req, res) => {
+    const success = await dal.kanban.deleteComment(req.params.commentId);
+    if (!success) {
+      res.status(404).json({ error: { code: "COMMENT_NOT_FOUND", message: "Comment not found." } });
+      return;
+    }
+    res.json({ success: true });
   });
 
   return router;

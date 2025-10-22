@@ -126,6 +126,20 @@ export const KanbanCreateBoardSchema = z
   .strict();
 export type KanbanCreateBoardInput = z.infer<typeof KanbanCreateBoardSchema>;
 
+export const KanbanUpdateBoardSchema = z
+  .object({
+    name: optionalTrimmed("Board name", 160),
+    description: z
+      .string()
+      .trim()
+      .max(400, "Board description must be less than 401 characters.")
+      .nullable()
+      .optional(),
+    projectId: KanbanIdSchema.nullish(),
+  })
+  .strict();
+export type KanbanUpdateBoardInput = z.infer<typeof KanbanUpdateBoardSchema>;
+
 export const KanbanCreateColumnSchema = z
   .object({
     title: nonEmptyTrimmed("Column title", 120),

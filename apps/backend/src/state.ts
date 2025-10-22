@@ -1,4 +1,4 @@
-﻿import fs from "fs";
+import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import type {
@@ -10,6 +10,7 @@ import type {
   HealthStatus,
   KanbanBoard,
   KanbanColumn,
+  KanbanComment,
   KanbanBoardSnapshot,
   KanbanSprint,
   KanbanTicket,
@@ -26,6 +27,7 @@ export interface AppState {
   kanbanTickets: KanbanTicket[];
   kanbanSprints: KanbanSprint[];
   kanbanUsers: KanbanUser[];
+  kanbanComments: KanbanComment[];
 }
 
 const DEFAULT_STATE: AppState = {
@@ -37,6 +39,7 @@ const DEFAULT_STATE: AppState = {
   kanbanTickets: [],
   kanbanSprints: [],
   kanbanUsers: [],
+  kanbanComments: [],
 };
 
 export class StateStore {
@@ -68,6 +71,7 @@ export class StateStore {
         kanbanTickets: parsed.kanbanTickets ?? [],
         kanbanSprints: parsed.kanbanSprints ?? [],
         kanbanUsers: parsed.kanbanUsers ?? [],
+        kanbanComments: parsed.kanbanComments ?? [],
       };
     } catch (error) {
       console.error("[state] failed to parse state file", error);
@@ -93,6 +97,7 @@ export class StateStore {
       kanbanTickets: overrides.kanbanTickets ? [...overrides.kanbanTickets] : [],
       kanbanSprints: overrides.kanbanSprints ? [...overrides.kanbanSprints] : [],
       kanbanUsers: overrides.kanbanUsers ? [...overrides.kanbanUsers] : [],
+      kanbanComments: overrides.kanbanComments ? [...overrides.kanbanComments] : [],
     };
     this.persist();
   }
@@ -288,6 +293,22 @@ export class StateStore {
     return snapshot;
   }
 
+  updateBoard(boardId: string, updates: Partial<Pick<KanbanBoard, "name" | "description" | "projectId">>): KanbanBoard | undefined {
+    const board = this.state.kanbanBoards.find((item) => item.id === boardId);
+    if (!board) return undefined;
+    if (updates.name !== undefined) {
+      board.name = updates.name;
+    }
+    if (updates.description !== undefined) {
+      board.description = updates.description ?? undefined;
+    }
+    if (updates.projectId !== undefined) {
+      board.projectId = updates.projectId ?? undefined;
+    }
+    this.persist();
+    return board;
+  }
+
   createColumn(boardId: string, input: { title: string; order?: number }): KanbanColumn {
     const column: KanbanColumn = {
       id: randomUUID(),
@@ -373,7 +394,11 @@ export class StateStore {
     const board = this.state.kanbanBoards.find((item) => item.id === boardId);
     if (!board) return undefined;
     const columns = this.state.kanbanColumns.filter((column) => column.boardId === boardId).sort((a, b) => a.order - b.order);
-    const tickets = this.state.kanbanTickets.filter((ticket) => ticket.boardId === boardId);
+    const rawTickets = this.state.kanbanTickets.filter((ticket) => ticket.boardId === boardId);
+    const tickets = rawTickets.map((ticket) => ({
+      ...ticket,
+      comments: this.state.kanbanComments.filter((comment) => comment.ticketId === ticket.id),
+    }));
     const sprints = this.state.kanbanSprints.filter((sprint) => sprint.boardId === boardId);
     const members = board.memberIds
       .map((id) => this.state.kanbanUsers.find((user) => user.id === id))
@@ -392,6 +417,40 @@ export class StateStore {
       sprints,
       members,
     };
+  }
+
+  getTicket(ticketId: string): KanbanTicket | undefined {
+    return this.state.kanbanTickets.find((ticket) => ticket.id === ticketId);
+  }
+
+  addComment(ticketId: string, userId: string, content: string): KanbanComment | null {
+    const ticket = this.getTicket(ticketId);
+    if (!ticket) return null;
+
+    const comment: KanbanComment = {
+      id: randomUUID(),
+      ticketId,
+      userId,
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.state.kanbanComments.push(comment);
+    this.persist();
+    return comment;
+  }
+
+  getComment(commentId: string): KanbanComment | undefined {
+    return this.state.kanbanComments.find((comment) => comment.id === commentId);
+  }
+
+  deleteComment(commentId: string): boolean {
+    const index = this.state.kanbanComments.findIndex((comment) => comment.id === commentId);
+    if (index === -1) return false;
+    this.state.kanbanComments.splice(index, 1);
+    this.persist();
+    return true;
   }
 }
 

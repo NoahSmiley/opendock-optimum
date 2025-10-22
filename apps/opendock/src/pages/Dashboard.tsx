@@ -249,13 +249,13 @@ export default function DashboardPage() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            to="/boards"
+          <a
+            href="http://localhost:5174/dashboard"
             className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
           >
-            View Boards
+            Launch Boards
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </a>
           <a
             href="https://github.com/new"
             target="_blank"

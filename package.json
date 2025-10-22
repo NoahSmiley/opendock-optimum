@@ -8,8 +8,12 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev:opendock": "npm --workspace apps/opendock run dev",
-    "dev:boards": "npm --workspace apps/boards run dev",
-    "dev:backend": "npm --workspace apps/backend run dev"
+    "dev:opendock": "npm run dev --workspace=apps/opendock",
+    "dev:boards": "npm run dev --workspace=apps/boards",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:all": "concurrently -n backend,boards,opendock -c blue,magenta,cyan \"pnpm run dev:backend\" \"pnpm run dev:boards\" \"pnpm run dev:opendock\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   }
 }

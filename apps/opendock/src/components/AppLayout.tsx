@@ -82,7 +82,7 @@ export function AppLayout() {
     try {
       await logout();
     } finally {
-      navigate("/auth?mode=login");
+      navigate("/");
     }
   }, [logout, navigate]);
 
@@ -274,7 +274,13 @@ export function AppLayout() {
               ))}
             </div>
           </aside>
-          <div className={contentClass}>
+          <div 
+            className={contentClass}
+            style={{
+              paddingLeft: wideLayout ? `${layoutOffset}px` : "0",
+              transition: "padding-left 300ms ease-in-out"
+            }}
+          >
             <Outlet />
           </div>
         </div>

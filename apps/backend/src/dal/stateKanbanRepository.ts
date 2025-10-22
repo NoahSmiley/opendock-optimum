@@ -2,6 +2,7 @@ import type {
   KanbanBoard,
   KanbanBoardSnapshot,
   KanbanColumn,
+  KanbanComment,
   KanbanSprint,
   KanbanTicket,
   KanbanUser,
@@ -13,6 +14,7 @@ import type {
   KanbanCreateTicketInput,
   KanbanReorderTicketInput,
   KanbanUpdateTicketInput,
+  KanbanUpdateBoardInput,
 } from "@opendock/shared/kanban";
 import { store } from "../state";
 import { kanbanEvents } from "../events";
@@ -28,6 +30,14 @@ function sanitizeTicketUpdate(updates: KanbanUpdateTicketInput) {
     ...(updates.priority !== undefined ? { priority: updates.priority } : {}),
     ...(updates.sprintId !== undefined ? { sprintId: updates.sprintId ?? undefined } : {}),
   } satisfies Partial<KanbanTicket>;
+}
+
+function sanitizeBoardUpdate(updates: KanbanUpdateBoardInput) {
+  return {
+    ...(updates.name !== undefined ? { name: updates.name } : {}),
+    ...(updates.description !== undefined ? { description: updates.description ?? undefined } : {}),
+    ...(updates.projectId !== undefined ? { projectId: updates.projectId ?? undefined } : {}),
+  } satisfies Partial<KanbanBoard>;
 }
 
 export class StateKanbanRepository implements KanbanRepository {
@@ -76,6 +86,13 @@ export class StateKanbanRepository implements KanbanRepository {
     return ticket;
   }
 
+  async updateBoard(boardId: string, input: KanbanUpdateBoardInput): Promise<KanbanBoard | null> {
+    const board = store.updateBoard(boardId, sanitizeBoardUpdate(input));
+    if (!board) return null;
+    kanbanEvents.broadcast({ type: "board-snapshot", boardId });
+    return board;
+  }
+
   async updateTicket(ticketId: string, updates: KanbanUpdateTicketInput): Promise<KanbanTicket | null> {
     const ticket = store.updateTicket(ticketId, sanitizeTicketUpdate(updates));
     if (!ticket) return null;
@@ -89,5 +106,26 @@ export class StateKanbanRepository implements KanbanRepository {
       kanbanEvents.broadcast({ type: "ticket-reordered", boardId });
     }
     return snapshot;
+  }
+
+  async addComment(ticketId: string, userId: string, content: string): Promise<KanbanComment | null> {
+    const comment = store.addComment(ticketId, userId, content);
+    if (!comment) return null;
+    const ticket = store.getTicket(ticketId);
+    if (ticket) {
+      kanbanEvents.broadcast({ type: "board-snapshot", boardId: ticket.boardId });
+    }
+    return comment;
+  }
+
+  async deleteComment(commentId: string): Promise<boolean> {
+    const comment = store.getComment(commentId);
+    if (!comment) return false;
+    const ticket = store.getTicket(comment.ticketId);
+    const success = store.deleteComment(commentId);
+    if (success && ticket) {
+      kanbanEvents.broadcast({ type: "board-snapshot", boardId: ticket.boardId });
+    }
+    return success;
   }
 }
