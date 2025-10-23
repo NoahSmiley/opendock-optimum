@@ -3,34 +3,29 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { Expand, Minimize } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
-import { getBoardsAppUrl } from "@/lib/config";
 import { useAuth } from "./auth";
 
 const navItems = [
-  { label: "Docs", to: "/dashboard" },
-  { label: "Boards", to: "/boards" },
-  { label: "About", to: "/about" },
-  { label: "Roadmap", to: "/roadmap" },
+  { label: "Features", to: "/features" },
+  { label: "Pricing", to: "/pricing" },
 ];
 
-type SidebarLink = { label: string; to: string } | { label: string; launchBoards: true };
+type SidebarLink = { label: string; to: string };
 
 const sidebarSections: Array<{ title: string; links: SidebarLink[] }> = [
   {
-    title: "Get Started",
+    title: "Product",
     links: [
-      { label: "Overview", to: "/dashboard" },
-      { label: "Boards", to: "/boards" },
-      { label: "Deployment", to: "/dashboard#deployment" },
+      { label: "Home", to: "/" },
+      { label: "Features", to: "/features" },
+      { label: "Pricing", to: "/pricing" },
     ],
   },
   {
-    title: "Reference",
+    title: "Get Started",
     links: [
-      { label: "Projects", to: "/dashboard#projects" },
-      { label: "Pipelines", to: "/dashboard#pipelines" },
-      { label: "Monitoring", to: "/dashboard#monitor" },
-      { label: "Boards App", launchBoards: true },
+      { label: "Sign In", to: "/auth?mode=login" },
+      { label: "Sign Up", to: "/auth?mode=register" },
     ],
   },
 ];
@@ -40,12 +35,11 @@ const LAYOUT_PREF_KEY = "opendock.layout.wide";
 const HASH_AWARE_PATHS = new Set(
   sidebarSections
     .flatMap((section) => section.links)
-    .filter((link): link is Extract<SidebarLink, { to: string }> => "to" in link)
     .filter((link) => link.to.includes("#"))
     .map((link) => link.to.split("#")[0]),
 );
 
-export function AppLayout() {
+export function PublicLayout() {
   const headerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -55,12 +49,32 @@ export function AppLayout() {
     return window.localStorage.getItem(LAYOUT_PREF_KEY) === "1";
   });
   const [layoutOffset, setLayoutOffset] = useState(0);
-  const { user, status: authStatus, logout } = useAuth();
+  const { user, status: authStatus } = useAuth();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(LAYOUT_PREF_KEY, wideLayout ? "1" : "0");
   }, [wideLayout]);
+
+  useEffect(() => {
+    if (!hash) return;
+    const target = document.querySelector(hash);
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [hash]);
+
+  const toggleLayout = useCallback(() => {
+    setWideLayout((current) => !current);
+  }, []);
+
+  const handleSignIn = useCallback(() => {
+    navigate("/auth?mode=login");
+  }, [navigate]);
+
+  const handleGetStarted = useCallback(() => {
+    navigate("/auth?mode=register");
+  }, [navigate]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -81,31 +95,6 @@ export function AppLayout() {
     window.addEventListener("resize", updateOffset);
     return () => window.removeEventListener("resize", updateOffset);
   }, [wideLayout]);
-
-  useEffect(() => {
-    if (!hash) return;
-    const target = document.querySelector(hash);
-    if (target instanceof HTMLElement) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [hash]);
-
-  const toggleLayout = useCallback(() => {
-    setWideLayout((current) => !current);
-  }, []);
-
-  const handleSignIn = useCallback(() => {
-    navigate("/auth?mode=login");
-  }, [navigate]);
-
-  const handleSignOut = useCallback(async () => {
-    // Navigate away first, then logout to avoid RequireAuth redirect
-    window.location.href = "/";
-    // Logout will happen as the page unloads
-    logout().catch(() => {
-      // Ignore errors during navigation
-    });
-  }, [logout]);
 
   const headerShellClass = clsx(
     "flex w-full items-center justify-between gap-6 py-4",
@@ -136,16 +125,6 @@ export function AppLayout() {
     [hash, pathname],
   );
 
-  const handleLaunchBoards = useCallback(() => {
-    const boardsUrl = getBoardsAppUrl();
-    const isExternal = /^https?:\/\//i.test(boardsUrl);
-    if (isExternal) {
-      window.open(boardsUrl, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.href = boardsUrl;
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-white text-neutral-900 transition dark:bg-black dark:text-neutral-100">
       <header className="sticky top-0 z-40 bg-white backdrop-blur-md supports-[backdrop-filter]:backdrop-blur dark:bg-black/95">
@@ -158,7 +137,7 @@ export function AppLayout() {
               }}
             >
               <NavLink
-                to="/dashboard"
+                to="/"
                 end
                 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-700 transition hover:text-neutral-900 dark:text-white dark:hover:text-white"
               >
@@ -209,12 +188,31 @@ export function AppLayout() {
                 )}
               </button>
               <ThemeToggle />
-              <AuthControls
-                status={authStatus}
-                userName={user?.displayName ?? user?.email ?? ""}
-                onSignIn={handleSignIn}
-                onSignOut={handleSignOut}
-              />
+              {authStatus === "authenticated" && user ? (
+                <NavLink
+                  to="/dashboard"
+                  className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600 transition hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-neutral-500"
+                >
+                  Dashboard
+                </NavLink>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSignIn}
+                    className="hidden rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600 transition hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-neutral-500 sm:inline-block"
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGetStarted}
+                    className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                  >
+                    Get Started
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -236,20 +234,6 @@ export function AppLayout() {
                   </h3>
                   <ul className="mt-3 space-y-2">
                     {section.links.map((link) => {
-                      if ("launchBoards" in link) {
-                        return (
-                          <li key={link.label}>
-                            <button
-                              type="button"
-                              onClick={handleLaunchBoards}
-                              className="w-full rounded-md px-2 py-1 text-left transition hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-white/10 dark:hover:text-white"
-                            >
-                              {link.label}
-                            </button>
-                          </li>
-                        );
-                      }
-
                       const target = link.to;
                       return (
                         <li key={link.label}>
@@ -287,47 +271,5 @@ export function AppLayout() {
         </div>
       </main>
     </div>
-  );
-}
-
-interface AuthControlsProps {
-  status: "unauthenticated" | "loading" | "authenticated" | "error";
-  userName: string;
-  onSignIn: () => void;
-  onSignOut: () => void;
-}
-
-function AuthControls({ status, userName, onSignIn, onSignOut }: AuthControlsProps) {
-  if (status === "loading") {
-    return (
-      <span className="text-xs font-medium text-neutral-400 dark:text-neutral-500" aria-live="polite">
-        Checking session...
-      </span>
-    );
-  }
-
-  if (status === "authenticated" && userName) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="hidden text-xs font-medium text-neutral-500 dark:text-neutral-300 sm:inline">{userName}</span>
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600 transition hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-neutral-500"
-        >
-          Sign out
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onSignIn}
-      className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600 transition hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-neutral-500"
-    >
-      Sign in
-    </button>
   );
 }

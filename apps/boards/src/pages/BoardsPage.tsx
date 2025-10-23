@@ -226,7 +226,7 @@ function SortableTicket({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? transition : undefined,
+    transition: isDragging ? "none" : transition,
   };
 
   return (
@@ -1752,7 +1752,7 @@ function BoardsAppInner() {
                                   <button
                                     type="button"
                                     onClick={() => handleColumnComposerOpen(column.id)}
-                                    className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-slate-300/60 px-4 py-2 text-sm font-semibold text-slate-500 transition hover:border-slate-300 hover:bg-white dark:border-white/20 dark:text-slate-300 dark:hover:border-white/30 dark:hover:text-white"
+                                    className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-slate-300/60 px-4 py-2 text-sm font-semibold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-white/20 dark:text-slate-300 dark:hover:border-white/30 dark:hover:bg-white/10 dark:hover:text-white"
                                   >
                                     <Plus className="h-4 w-4" />
                                     Create issue

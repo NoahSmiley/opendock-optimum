@@ -45,7 +45,6 @@ apps/
   boards/       # Full-screen kanban workspace
 packages/
   shared/       # Types and fetch helper shared across apps
-frontend/       # Legacy directory (node_modules only, safe to ignore)
 ```
 
 ## API Routes

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
+import { PublicLayout } from "./components/PublicLayout";
 import { RequireAuth } from "./components/auth";
 import DashboardPage from "./pages/Dashboard";
 import BoardsLanding from "./pages/BoardsLanding";
@@ -14,10 +15,14 @@ import FeaturesPage from "./pages/Features";
 export default function App() {
   return (
     <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/features" element={<FeaturesPage />} />
+      {/* Public routes with PublicLayout */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+      </Route>
+      
+      {/* Auth page without layout */}
       <Route path="/auth" element={<AuthPage />} />
       
       {/* Private routes - require authentication */}

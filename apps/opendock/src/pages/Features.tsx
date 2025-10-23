@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { PublicHeader } from "@/components/PublicHeader";
 import {
   GitBranch,
   Rocket,
@@ -19,11 +18,10 @@ import {
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-black">
-      <PublicHeader />
+    <div className="w-full">
       {/* Header */}
-      <section className="px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl text-center">
+      <section className="py-16 sm:py-20">
+        <div className="w-full text-center">
           <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-5xl">
             Powerful features for modern teams
           </h1>
@@ -34,8 +32,8 @@ export default function FeaturesPage() {
       </section>
 
       {/* Main Features */}
-      <section className="px-4 pb-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="pb-16 sm:pb-20">
+        <div className="w-full">
           <div className="grid gap-16 lg:grid-cols-2">
             <FeatureSection
               icon={GitBranch}
@@ -108,8 +106,8 @@ export default function FeaturesPage() {
       </section>
 
       {/* Additional Features Grid */}
-      <section className="bg-neutral-50 px-4 py-24 dark:bg-neutral-900/50 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="-mx-6 bg-neutral-50 px-6 py-16 dark:bg-neutral-900/50 sm:-mx-8 sm:px-8 sm:py-20">
+        <div className="w-full">
           <h2 className="text-center text-3xl font-bold text-neutral-900 dark:text-white">
             And so much more...
           </h2>
@@ -127,8 +125,8 @@ export default function FeaturesPage() {
       </section>
 
       {/* CTA */}
-      <section className="px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
+      <section className="py-16 sm:py-20">
+        <div className="mx-auto w-full max-w-4xl text-center">
           <h2 className="text-3xl font-bold text-neutral-900 dark:text-white">
             See OpenDock in action
           </h2>

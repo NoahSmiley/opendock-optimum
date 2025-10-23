@@ -10,15 +10,13 @@ import {
   BarChart3,
   CheckCircle2
 } from "lucide-react";
-import { PublicHeader } from "@/components/PublicHeader";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-black">
-      <PublicHeader />
+    <div className="w-full">
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="relative overflow-hidden py-16 sm:py-20">
+        <div className="w-full">
           <div className="text-center">
             <h1 className="text-5xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-6xl lg:text-7xl">
               Ship faster with
@@ -47,8 +45,8 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section className="px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="py-16 sm:py-20">
+        <div className="w-full">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-neutral-900 dark:text-white sm:text-4xl">
               Everything you need to deploy at scale
@@ -94,8 +92,8 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section className="bg-neutral-50 px-4 py-24 dark:bg-neutral-900/50 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="-mx-6 bg-neutral-50 px-6 py-16 dark:bg-neutral-900/50 sm:-mx-8 sm:px-8 sm:py-20">
+        <div className="w-full">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-neutral-900 dark:text-white sm:text-4xl">
               Deploy in 3 simple steps
@@ -126,8 +124,8 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
+      <section className="py-16 sm:py-20">
+        <div className="mx-auto w-full max-w-4xl text-center">
           <h2 className="text-3xl font-bold text-neutral-900 dark:text-white sm:text-4xl">
             Ready to ship faster?
           </h2>
