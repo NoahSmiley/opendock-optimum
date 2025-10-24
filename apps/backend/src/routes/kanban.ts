@@ -52,6 +52,15 @@ export function createKanbanRouter(): Router {
     res.status(201).json(snapshot);
   });
 
+  router.get("/boards/:boardId", authRequired, async (req, res) => {
+    const snapshot = await dal.kanban.boardSnapshot(req.params.boardId);
+    if (!snapshot) {
+      res.status(404).json({ error: { code: "BOARD_NOT_FOUND", message: "Board not found." } });
+      return;
+    }
+    res.json(snapshot);
+  });
+
   router.patch("/boards/:boardId", authRequired, requireCsrfProtection, async (req, res) => {
     const parsed = KanbanUpdateBoardSchema.safeParse(req.body ?? {});
     if (!parsed.success) {

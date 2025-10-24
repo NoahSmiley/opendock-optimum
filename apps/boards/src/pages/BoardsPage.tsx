@@ -17,7 +17,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
   CalendarClock,
@@ -102,7 +101,7 @@ function TicketCard({
   const isComplete = column?.title.toLowerCase().includes("done") || column?.title.toLowerCase().includes("complete");
 
   return (
-    <motion.div
+    <div
       onClick={onClick}
       className={clsx(
         "group relative flex flex-col gap-2 rounded-lg border bg-white p-3 pl-5 text-neutral-700 transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 dark:bg-neutral-950 dark:text-neutral-200",
@@ -112,19 +111,6 @@ function TicketCard({
         highlight && "ring-2 ring-blue-400/30 dark:ring-blue-500/30",
         onClick && "cursor-pointer",
       )}
-      animate={
-        isComplete
-          ? {
-              scale: [1, 1.02, 1],
-              boxShadow: [
-                "0 0 0 0 rgba(16, 185, 129, 0)",
-                "0 0 0 8px rgba(16, 185, 129, 0.2)",
-                "0 0 0 0 rgba(16, 185, 129, 0)",
-              ],
-            }
-          : {}
-      }
-      transition={{ duration: 0.6 }}
     >
       <span aria-hidden className={clsx("absolute inset-y-2 left-2 w-1 rounded-full", priorityAccent[ticket.priority])} />
       <div className="flex items-start justify-between gap-3">
@@ -193,7 +179,7 @@ function TicketCard({
           </div>
         ) : null}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -226,29 +212,19 @@ function SortableTicket({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? "none" : transition,
+    transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
-    <motion.div
+    <div
       key={ticket.id}
       ref={setNodeRef}
       style={style}
-      className={clsx("select-none", isDragging && "opacity-50")}
-      initial={{ opacity: 0, height: 0, scale: 0.8 }}
-      animate={{ opacity: 1, height: "auto", scale: 1 }}
-      exit={{ opacity: 0, height: 0, scale: 0.8 }}
-      transition={{ 
-        opacity: { duration: 0.2 },
-        height: { duration: 0.3, ease: "easeInOut" },
-        scale: { duration: 0.2 }
-      }}
+      {...attributes}
+      {...listeners}
+      className="cursor-grab active:cursor-grabbing"
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing"
-      >
         <TicketCard
           ticket={ticket}
           column={column}
@@ -258,8 +234,7 @@ function SortableTicket({
           onClick={onClick}
           highlight={isDragging}
         />
-      </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -305,9 +280,7 @@ function KanbanColumn({
             isOver ? "border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" : "border-transparent",
           )}
         >
-          <AnimatePresence initial={false}>
-            {children}
-          </AnimatePresence>
+          {children}
           {tickets.length === 0 ? (
             totalCount > 0 ? (
               <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
@@ -906,55 +879,105 @@ function BoardsAppInner() {
 
     const activeTicketId = String(active.id);
     const fromColumnId = active.data.current?.columnId as string | undefined;
-    
-    // Get the target column - either from the over element directly, or from the ticket being hovered over
     let toColumnId = over.data.current?.columnId as string | undefined;
-    
-    // If we're hovering over a ticket (not a column), get that ticket's column
-    if (!toColumnId && over.data.current?.type === "ticket") {
-      const overTicket = selectedBoard.tickets.find((t) => t.id === over.id);
+
+    if (!fromColumnId) return;
+
+    if (!toColumnId) {
+      const overTicket = selectedBoard.tickets.find((ticket) => ticket.id === String(over.id));
       toColumnId = overTicket?.columnId;
     }
 
-    if (!fromColumnId || !toColumnId) return;
+    if (!toColumnId) return;
 
-    const destinationTickets = columnTicketMap.get(toColumnId) ?? [];
-    let toIndex = destinationTickets.findIndex((ticket) => ticket.id === over.id);
+    const sourceTickets = [...(columnTicketMap.get(fromColumnId) ?? [])];
+    const destinationTickets =
+      fromColumnId === toColumnId
+        ? sourceTickets
+        : [...(columnTicketMap.get(toColumnId) ?? [])];
 
-    if (over.data.current?.type === "column" || toIndex === -1) {
-      toIndex = destinationTickets.length;
+    const oldIndex = sourceTickets.findIndex((ticket) => ticket.id === activeTicketId);
+    if (oldIndex === -1) return;
+
+    let newIndex = destinationTickets.findIndex((ticket) => ticket.id === String(over.id));
+    if (over.data.current?.type === "column" || newIndex === -1) {
+      newIndex = destinationTickets.length;
     }
 
-    // Optimistically update the UI immediately
-    const ticketToMove = selectedBoard.tickets.find((t) => t.id === activeTicketId);
-    if (ticketToMove) {
-      const updatedTickets = selectedBoard.tickets.map((ticket) => {
-        if (ticket.id === activeTicketId) {
-          return { ...ticket, columnId: toColumnId };
-        }
-        return ticket;
-      });
+    const nextTickets = selectedBoard.tickets.map((ticket) => ({ ...ticket }));
 
-      setData((prev) => ({
-        ...prev,
-        boards: prev.boards.map((board) =>
-          board.id === selectedBoard.id
-            ? { ...board, tickets: updatedTickets }
-            : board
-        ),
+    if (fromColumnId === toColumnId) {
+      const boundedIndex = Math.max(0, Math.min(newIndex, destinationTickets.length - 1));
+      if (boundedIndex === oldIndex) {
+        return;
+      }
+
+      const reordered = arrayMove(destinationTickets, oldIndex, boundedIndex).map((ticket, index) => ({
+        ...ticket,
+        order: index,
       }));
+
+      for (const ticket of nextTickets) {
+        if (ticket.columnId === fromColumnId) {
+          const updated = reordered.find((item) => item.id === ticket.id);
+          if (updated) {
+            ticket.order = updated.order;
+          }
+        }
+      }
+
+      newIndex = boundedIndex;
+    } else {
+      const withoutActive = sourceTickets
+        .filter((ticket) => ticket.id !== activeTicketId)
+        .map((ticket, index) => ({ ...ticket, order: index }));
+
+      const withActive = [
+        ...destinationTickets.slice(0, newIndex),
+        { ...sourceTickets[oldIndex], columnId: toColumnId },
+        ...destinationTickets.slice(newIndex),
+      ].map((ticket, index) => ({ ...ticket, columnId: toColumnId, order: index }));
+
+      for (const ticket of nextTickets) {
+        if (ticket.id === activeTicketId) {
+          const updated = withActive.find((item) => item.id === ticket.id);
+          if (updated) {
+            ticket.columnId = updated.columnId;
+            ticket.order = updated.order;
+          }
+          continue;
+        }
+        if (ticket.columnId === fromColumnId) {
+          const updated = withoutActive.find((item) => item.id === ticket.id);
+          if (updated) {
+            ticket.order = updated.order;
+          }
+          continue;
+        }
+        if (ticket.columnId === toColumnId) {
+          const updated = withActive.find((item) => item.id === ticket.id);
+          if (updated) {
+            ticket.order = updated.order;
+          }
+        }
+      }
     }
+
+    setData((prev) => ({
+      ...prev,
+      boards: prev.boards.map((board) =>
+        board.id === selectedBoard.id ? { ...board, tickets: nextTickets } : board,
+      ),
+    }));
 
     try {
       await boardsApi.reorderTicket(selectedBoard.id, {
         ticketId: activeTicketId,
         toColumnId,
-        toIndex,
+        toIndex: newIndex,
       });
-      // Don't refresh - SSE stream will update the board automatically
     } catch (err) {
       setError((err as Error).message);
-      // On error, refresh to restore correct state
       await refresh();
     }
   };
@@ -995,17 +1018,18 @@ function BoardsAppInner() {
         sidebarCollapsed ? "w-16 px-3" : "w-64 px-6"
       )}>
         <div className="mb-6 flex items-center justify-between gap-2">
-          {!sidebarCollapsed && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                OpenDock
-              </span>
-              <span className="text-neutral-300 dark:text-neutral-700">/</span>
-              <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                Boards
-              </span>
-            </div>
-          )}
+          <div className={clsx(
+            "flex items-center gap-2 overflow-hidden transition-all duration-300",
+            sidebarCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+          )}>
+            <span className="whitespace-nowrap text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+              OpenDock
+            </span>
+            <span className="text-neutral-300 dark:text-neutral-700">/</span>
+            <span className="whitespace-nowrap text-sm font-semibold text-neutral-900 dark:text-white">
+              Boards
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -1015,11 +1039,13 @@ function BoardsAppInner() {
             {sidebarCollapsed ? <Expand className="h-4 w-4" /> : <Minimize className="h-4 w-4" />}
           </button>
         </div>
-        {!sidebarCollapsed && (
-        <div className="mb-6 flex items-center justify-between gap-2">
+        <div className={clsx(
+          "mb-6 flex items-center justify-between gap-2 overflow-hidden transition-all duration-300",
+          sidebarCollapsed ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+        )}>
           <div>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500">Projects</p>
-            <p className="mt-1 text-base font-semibold text-neutral-900 dark:text-white">Beyond Gravity</p>
+            <p className="whitespace-nowrap text-xs text-neutral-400 dark:text-neutral-500">Projects</p>
+            <p className="mt-1 whitespace-nowrap text-base font-semibold text-neutral-900 dark:text-white">Beyond Gravity</p>
           </div>
           <button
             type="button"
@@ -1028,13 +1054,13 @@ function BoardsAppInner() {
             <Settings2 className="h-4 w-4" />
           </button>
         </div>
-        )}
         <div className="mt-6 flex-1 space-y-8 overflow-y-auto">
           {sidebarSections.map((section) => (
             <div key={section.title}>
-              {!sidebarCollapsed && (
-                <p className="text-xs font-semibold uppercase text-neutral-400 dark:text-neutral-500">{section.title}</p>
-              )}
+              <p className={clsx(
+                "overflow-hidden text-xs font-semibold uppercase text-neutral-400 transition-all duration-300 dark:text-neutral-500",
+                sidebarCollapsed ? "max-h-0 opacity-0" : "max-h-10 opacity-100"
+              )}>{section.title}</p>
               <ul className={clsx("space-y-1", !sidebarCollapsed && "mt-3")}>
                 {section.items.map((item) => (
                   <li key={item.label}>
@@ -1047,18 +1073,23 @@ function BoardsAppInner() {
                       )}
                       title={item.label}
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!sidebarCollapsed && item.label}
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <span className={clsx(
+                        "overflow-hidden whitespace-nowrap transition-all duration-300",
+                        sidebarCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                      )}>{item.label}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
-          {!sidebarCollapsed && (
-          <div>
+          <div className={clsx(
+            "overflow-hidden transition-all duration-300",
+            sidebarCollapsed ? "max-h-0 opacity-0" : "max-h-[500px] opacity-100"
+          )}>
             <div className="flex items-center justify-between text-xs uppercase text-neutral-400 dark:text-neutral-500">
-              <span>Boards</span>
+              <span className="whitespace-nowrap">Boards</span>
               <span>{data.boards.length}</span>
             </div>
             <div className="mt-3 space-y-1">
@@ -1083,10 +1114,11 @@ function BoardsAppInner() {
               )}
             </div>
           </div>
-          )}
         </div>
-        {!sidebarCollapsed && (
-        <div className="mt-6 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+        <div className={clsx(
+          "mt-6 overflow-hidden border-t border-neutral-200 pt-4 transition-all duration-300 dark:border-neutral-800",
+          sidebarCollapsed ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+        )}>
           <button
             type="button"
             onClick={() => setShowBoardForm((value) => !value)}
@@ -1154,7 +1186,6 @@ function BoardsAppInner() {
             </form>
           ) : null}
         </div>
-        )}
       </aside>
       <div className={clsx(
         "flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300",
@@ -1660,7 +1691,13 @@ function BoardsAppInner() {
               ) : null}
             {activeTab === "board" && selectedBoard ? (
               <div className="mt-6">
-                <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCorners}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onDragCancel={handleDragCancel}
+                >
                   <div className="overflow-x-auto">
                     <div className="mx-auto flex w-max gap-5 px-4 pb-6 sm:px-6 lg:px-10">
                       {selectedBoard.columns.map((column) => {
@@ -1799,13 +1836,13 @@ function BoardsAppInner() {
                   </div>
                   <DragOverlay>
                     {activeTicket && selectedBoard ? (
-                      <div className="pointer-events-none">
+                      <div className="pointer-events-none scale-105 rotate-2 cursor-grabbing shadow-2xl">
                         <TicketCard
                           ticket={activeTicket}
                           column={selectedBoard.columns.find((col) => col.id === activeTicket.columnId)}
                           members={selectedBoard.members}
                           sprints={selectedBoard.sprints}
-                          onAssigneeChange={() => undefined}
+                          onAssigneeChange={handleAssigneeChange}
                           interactive={false}
                           highlight
                         />
