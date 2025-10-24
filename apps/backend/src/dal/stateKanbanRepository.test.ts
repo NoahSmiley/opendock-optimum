@@ -43,4 +43,27 @@ describe("StateKanbanRepository events", () => {
 
     unsubscribe();
   });
+
+  it("reorders tickets within the same column", async () => {
+    const board = await repo.createBoard({ name: "Board" });
+    const column = await repo.createColumn(board.board.id, { title: "Todo" });
+    const first = await repo.createTicket(board.board.id, { columnId: column.id, title: "First" });
+    const second = await repo.createTicket(board.board.id, { columnId: column.id, title: "Second" });
+
+    const snapshot = await repo.reorderTicket(board.board.id, {
+      ticketId: second.id,
+      toColumnId: column.id,
+      toIndex: 0,
+    });
+
+    expect(snapshot).not.toBeNull();
+    if (!snapshot) return;
+
+    const reordered = snapshot.board.tickets
+      .filter((ticket) => ticket.columnId === column.id)
+      .sort((a, b) => a.order - b.order);
+
+    expect(reordered.map((ticket) => ticket.id)).toEqual([second.id, first.id]);
+    expect(reordered.map((ticket) => ticket.order)).toEqual([0, 1]);
+  });
 });

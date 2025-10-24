@@ -7,16 +7,22 @@
     <title>boards</title>
     <script>
       // Apply theme immediately to prevent flash
-      (function() {
-        const stored = localStorage.getItem('opendock-theme');
-        const theme = stored === 'dark' || stored === 'light' 
-          ? stored 
-          : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.classList.add(theme);
-        // Set background color immediately before CSS loads
-        if (theme === 'dark') {
-          document.documentElement.style.backgroundColor = '#000000';
-        }
+      (function () {
+        const STORAGE_KEY = "boards-theme";
+        const DARK_BG = "#000000";
+        const LIGHT_BG = "#f6f7ff";
+        const stored = localStorage.getItem(STORAGE_KEY);
+        const theme =
+          stored === "dark" || stored === "light"
+            ? stored
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+
+        const root = document.documentElement;
+        root.classList.remove("light", "dark");
+        root.classList.add(theme);
+        root.style.backgroundColor = theme === "dark" ? DARK_BG : LIGHT_BG;
       })();
     </script>
   </head>

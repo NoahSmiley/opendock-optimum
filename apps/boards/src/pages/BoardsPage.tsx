@@ -1,21 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
   useSensor,
   useSensors,
-  closestCorners,
+  type CollisionDetection,
+  MeasuringStrategy,
 } from "@dnd-kit/core";
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import type { DragEndEvent, DragOverEvent, DragStartEvent, DropAnimation } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   BarChart3,
@@ -41,6 +46,12 @@ import { fetchCsrfToken } from "@/lib/auth-client";
 import { useTheme } from "@/theme-provider";
 import { ThemeToggle } from "@/theme-toggle";
 import { TicketDetailPanel } from "@/components/TicketDetailPanel";
+
+const debugDrag = (...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.debug("[kanban-dnd]", ...args);
+  }
+};
 
 interface BoardState {
   boards: KanbanBoard[];
@@ -183,6 +194,53 @@ function TicketCard({
   );
 }
 
+const ticketTransition = {
+  duration: 400,
+  easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+};
+const zeroTransition = CSS.Transition.toString({
+  property: "transform",
+  duration: 0,
+  easing: "linear",
+});
+
+const animateTicketLayoutChanges: AnimateLayoutChanges = ({
+  isSorting,
+  wasDragging,
+  previousContainerId,
+  containerId,
+  id,
+  index,
+  newIndex,
+  items,
+  previousItems,
+}) => {
+  const sameContainer =
+    previousContainerId == null || previousContainerId === containerId;
+  const itemsChanged = previousItems !== items;
+  const indexChanged = newIndex !== index;
+  const shouldAnimate =
+    wasDragging && sameContainer && (itemsChanged || indexChanged);
+
+  debugDrag("animateLayoutChanges decision", {
+    id,
+    index,
+    newIndex,
+    wasDragging,
+    sameContainer,
+    itemsChanged,
+    indexChanged,
+    isSorting,
+    shouldAnimate,
+  });
+
+  if (isSorting) {
+    return true;
+  }
+
+  return shouldAnimate;
+};
+
 function SortableTicket({
   ticket,
   column,
@@ -190,6 +248,8 @@ function SortableTicket({
   sprints,
   onAssigneeChange,
   onClick,
+  activeTicketId,
+  activeTicketColumnId,
 }: {
   ticket: KanbanTicket;
   column: KanbanBoard["columns"][number];
@@ -197,6 +257,8 @@ function SortableTicket({
   sprints: KanbanBoard["sprints"];
   onAssigneeChange: (ticket: KanbanTicket, assigneeId: string) => void;
   onClick?: () => void;
+  activeTicketId: string | null;
+  activeTicketColumnId: string | null;
 }) {
   const {
     setNodeRef,
@@ -208,12 +270,50 @@ function SortableTicket({
   } = useSortable({
     id: ticket.id,
     data: { type: "ticket", columnId: column.id },
+    transition: ticketTransition,
+    animateLayoutChanges: animateTicketLayoutChanges,
   });
 
+  const transformString = transform ? CSS.Transform.toString(transform) : undefined;
+  const isTransforming =
+    Boolean(transform) &&
+    (Math.abs(transform.x) > 0.01 ||
+      Math.abs(transform.y) > 0.01 ||
+      transform.scaleX !== 1 ||
+      transform.scaleY !== 1);
+  const fallbackTransition = `transform ${ticketTransition.duration}ms ${ticketTransition.easing}`;
+  const shouldUseFallback =
+    isTransforming &&
+    (!transition || transition === zeroTransition || transition.includes("0ms"));
+  const resolvedTransition = shouldUseFallback
+    ? fallbackTransition
+    : transition && transition !== zeroTransition
+      ? transition
+      : undefined;
+
+  const isActiveTicket = activeTicketId === ticket.id;
+  const [collapseReady, setCollapseReady] = useState(false);
+
+  useEffect(() => {
+    if (!isDragging || !isActiveTicket || activeTicketColumnId === column.id) {
+      setCollapseReady(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => setCollapseReady(true), 250);
+    return () => window.clearTimeout(timeout);
+  }, [isDragging, isActiveTicket, activeTicketColumnId, column.id]);
+
+  const shouldCollapse = collapseReady;
+
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: transformString,
+    transition: resolvedTransition,
     opacity: isDragging ? 0 : 1,
+    willChange: isDragging ? "transform" : undefined,
+    height: shouldCollapse ? 0 : undefined,
+    margin: shouldCollapse ? 0 : undefined,
+    pointerEvents: isDragging ? "none" : undefined,
+    overflow: shouldCollapse ? "hidden" : undefined,
   };
 
   return (
@@ -221,19 +321,20 @@ function SortableTicket({
       key={ticket.id}
       ref={setNodeRef}
       style={style}
+      data-ticket-id={ticket.id}
       {...attributes}
       {...listeners}
       className="cursor-grab active:cursor-grabbing"
     >
-        <TicketCard
-          ticket={ticket}
-          column={column}
-          members={members}
-          sprints={sprints}
-          onAssigneeChange={onAssigneeChange}
-          onClick={onClick}
-          highlight={isDragging}
-        />
+      <TicketCard
+        ticket={ticket}
+        column={column}
+        members={members}
+        sprints={sprints}
+        onAssigneeChange={onAssigneeChange}
+        onClick={onClick}
+        highlight={isDragging}
+      />
     </div>
   );
 }
@@ -255,9 +356,47 @@ function KanbanColumn({
     id: column.id,
     data: { type: "column", columnId: column.id },
   });
+  const columnBodyRef = useRef<HTMLDivElement | null>(null);
+  const [columnBodyHeight, setColumnBodyHeight] = useState<number | null>(null);
+  const [hasMeasured, setHasMeasured] = useState(false);
+
+  const linkRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      columnBodyRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef],
+  );
+
+  useLayoutEffect(() => {
+    const element = columnBodyRef.current;
+    if (!element) {
+      return;
+    }
+
+    const measure = () => {
+      const nextHeight = element.scrollHeight;
+      setHasMeasured(true);
+      setColumnBodyHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+    };
+
+    measure();
+
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(measure);
+      observer.observe(element);
+      return () => observer.disconnect();
+    }
+
+    const interval = window.setInterval(measure, 200);
+    return () => window.clearInterval(interval);
+  }, [tickets.length, totalCount]);
 
   return (
-    <div className="flex min-w-[22rem] max-w-[22rem] flex-col gap-3 self-start rounded-lg border border-neutral-200 bg-white p-4 transition dark:border-neutral-800 dark:bg-neutral-950">
+    <div
+      className="flex min-w-[22rem] max-w-[22rem] flex-col gap-3 self-start rounded-lg border border-neutral-200 bg-white p-4 transition dark:border-neutral-800 dark:bg-neutral-950"
+      data-column-id={column.id}
+    >
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{column.title}</h3>
@@ -274,24 +413,35 @@ function KanbanColumn({
       </div>
       <SortableContext id={column.id} items={tickets.map((ticket) => ticket.id)} strategy={verticalListSortingStrategy}>
         <div
-          ref={setNodeRef}
-          className={clsx(
-            "flex min-h-[6rem] flex-col gap-2.5 rounded-md border border-transparent p-1 transition-colors",
-            isOver ? "border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" : "border-transparent",
-          )}
+          style={{
+            height:
+              columnBodyHeight != null ? `${columnBodyHeight}px` : "auto",
+            overflow: "hidden",
+            transition: hasMeasured
+              ? "height 0.45s cubic-bezier(0.22, 1, 0.36, 1)"
+              : "none",
+          }}
         >
-          {children}
-          {tickets.length === 0 ? (
-            totalCount > 0 ? (
-              <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
-                No issues match the active filters.
-              </div>
-            ) : (
-              <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
-                Drop issues here
-              </div>
-            )
-          ) : null}
+          <div
+            ref={linkRefs}
+            className={clsx(
+              "flex min-h-[6rem] flex-col gap-2.5 rounded-md border border-transparent p-1 transition-colors",
+              isOver ? "border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" : "border-transparent",
+            )}
+          >
+            {children}
+            {tickets.length === 0 ? (
+              totalCount > 0 ? (
+                <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
+                  No issues match the active filters.
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
+                  Drop issues here
+                </div>
+              )
+            ) : null}
+          </div>
         </div>
       </SortableContext>
       {footer ? <div>{footer}</div> : null}
@@ -307,6 +457,7 @@ function BoardsAppInner() {
   const [activeTab, setActiveTab] = useState<"board" | "overview" | "backlog">("board");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const streamRef = useRef<EventSource | null>(null);
+  const lastOverIdRef = useRef<string | null>(null);
   const [streamRetry, setStreamRetry] = useState(0);
   const [projects, setProjects] = useState<ProjectsResponse['projects']>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -317,12 +468,23 @@ function BoardsAppInner() {
   const [creatingBacklogTicket, setCreatingBacklogTicket] = useState(false);
   const [creatingSprint, setCreatingSprint] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [activeTicketColumnId, setActiveTicketColumnId] = useState<string | null>(null);
+  const [activeTicketSourceColumnId, setActiveTicketSourceColumnId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     }),
+  );
+
+  const dropAnimation: DropAnimation = useMemo(
+    () => ({
+      duration: 400,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      dragSourceOpacity: 0,
+    }),
+    [],
   );
 
   const [boardForm, setBoardForm] = useState({ name: "", description: "", members: "", projectId: "" });
@@ -672,6 +834,80 @@ function BoardsAppInner() {
     ],
   );
 
+  const columnIdSet = useMemo(() => {
+    if (!selectedBoard) return new Set<string>();
+    return new Set(selectedBoard.columns.map((column) => column.id));
+  }, [selectedBoard]);
+
+  const filteredTicketMap = useMemo(() => {
+    const map = new Map<string, KanbanTicket[]>();
+    if (!selectedBoard) return map;
+    selectedBoard.columns.forEach((column) => {
+      const rawTickets = columnTicketMap.get(column.id) ?? [];
+      map.set(column.id, rawTickets.filter(passesFilters));
+    });
+    return map;
+  }, [columnTicketMap, passesFilters, selectedBoard]);
+
+  // Custom collision detection keeps drops stable when tickets are hidden by filters.
+  const collisionDetectionStrategy = useCallback<CollisionDetection>(
+    (args) => {
+      const pointerCollisions = pointerWithin(args);
+      const pointerOver = pointerCollisions.length > 0 ? pointerCollisions : [];
+
+      const rectCollisions = rectIntersection(args);
+      const fallbackCollisions = closestCorners(args);
+
+      let collisions = pointerOver.length > 0 ? pointerOver : rectCollisions;
+      if (collisions.length === 0) {
+        collisions = fallbackCollisions;
+      }
+
+      let overId = collisions[0]?.id;
+
+      if (overId && columnIdSet.has(String(overId))) {
+        const ticketIds = (filteredTicketMap.get(String(overId)) ?? []).map((ticket) => ticket.id);
+        if (ticketIds.length > 0) {
+          const matchingContainers = args.droppableContainers.filter((container) =>
+            ticketIds.includes(String(container.id)),
+          );
+          if (matchingContainers.length > 0) {
+            const ticketCollisions = closestCorners({
+              ...args,
+              droppableContainers: matchingContainers,
+            });
+            if (ticketCollisions.length > 0) {
+              overId = ticketCollisions[0]?.id;
+            }
+          }
+        }
+      }
+
+      if (overId) {
+        if (overId !== lastOverIdRef.current) {
+          debugDrag("Resolved over target", {
+            activeId: String(args.active.id),
+            overId: String(overId),
+            reason: "direct-hit",
+          });
+        }
+        lastOverIdRef.current = String(overId);
+        return [{ id: overId }];
+      }
+
+      if (lastOverIdRef.current) {
+        debugDrag("Falling back to last over target", {
+          activeId: String(args.active.id),
+          overId: lastOverIdRef.current,
+        });
+        return [{ id: lastOverIdRef.current }];
+      }
+
+      return [];
+    },
+    [columnIdSet, filteredTicketMap],
+  );
+
   const getColumnDraft = useCallback(
     (columnId: string) => columnDrafts[columnId] ?? createColumnDraft(),
     [columnDrafts],
@@ -869,13 +1105,64 @@ function BoardsAppInner() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    const columnId = event.active.data.current?.columnId as string | undefined;
     setActiveTicketId(String(event.active.id));
+    setActiveTicketColumnId(columnId ?? null);
+    setActiveTicketSourceColumnId(columnId ?? null);
+    debugDrag("Drag started", {
+      ticketId: String(event.active.id),
+      columnId,
+    });
+    lastOverIdRef.current = String(event.active.id);
   };
+
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      if (!activeTicketId || !selectedBoard) {
+        return;
+      }
+
+      const { over } = event;
+      if (!over) {
+        setActiveTicketColumnId((prev) => (prev === null ? prev : null));
+        return;
+      }
+
+      const overId = String(over.id);
+      let overColumnId = over.data.current?.columnId as string | undefined;
+
+      if (!overColumnId) {
+        if (columnIdSet.has(overId)) {
+          overColumnId = overId;
+        } else {
+          const match = selectedBoard.tickets.find((ticket) => ticket.id === overId);
+          overColumnId = match?.columnId;
+        }
+      }
+
+      if (!overColumnId) {
+        setActiveTicketColumnId((prev) => (prev === null ? prev : null));
+        return;
+      }
+
+      setActiveTicketColumnId((prev) => (prev === overColumnId ? prev : overColumnId));
+    },
+    [activeTicketId, columnIdSet, selectedBoard],
+  );
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTicketId(null);
-    if (!selectedBoard || !over) return;
+    setActiveTicketColumnId(null);
+    setActiveTicketSourceColumnId(null);
+    if (!selectedBoard || !over) {
+      debugDrag("Drag ended without drop target", {
+        ticketId: String(active.id),
+        reason: selectedBoard ? "no-over" : "no-board",
+      });
+      lastOverIdRef.current = null;
+      return;
+    }
 
     const activeTicketId = String(active.id);
     const fromColumnId = active.data.current?.columnId as string | undefined;
@@ -902,6 +1189,27 @@ function BoardsAppInner() {
     let newIndex = destinationTickets.findIndex((ticket) => ticket.id === String(over.id));
     if (over.data.current?.type === "column" || newIndex === -1) {
       newIndex = destinationTickets.length;
+    } else if (
+      over.data.current?.type === "ticket" &&
+      newIndex !== -1 &&
+      String(over.id) !== activeTicketId &&
+      fromColumnId !== toColumnId
+    ) {
+      const overRect = over.rect;
+      const { initial, translated } = active.rect.current;
+      const resolvedTop = translated?.top ?? (initial ? initial.top + event.delta.y : null);
+      const resolvedHeight = translated?.height ?? initial?.height ?? null;
+
+      if (resolvedTop !== null && resolvedHeight !== null) {
+        const activeCenter = resolvedTop + resolvedHeight / 2;
+        const overCenter = overRect.top + overRect.height / 2;
+
+        // When the dragged ticket crosses the midpoint of the target ticket,
+        // treat the drop as inserting after that ticket rather than before it.
+        if (activeCenter > overCenter) {
+          newIndex = Math.min(newIndex + 1, destinationTickets.length);
+        }
+      }
     }
 
     const nextTickets = selectedBoard.tickets.map((ticket) => ({ ...ticket }));
@@ -970,20 +1278,38 @@ function BoardsAppInner() {
       ),
     }));
 
+    debugDrag("Submitting reorder", {
+      ticketId: activeTicketId,
+      fromColumnId,
+      toColumnId,
+      oldIndex,
+      newIndex,
+    });
+
     try {
       await boardsApi.reorderTicket(selectedBoard.id, {
         ticketId: activeTicketId,
         toColumnId,
         toIndex: newIndex,
       });
+      debugDrag("Reorder persisted", { ticketId: activeTicketId });
     } catch (err) {
+      debugDrag("Reorder failed, refreshing snapshot", {
+        ticketId: activeTicketId,
+        error: err instanceof Error ? err.message : err,
+      });
       setError((err as Error).message);
       await refresh();
     }
+    lastOverIdRef.current = null;
   };
 
   const handleDragCancel = () => {
     setActiveTicketId(null);
+    setActiveTicketColumnId(null);
+    setActiveTicketSourceColumnId(null);
+    debugDrag("Drag cancelled", { lastOverId: lastOverIdRef.current });
+    lastOverIdRef.current = null;
   };
 
   const sidebarSections = [
@@ -1693,18 +2019,35 @@ function BoardsAppInner() {
               <div className="mt-6">
                 <DndContext
                   sensors={sensors}
-                  collisionDetection={closestCorners}
+                  collisionDetection={collisionDetectionStrategy}
                   onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
                   onDragCancel={handleDragCancel}
+                  measuring={{
+                    droppable: {
+                      strategy: MeasuringStrategy.Always,
+                    },
+                  }}
                 >
                   <div className="overflow-x-auto">
-                    <div className="mx-auto flex w-max gap-5 px-4 pb-6 sm:px-6 lg:px-10">
+                    <div className="kanban-board-surface mx-auto flex w-max gap-5 px-4 pb-6 sm:px-6 lg:px-10">
                       {selectedBoard.columns.map((column) => {
                         const rawTickets = columnTicketMap.get(column.id) ?? [];
-                        const filteredTickets = rawTickets.filter(passesFilters);
+                        const filteredTickets = filteredTicketMap.get(column.id) ?? [];
                         const draft = getColumnDraft(column.id);
                         const composerOpen = activeComposerColumnId === column.id;
+
+                        const shouldPreviewIncoming =
+                          Boolean(activeTicketId) &&
+                          activeTicketColumnId === column.id &&
+                          activeTicketSourceColumnId !== column.id &&
+                          !filteredTickets.some((ticket) => ticket.id === activeTicketId);
+                        const previewTicket =
+                          shouldPreviewIncoming && activeTicketId
+                            ? selectedBoard.tickets.find((ticket) => ticket.id === activeTicketId) ?? null
+                            : null;
+
                         return (
                           <KanbanColumn
                             key={column.id}
@@ -1755,7 +2098,7 @@ function BoardsAppInner() {
                                               priority: event.target.value as KanbanTicket["priority"],
                                             })
                                           }
-                                          className="rounded-md border border-slate-200/70 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/10 dark:bg-black dark:text-slate-100 dark:focus:border-white/30 dark:focus:ring-white/20"
+                                          className="rounded-md border border-slate-200/70 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/10 dark:bg-black dark:text-slate-100 dark:focus-border-white/30 dark:focus:ring-white/20"
                                         >
                                           <option value="high">High</option>
                                           <option value="medium">Medium</option>
@@ -1807,8 +2150,22 @@ function BoardsAppInner() {
                                 sprints={selectedBoard.sprints}
                                 onAssigneeChange={handleAssigneeChange}
                                 onClick={() => setSelectedTicketId(ticket.id)}
+                                activeTicketId={activeTicketId}
+                                activeTicketColumnId={activeTicketColumnId}
                               />
                             ))}
+                            {previewTicket ? (
+                              <div aria-hidden="true" className="pointer-events-none opacity-0">
+                                <TicketCard
+                                  ticket={previewTicket}
+                                  column={column}
+                                  members={selectedBoard.members}
+                                  sprints={selectedBoard.sprints}
+                                  onAssigneeChange={handleAssigneeChange}
+                                  interactive={false}
+                                />
+                              </div>
+                            ) : null}
                           </KanbanColumn>
                         );
                       })}
@@ -1834,9 +2191,9 @@ function BoardsAppInner() {
                       </form>
                     </div>
                   </div>
-                  <DragOverlay>
+                  <DragOverlay dropAnimation={dropAnimation}>
                     {activeTicket && selectedBoard ? (
-                      <div className="pointer-events-none scale-105 rotate-2 cursor-grabbing shadow-2xl">
+                      <div className="pointer-events-none cursor-grabbing shadow-2xl">
                         <TicketCard
                           ticket={activeTicket}
                           column={selectedBoard.columns.find((col) => col.id === activeTicket.columnId)}

@@ -369,22 +369,30 @@ export class StateStore {
   moveTicket(ticketId: string, toColumnId: string, toIndex: number): KanbanBoardSnapshot | undefined {
     const ticket = this.state.kanbanTickets.find((item) => item.id === ticketId);
     if (!ticket) return undefined;
+
     const fromColumnId = ticket.columnId;
+    const sameColumn = fromColumnId === toColumnId;
+
+    const destinationTickets = this.state.kanbanTickets
+      .filter((item) => item.columnId === toColumnId && item.id !== ticketId)
+      .sort((a, b) => a.order - b.order);
+
+    const clamped = Math.max(0, Math.min(toIndex, destinationTickets.length));
     ticket.columnId = toColumnId;
-    const affected = this.state.kanbanTickets.filter((item) => item.columnId === toColumnId && item.id !== ticketId);
-    const clamped = Math.max(0, Math.min(toIndex, affected.length));
-    affected.splice(clamped, 0, ticket);
-    affected.forEach((item, index) => {
+    destinationTickets.splice(clamped, 0, ticket);
+    destinationTickets.forEach((item, index) => {
       item.order = index;
     });
-    const originalColumnTickets = this.state.kanbanTickets
-      .filter((item) => item.columnId === fromColumnId && item.id !== ticketId)
-      .sort((a, b) => a.order - b.order)
-      .map((item, index) => {
+
+    if (!sameColumn) {
+      const sourceTickets = this.state.kanbanTickets
+        .filter((item) => item.columnId === fromColumnId && item.id !== ticketId)
+        .sort((a, b) => a.order - b.order);
+      sourceTickets.forEach((item, index) => {
         item.order = index;
-        return item;
       });
-    originalColumnTickets;
+    }
+
     ticket.updatedAt = new Date().toISOString();
     this.persist();
     return this.boardSnapshot(ticket.boardId);

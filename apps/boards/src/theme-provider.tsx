@@ -24,6 +24,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const opposite = theme === "dark" ? "light" : "dark";
     root.classList.remove(opposite);
     root.classList.add(theme);
+    const backgrounds: Record<Theme, string> = {
+      dark: "#000000",
+      light: "#f6f7ff",
+    };
+    root.style.backgroundColor = backgrounds[theme];
     window.localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
