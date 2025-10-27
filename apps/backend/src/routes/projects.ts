@@ -12,6 +12,12 @@ import { authRequired, requireCsrfProtection } from "../auth";
 const RedeploySchema = z
   .object({
     branch: BranchNameSchema.optional(),
+    environment: z
+      .string()
+      .trim()
+      .min(1, "Environment is required when provided.")
+      .max(120, "Environment slug must be less than 120 characters.")
+      .optional(),
   })
   .strict();
 
@@ -57,6 +63,7 @@ export function createProjectsRouter(builds: BuildService, projects: ProjectsRep
     const build = builds.enqueue({
       projectId: project.id,
       branch: payload.branch ?? project.branch,
+      environmentSlug: "staging",
       reason: "manual",
     });
 
@@ -98,6 +105,7 @@ export function createProjectsRouter(builds: BuildService, projects: ProjectsRep
     const build = builds.enqueue({
       projectId: project.id,
       branch: body.data.branch ?? project.branch,
+      environmentSlug: body.data.environment ?? "production",
       reason: "manual",
     });
 

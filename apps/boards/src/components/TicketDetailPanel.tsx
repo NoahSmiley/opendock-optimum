@@ -143,9 +143,9 @@ export function TicketDetailPanel({
   return (
     <>
       {/* Backdrop - positioned to not cover sidebar/navbar */}
-      <div 
+      <div
         className={clsx(
-          "fixed inset-y-0 right-0 left-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity duration-200",
+          "fixed inset-y-0 right-0 left-0 z-30 bg-black/40 transition-opacity duration-200",
           sidebarCollapsed ? "lg:left-16" : "lg:left-64",
           isOpen && !isClosing ? "opacity-100" : "opacity-0"
         )}

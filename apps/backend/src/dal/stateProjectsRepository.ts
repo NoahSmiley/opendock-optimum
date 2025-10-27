@@ -45,19 +45,37 @@ function sanitizeUpdateBuildConfig(config?: ProjectUpdateInput["buildConfig"]): 
   return hasChange ? result : undefined;
 }
 
-function summarizeProject(projectId: string, limitRecentBuilds: number): Pick<ProjectOverview, "latestBuild" | "deployment" | "builds"> {
+function summarizeProject(projectId: string, limitRecentBuilds: number): Pick<ProjectOverview, "latestBuild" | "deployment" | "builds" | "environments"> {
+  store.ensureDefaultEnvironments(projectId);
   const builds = store.listBuilds(projectId);
   const sorted = builds
     .slice()
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const latestBuild = sorted[0];
   const recentBuilds = builds.slice(-limitRecentBuilds).reverse();
-  const deployment = store.findDeploymentByProject(projectId);
+  const environments = store
+    .listEnvironments(projectId)
+    .map((environment) => {
+      const deployments = store
+        .listDeploymentsByEnvironment(environment.id)
+        .slice()
+        .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+      const recentDeployments = deployments.slice(0, limitRecentBuilds);
+      return {
+        ...environment,
+        latestDeployment: deployments[0],
+        recentDeployments,
+      };
+    });
+
+  const deployment =
+    environments.find((env) => env.slug.toLowerCase() === "production")?.latestDeployment ?? environments[0]?.latestDeployment;
 
   return {
     latestBuild,
     deployment,
     builds: recentBuilds,
+    environments,
   };
 }
 

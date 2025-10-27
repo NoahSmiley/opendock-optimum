@@ -9,6 +9,7 @@ import { BuildService } from "./buildService";
 import { MonitorService } from "./monitorService";
 import { createProjectsRouter } from "./routes/projects";
 import { createKanbanRouter } from "./routes/kanban";
+import { createGitHubRouter } from "./routes/github";
 import { authRouter } from "./routes/auth";
 import { dal } from "./dal";
 import { attachUser } from "./auth";
@@ -65,6 +66,7 @@ export function createApp(options: CreateAppOptions = {}) {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/github", createGitHubRouter());
   app.use("/api/projects", createProjectsRouter(builds, dal.projects));
   app.use("/api/kanban", createKanbanRouter());
 

@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { Expand, Minimize } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { getBoardsAppUrl } from "@/lib/config";
+import { launchBoardsApp } from "@/lib/boards";
 import { useAuth } from "./auth";
 
 const navItems = [
@@ -137,13 +138,7 @@ export function AppLayout() {
   );
 
   const handleLaunchBoards = useCallback(() => {
-    const boardsUrl = getBoardsAppUrl();
-    const isExternal = /^https?:\/\//i.test(boardsUrl);
-    if (isExternal) {
-      window.open(boardsUrl, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.href = boardsUrl;
-    }
+    launchBoardsApp(getBoardsAppUrl());
   }, []);
 
   return (

@@ -57,6 +57,27 @@ export async function fetchProject(projectId: string) {
   return request<ProjectDetailResponse>({ path: `/api/projects/${projectId}` });
 }
 
+export interface GitHubRepositorySummary {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  description: string | null;
+  htmlUrl: string;
+  defaultBranch: string;
+  owner: string;
+}
+
+export async function fetchGitHubRepositories(options: { visibility?: "all" | "public" | "private" } = {}) {
+  const params = new URLSearchParams();
+  if (options.visibility) {
+    params.set("visibility", options.visibility);
+  }
+  const query = params.toString();
+  const path = query.length > 0 ? `/api/github/repos?${query}` : "/api/github/repos";
+  return request<{ repositories: GitHubRepositorySummary[] }>({ path });
+}
+
 export async function updateProject(projectId: string, payload: ProjectUpdateInput) {
   const headers = await resolveCsrfHeaders();
   return request<{ project: Project }>({

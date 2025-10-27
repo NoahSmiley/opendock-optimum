@@ -16,7 +16,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { BuildStatus, HealthStatus, ProjectsResponse } from "@opendock/shared/types";
 import type { ProjectCreateInput } from "@opendock/shared/projects";
-import { createProject, fetchProjects } from "@/lib/api";
+import { getApiBaseUrl, RequestError } from "@opendock/shared/api";
+import { createProject, fetchGitHubRepositories, fetchProjects, type GitHubRepositorySummary } from "@/lib/api";
+import { getBoardsAppUrl } from "@/lib/config";
+import { isBoardsUrlExternal, launchBoardsApp } from "@/lib/boards";
 
 type DashboardState =
   | { status: "idle" | "loading"; projects: ProjectsResponse["projects"]; error?: undefined }
@@ -67,12 +70,52 @@ export default function DashboardPage() {
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateProjectFormState>(() => createFormDefaults());
   const [createStatus, setCreateStatus] = useState<CreateProjectStatus>({ status: "idle" });
+  const [githubRepos, setGithubRepos] = useState<GitHubRepositorySummary[]>([]);
+  const [githubReposStatus, setGithubReposStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [githubReposError, setGithubReposError] = useState<string | null>(null);
+  const [githubReposErrorCode, setGithubReposErrorCode] = useState<string | null>(null);
+  const boardsUrl = useMemo(() => getBoardsAppUrl(), []);
+  const boardsLaunchTitle = useMemo(
+    () => (isBoardsUrlExternal(boardsUrl) ? "Launch Boards in a new window" : "Launch Boards"),
+    [boardsUrl],
+  );
+  const githubLoginUrl = useMemo(() => {
+    const baseUrl = getApiBaseUrl().replace(/\/+$/, "");
+    const redirectTarget =
+      typeof window !== "undefined" && window.location
+        ? `${window.location.pathname}${window.location.search}` || "/dashboard"
+        : "/dashboard";
+    const url = new URL("/api/auth/github/login", `${baseUrl}/`);
+    url.searchParams.set("redirect", redirectTarget);
+    return url.toString();
+  }, []);
 
   const friendlyError = useCallback(
     (err: unknown) =>
       err instanceof Error ? err.message : "Unable to load projects right now. Please try again shortly.",
     [],
   );
+
+  const loadGitHubRepos = useCallback(async () => {
+    setGithubReposStatus("loading");
+    setGithubReposError(null);
+    setGithubReposErrorCode(null);
+    try {
+      const response = await fetchGitHubRepositories();
+      setGithubRepos(response.repositories);
+      setGithubReposStatus("ready");
+      setGithubReposErrorCode(null);
+    } catch (err) {
+      setGithubReposStatus("error");
+      if (err instanceof RequestError) {
+        setGithubReposError(err.message || "Unable to load GitHub repositories.");
+        setGithubReposErrorCode(err.code ?? null);
+      } else {
+        setGithubReposError(err instanceof Error ? err.message : "Unable to load GitHub repositories.");
+        setGithubReposErrorCode(null);
+      }
+    }
+  }, []);
 
   const refreshProjects = useCallback(
     async (options: { silent?: boolean } = {}) => {
@@ -88,6 +131,10 @@ export default function DashboardPage() {
     },
     [friendlyError],
   );
+
+  const handleLaunchBoards = useCallback(() => {
+    launchBoardsApp(boardsUrl);
+  }, [boardsUrl]);
 
   useEffect(() => {
     let isActive = true;
@@ -110,7 +157,10 @@ export default function DashboardPage() {
     setCreateStatus({ status: "idle" });
     setCreateForm(createFormDefaults());
     setCreateOpen(true);
-  }, []);
+    if (githubReposStatus === "idle") {
+      void loadGitHubRepos();
+    }
+  }, [githubReposStatus, loadGitHubRepos]);
 
   const closeCreate = useCallback(() => {
     if (createStatus.status === "saving") return;
@@ -185,16 +235,44 @@ export default function DashboardPage() {
     [createForm, createStatus.status, refreshProjects],
   );
 
+  const handleRepositorySelect = useCallback((repo: GitHubRepositorySummary) => {
+    setCreateForm((current) => {
+      const next: CreateProjectFormState = {
+        ...current,
+        repoUrl: `https://github.com/${repo.fullName}.git`,
+      };
+      if (!current.branch || current.branch.trim().length === 0) {
+        next.branch = repo.defaultBranch || current.branch;
+      }
+      if (!current.name || current.name.trim().length === 0) {
+        next.name = repo.name;
+      }
+      return next;
+    });
+  }, []);
+
+  const selectedGitHubRepoId = useMemo(() => {
+    if (!createForm.repoUrl) return null;
+    const normalized = createForm.repoUrl.trim().replace(/\.git$/, "");
+    const match = githubRepos.find((repo) => {
+      const repoUrl = `https://github.com/${repo.fullName}`;
+      const repoSsh = `git@github.com:${repo.fullName}`;
+      return normalized === repoUrl || normalized === repoSsh || normalized === `${repoSsh}.git`;
+    });
+    return match ? match.id : null;
+  }, [createForm.repoUrl, githubRepos]);
+
   const stats = useMemo(() => {
     const builds = projects.flatMap((project) => project.builds ?? []);
-    const deployments = projects
-      .map((project) => project.deployment)
-      .filter((deploy): deploy is NonNullable<typeof deploy> => Boolean(deploy));
+    const environmentDeployments = projects
+      .flatMap((project) => project.environments ?? [])
+      .map((environment) => environment.latestDeployment)
+      .filter((deployment): deployment is NonNullable<typeof deployment> => Boolean(deployment));
 
     const runningBuilds = builds.filter((build) => build.status === "running").length;
     const failedBuildsLastFive = builds.filter((build) => build.status === "failed").length;
-    const healthyDeployments = deployments.filter((deploy) => deploy.healthStatus === "up").length;
-    const unhealthyDeployments = deployments.filter((deploy) => deploy.healthStatus === "down").length;
+    const healthyDeployments = environmentDeployments.filter((deployment) => deployment.healthStatus === "up").length;
+    const unhealthyDeployments = environmentDeployments.filter((deployment) => deployment.healthStatus === "down").length;
 
     return {
       projectCount: projects.length,
@@ -204,6 +282,19 @@ export default function DashboardPage() {
       unhealthyDeployments,
     };
   }, [projects]);
+
+  const environmentCards = useMemo(
+    () =>
+      projects.flatMap((project) =>
+        (project.environments ?? []).map((environment) => ({
+          project,
+          environment,
+        })),
+      ),
+    [projects],
+  );
+
+  const hasActiveDeployments = environmentCards.some(({ environment }) => Boolean(environment.latestDeployment));
 
   return (
     <div className="space-y-10">
@@ -249,13 +340,15 @@ export default function DashboardPage() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <a
-            href="http://localhost:5174/dashboard"
+          <button
+            type="button"
+            onClick={handleLaunchBoards}
+            title={boardsLaunchTitle}
             className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
           >
             Launch Boards
             <ArrowRight className="h-4 w-4" />
-          </a>
+          </button>
           <a
             href="https://github.com/new"
             target="_blank"
@@ -278,12 +371,10 @@ export default function DashboardPage() {
           <Server className="hidden h-6 w-6 text-neutral-400 dark:text-neutral-500 md:block" />
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          {projects
-            .filter((project) => project.deployment)
-            .map((project) => (
-              <DeploymentCard key={project.id} project={project} />
-            ))}
-          {projects.every((project) => !project.deployment) && (
+          {environmentCards.map(({ project, environment }) => (
+            <DeploymentCard key={`${project.id}:${environment.id}`} project={project} environment={environment} />
+          ))}
+          {!hasActiveDeployments && (
             <div className="rounded-3xl border border-dashed border-neutral-300 bg-white/40 p-6 text-sm text-neutral-500 dark:border-white/20 dark:bg-neutral-900/40 dark:text-neutral-300">
               Start a deployment from any connected project to monitor uptime here. Redeployments issued from the board
               or API will also surface in this feed.
@@ -321,11 +412,19 @@ export default function DashboardPage() {
               onChange={handleCreateChange}
               onClose={closeCreate}
               onSubmit={handleCreateSubmit}
+              githubRepos={githubRepos}
+              githubReposStatus={githubReposStatus}
+              githubReposError={githubReposError}
+              githubReposErrorCode={githubReposErrorCode}
+              githubLoginUrl={githubLoginUrl}
+              selectedGitHubRepoId={selectedGitHubRepoId}
+              onSelectRepository={handleRepositorySelect}
+              onRefreshGitHubRepos={loadGitHubRepos}
             />
           )}
           {status === "loading" && (
             <div className="rounded-3xl border border-neutral-200 bg-white/60 p-6 text-sm text-neutral-500 dark:border-white/10 dark:bg-neutral-900/60 dark:text-neutral-300">
-              Loading project activity…
+              Loading project activity...
             </div>
           )}
           {status === "error" && (
@@ -439,10 +538,45 @@ interface CreateProjectCardProps {
   onChange: (field: keyof CreateProjectFormState, value: string) => void;
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  githubRepos: GitHubRepositorySummary[];
+  githubReposStatus: "idle" | "loading" | "ready" | "error";
+  githubReposError: string | null;
+  githubReposErrorCode: string | null;
+  githubLoginUrl: string;
+  selectedGitHubRepoId: number | null;
+  onSelectRepository: (repo: GitHubRepositorySummary) => void;
+  onRefreshGitHubRepos: () => void;
 }
 
-function CreateProjectCard({ form, status, onChange, onClose, onSubmit }: CreateProjectCardProps) {
+function CreateProjectCard({
+  form,
+  status,
+  onChange,
+  onClose,
+  onSubmit,
+  githubRepos,
+  githubReposStatus,
+  githubReposError,
+  githubReposErrorCode,
+  githubLoginUrl,
+  selectedGitHubRepoId,
+  onSelectRepository,
+  onRefreshGitHubRepos,
+}: CreateProjectCardProps) {
   const isSaving = status.status === "saving";
+  const [repoQuery, setRepoQuery] = useState("");
+
+  const filteredRepos = useMemo(() => {
+    if (!repoQuery.trim()) {
+      return githubRepos;
+    }
+    const needle = repoQuery.trim().toLowerCase();
+    return githubRepos.filter((repo) => {
+      const fullName = `${repo.owner}/${repo.name}`.toLowerCase();
+      const description = repo.description?.toLowerCase() ?? "";
+      return fullName.includes(needle) || description.includes(needle);
+    });
+  }, [githubRepos, repoQuery]);
 
   return (
     <form
@@ -503,6 +637,139 @@ function CreateProjectCard({ form, status, onChange, onClose, onSubmit }: Create
             placeholder="main"
             className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
           />
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300">
+              GitHub repository
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isSaving) {
+                  void onRefreshGitHubRepos();
+                }
+              }}
+              disabled={isSaving || githubReposStatus === "loading"}
+              className="text-xs font-semibold text-neutral-500 underline-offset-4 transition hover:text-neutral-800 hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:text-neutral-200"
+            >
+              Refresh
+            </button>
+          </div>
+          {githubReposStatus === "loading" && (
+            <div className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-300">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Fetching repositories from GitHub...
+            </div>
+          )}
+          {githubReposStatus === "error" && githubReposError && (
+            <div className="space-y-2 rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+              <p>{githubReposError}</p>
+              {githubReposErrorCode === "GITHUB_ACCOUNT_NOT_CONNECTED" && (
+                <a
+                  href={githubLoginUrl}
+                  className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-50 dark:hover:bg-amber-500/30"
+                >
+                  Connect with GitHub
+                  <ArrowRight className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          )}
+          {githubReposStatus === "ready" && githubRepos.length > 0 ? (
+            <div className="space-y-3">
+              <input
+                type="search"
+                value={repoQuery}
+                onChange={(event) => setRepoQuery(event.target.value)}
+                placeholder="Search repositories..."
+                className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-white/30 dark:focus:ring-white/10"
+              />
+              <div className="rounded-2xl border border-neutral-200 bg-white/70 p-3 dark:border-white/10 dark:bg-neutral-900/60">
+                <div className="flex items-center justify-between gap-3 px-1 pb-2 text-xs uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+                  <span>Matching repositories</span>
+                  <span>{filteredRepos.length}</span>
+                </div>
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1" role="list">
+                  {filteredRepos.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-neutral-300 bg-white/60 px-4 py-6 text-center text-xs text-neutral-500 dark:border-white/20 dark:bg-neutral-900/40 dark:text-neutral-400">
+                      No repositories match that search. Try a different name.
+                    </div>
+                  ) : (
+                    filteredRepos.map((repo) => {
+                      const isSelected = selectedGitHubRepoId === repo.id;
+                      return (
+                        <button
+                          key={repo.id}
+                          type="button"
+                          role="listitem"
+                          aria-pressed={isSelected}
+                          disabled={isSaving}
+                          onClick={() => onSelectRepository(repo)}
+                          className={`w-full rounded-xl border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-white/20 ${
+                            isSelected
+                              ? "border-neutral-900 bg-neutral-100 shadow-sm dark:border-white/60 dark:bg-white/10"
+                              : "border-transparent bg-white/40 hover:border-neutral-300 hover:bg-white/70 dark:bg-neutral-900/40 dark:hover:border-white/20 dark:hover:bg-neutral-900/60"
+                          } ${isSaving ? "cursor-not-allowed opacity-60" : ""}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+                                  {repo.owner}/{repo.name}
+                                </div>
+                                {isSelected ? <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-300" /> : null}
+                              </div>
+                              {repo.description ? (
+                                <p className="mt-1 max-h-12 overflow-hidden text-ellipsis text-xs text-neutral-500 dark:text-neutral-400">
+                                  {repo.description}
+                                </p>
+                              ) : (
+                                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">No description provided.</p>
+                              )}
+                            </div>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${
+                                repo.private
+                                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                                  : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+                              }`}
+                            >
+                              {repo.private ? "Private" : "Public"}
+                            </span>
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 dark:text-neutral-500">
+                            <span className="inline-flex items-center gap-1">
+                              <GitBranch className="h-3 w-3" />
+                              {repo.defaultBranch}
+                            </span>
+                            <a
+                              href={repo.htmlUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(event) => event.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-500 underline-offset-4 transition hover:text-neutral-800 hover:underline dark:text-neutral-400 dark:hover:text-neutral-200"
+                            >
+                              View repo
+                              <ArrowRight className="h-3 w-3" />
+                            </a>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500">
+                Choosing a repository will fill in the URL, default branch, and name. You can still edit anything manually.
+              </p>
+            </div>
+          ) : null}
+          {githubReposStatus === "ready" && githubRepos.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-neutral-300 bg-white/50 px-4 py-6 text-xs text-neutral-500 dark:border-white/20 dark:bg-neutral-900/50 dark:text-neutral-300">
+              No repositories were returned from GitHub. Refresh above or check your account permissions.
+            </div>
+          ) : null}
         </div>
         <div className="md:col-span-2 space-y-2">
           <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300" htmlFor="project-repo">
@@ -660,48 +927,105 @@ function ProjectCard({ project }: { project: ProjectsResponse["projects"][number
   );
 }
 
-function DeploymentCard({ project }: { project: ProjectsResponse["projects"][number] }) {
-  const deployment = project.deployment!;
-  const healthStyle = deploymentStatusStyles[deployment.healthStatus];
+type EnvironmentSnapshot = NonNullable<ProjectsResponse["projects"][number]["environments"]>[number];
+
+function DeploymentCard({
+  project,
+  environment,
+}: {
+  project: ProjectsResponse["projects"][number];
+  environment: EnvironmentSnapshot;
+}) {
+  const deployment = environment.latestDeployment;
+  const healthStyle = deployment
+    ? deploymentStatusStyles[deployment.healthStatus]
+    : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300";
+
+  const recent = environment.recentDeployments ?? [];
 
   return (
-    <article className="flex flex-col gap-4 rounded-3xl border border-neutral-200 bg-white/70 p-6 shadow-sm transition hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-900/60 dark:hover:border-white/20">
-      <div className="flex items-center justify-between">
-        <div>
+    <article className="flex flex-col gap-5 rounded-3xl border border-neutral-200 bg-white/70 p-6 shadow-sm transition hover:border-neutral-300 dark:border-white/10 dark:bg-neutral-900/60 dark:hover:border-white/20">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{project.name}</h3>
-          <p className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Port {deployment.port}</p>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900/90 px-3 py-1 font-semibold uppercase tracking-[0.3em] text-white dark:bg-white dark:text-neutral-900">
+              {environment.name}
+            </span>
+            <span className="text-neutral-400 dark:text-neutral-500">/{environment.slug}</span>
+            {deployment ? (
+              <span className="text-neutral-500 dark:text-neutral-400">Port {deployment.port}</span>
+            ) : null}
+          </div>
         </div>
         <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${healthStyle}`}>
-          {deployment.healthStatus === "up" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-          {deployment.healthStatus.toUpperCase()}
+          {deployment ? (
+            <>
+              {deployment.healthStatus === "up" ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <AlertCircle className="h-3.5 w-3.5" />
+              )}
+              {deployment.healthStatus.toUpperCase()}
+            </>
+          ) : (
+            <>Awaiting deploy</>
+          )}
         </span>
       </div>
-      <dl className="grid gap-3 text-sm text-neutral-500 dark:text-neutral-300 sm:grid-cols-2">
-        <div>
-          <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Mode</dt>
-          <dd className="mt-1 font-medium text-neutral-700 dark:text-neutral-200">{deployment.mode}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Updated</dt>
-          <dd className="mt-1">{new Date(deployment.updatedAt).toLocaleString()}</dd>
-        </div>
-        {deployment.healthUrl && (
-          <div className="sm:col-span-2">
-            <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Health URL</dt>
-            <dd className="mt-1">
-              <a
-                href={deployment.healthUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 underline-offset-4 transition hover:text-neutral-900 hover:underline dark:text-neutral-300 dark:hover:text-white"
-              >
-                {deployment.healthUrl}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </a>
-            </dd>
+
+      {deployment ? (
+        <dl className="grid gap-3 text-sm text-neutral-500 dark:text-neutral-300 sm:grid-cols-2">
+          <div>
+            <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Mode</dt>
+            <dd className="mt-1 font-medium text-neutral-700 dark:text-neutral-200">{deployment.mode}</dd>
           </div>
-        )}
-      </dl>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Updated</dt>
+            <dd className="mt-1">{new Date(deployment.updatedAt).toLocaleString()}</dd>
+          </div>
+          {deployment.healthUrl && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Health URL</dt>
+              <dd className="mt-1">
+                <a
+                  href={deployment.healthUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 underline-offset-4 transition hover:text-neutral-900 hover:underline dark:text-neutral-300 dark:hover:text-white"
+                >
+                  {deployment.healthUrl}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              </dd>
+            </div>
+          )}
+        </dl>
+      ) : (
+        <p className="text-sm text-neutral-500 dark:text-neutral-300">
+          Redeploy this project to light up the {environment.name.toLowerCase()} environment.
+        </p>
+      )}
+
+      {recent.length > 0 && (
+        <div className="rounded-2xl border border-neutral-200 bg-white/60 p-4 text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300">
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">
+            Recent deployments
+          </h4>
+          <ul className="mt-3 space-y-2">
+            {recent.slice(0, 4).map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-3">
+                <span className="font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+                  {new Date(item.startedAt).toLocaleString()}
+                </span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${deploymentStatusStyles[item.healthStatus]}`}>
+                  {item.healthStatus.toUpperCase()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </article>
   );
 }

@@ -27,7 +27,28 @@ export function getBoardsAppUrl(): string {
 
   const isDev = Boolean(env.DEV ?? env.MODE === "development");
   if (isDev) {
-    return "http://localhost:5174";
+    if (typeof window !== "undefined") {
+      const { protocol, hostname, port } = window.location;
+      const currentPort = Number.parseInt(port, 10);
+      const defaultPorts = [5173, 5174, 5175, 5176];
+
+      if (Number.isFinite(currentPort)) {
+        const candidatePort =
+          defaultPorts.find((value) => value !== currentPort) ??
+          (currentPort > 0 && currentPort < 65535 ? currentPort + 1 : undefined);
+        if (candidatePort) {
+          return `${protocol}//${hostname}:${candidatePort}`;
+        }
+      }
+
+      if (hostname === "localhost" || hostname === "127.0.0.1") {
+        return `${protocol}//${hostname}:5173`;
+      }
+
+      return `${protocol}//${hostname}/boards/app`;
+    }
+
+    return "http://localhost:5173";
   }
 
   return "/boards/app";

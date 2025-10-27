@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { Router } from "express";
 import { dal } from "../dal";
 import {
@@ -17,6 +18,9 @@ import {
 } from "../auth";
 import type { Request, Response } from "express";
 import type { AuthUser } from "../dal";
+import { getGitHubConfig } from "../github/config";
+import { createGitHubState, consumeGitHubState, storeGitHubToken } from "../github/state";
+import { exchangeCodeForToken, fetchGitHubUser, fetchPrimaryEmail } from "../github/client";
 
 const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 const AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -50,6 +54,132 @@ router.get("/session", (req, res) => {
     ? toPublicUser((req as RequestWithOptionalUser).user!)
     : null;
   res.json({ user, csrfToken: token });
+});
+
+router.get("/github/login", (req, res) => {
+  const config = getGitHubConfig();
+  if (!config) {
+    res.status(503).json({
+      error: {
+        code: "GITHUB_AUTH_DISABLED",
+        message: "GitHub authentication is not configured. Set OPENDOCK_GITHUB_CLIENT_ID and OPENDOCK_GITHUB_CLIENT_SECRET.",
+      },
+    });
+    return;
+  }
+
+  const redirectQuery = typeof req.query.redirect === "string" ? req.query.redirect : null;
+  const state = createGitHubState(redirectQuery);
+
+  const authorizeUrl = new URL("https://github.com/login/oauth/authorize");
+  authorizeUrl.searchParams.set("client_id", config.clientId);
+  authorizeUrl.searchParams.set("redirect_uri", config.redirectUri);
+  authorizeUrl.searchParams.set("scope", config.scope);
+  authorizeUrl.searchParams.set("state", state);
+  authorizeUrl.searchParams.set("allow_signup", "true");
+
+  res.redirect(authorizeUrl.toString());
+});
+
+router.get("/github/callback", async (req, res) => {
+  const config = getGitHubConfig();
+  if (!config) {
+    res.status(503).json({
+      error: {
+        code: "GITHUB_AUTH_DISABLED",
+        message: "GitHub authentication is not configured.",
+      },
+    });
+    return;
+  }
+
+  const stateParam = typeof req.query.state === "string" ? req.query.state : "";
+  const code = typeof req.query.code === "string" ? req.query.code : "";
+  if (!stateParam || !code) {
+    res.status(400).json({
+      error: {
+        code: "INVALID_CALLBACK",
+        message: "Missing state or code parameter from GitHub callback.",
+      },
+    });
+    return;
+  }
+
+  const stateRecord = consumeGitHubState(stateParam);
+  if (!stateRecord) {
+    res.status(400).json({
+      error: {
+        code: "STATE_MISMATCH",
+        message: "GitHub OAuth state is invalid or has expired.",
+      },
+    });
+    return;
+  }
+
+  try {
+    const tokenResponse = await exchangeCodeForToken({
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      code,
+      redirectUri: config.redirectUri,
+    });
+
+    const githubUser = await fetchGitHubUser(tokenResponse.access_token);
+    const primaryEmail =
+      (await fetchPrimaryEmail(tokenResponse.access_token)) ?? (githubUser as { email?: string }).email ?? null;
+
+    if (!primaryEmail) {
+      res.status(400).json({
+        error: {
+          code: "EMAIL_REQUIRED",
+          message: "GitHub account has no accessible email address. Please make the email public or grant email scope.",
+        },
+      });
+      return;
+    }
+
+    if (dal.kind !== "sql") {
+      res.status(503).json({
+        error: {
+          code: "AUTH_UNAVAILABLE",
+          message: "Authentication is only available when the SQL data provider is enabled.",
+        },
+      });
+      return;
+    }
+
+    let user = await dal.auth.findUserByEmail(primaryEmail);
+
+    if (!user) {
+      const passwordSeed = randomBytes(32).toString("hex");
+      const passwordHash = await hashPassword(passwordSeed);
+      user = await dal.auth.createUser({
+        email: primaryEmail,
+        passwordHash,
+        displayName: githubUser.name ?? githubUser.login ?? primaryEmail.split("@")[0] ?? "GitHub User",
+        role: "member",
+      });
+    }
+
+    storeGitHubToken(user.id, {
+      accessToken: tokenResponse.access_token,
+      tokenType: tokenResponse.token_type,
+      scope: tokenResponse.scope,
+      updatedAt: Date.now(),
+    });
+
+    await establishSession(req, res, user.id);
+    const redirectUrl = resolvePostAuthRedirect(stateRecord.redirectTo);
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("[auth] GitHub OAuth failed", error);
+    res.status(500).json({
+      error: {
+        code: "GITHUB_OAUTH_FAILED",
+        message: error instanceof Error ? error.message : "GitHub authentication failed.",
+      },
+    });
+  }
 });
 
 router.post("/register", requireCsrfProtection, async (req, res) => {
@@ -261,3 +391,52 @@ export function __resetAuthRateLimiter(): void {
 }
 
 export { router as authRouter };
+
+function resolvePostAuthRedirect(redirectTo: string | null): string {
+  const allowedOrigins = getAllowedWebOrigins();
+  const fallbackOrigin = allowedOrigins[0] ?? "http://localhost:5173";
+  const fallbackUrl = new URL("/dashboard", fallbackOrigin).toString();
+
+  if (redirectTo) {
+    try {
+      const candidate = new URL(redirectTo, fallbackOrigin);
+      if (allowedOrigins.includes(candidate.origin)) {
+        return candidate.toString();
+      }
+    } catch (_err) {
+      // ignore invalid redirect target
+    }
+  }
+
+  return fallbackUrl;
+}
+
+function getAllowedWebOrigins(): string[] {
+  const configured = process.env.OPENDOCK_WEB_ORIGIN
+    ? process.env.OPENDOCK_WEB_ORIGIN.split(",").map((value) => value.trim()).filter(Boolean)
+    : [];
+
+  const origins = configured
+    .map(normalizeOrigin)
+    .filter((value): value is string => Boolean(value));
+
+  if (origins.length > 0) {
+    return origins;
+  }
+
+  return [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+  ];
+}
+
+function normalizeOrigin(candidate: string): string | null {
+  try {
+    const url = new URL(candidate);
+    return url.origin;
+  } catch (_err) {
+    return null;
+  }
+}

@@ -26,6 +26,20 @@ npm run dev:boards
 
 The shell runs on [http://localhost:5173](http://localhost:5173) by default, the Boards workspace on [http://localhost:5174](http://localhost:5174), and the API on [http://localhost:4000](http://localhost:4000).
 
+### GitHub OAuth (optional)
+
+To enable “Sign in with GitHub” and repository discovery, provide the following environment variables for the backend (`apps/backend/.env`):
+
+```
+OPENDOCK_GITHUB_CLIENT_ID=your_client_id
+OPENDOCK_GITHUB_CLIENT_SECRET=your_client_secret
+# Optional overrides
+# OPENDOCK_GITHUB_REDIRECT_URI=http://localhost:4000/api/auth/github/callback
+# OPENDOCK_GITHUB_SCOPE=read:user user:email repo
+```
+
+After configuring, restarting the backend will expose `/api/auth/github/login` for OAuth sign-in.
+
 To point the shell at a different Boards host, set `VITE_BOARDS_URL` inside `apps/opendock`. You can also inject `window.__OPENDOCK_BOARDS_URL` from `index.html` if the URL needs to be decided at runtime. The defaults fall back to `http://localhost:5174` during development and `/boards/app` in production builds.
 
 ## Feature Highlights

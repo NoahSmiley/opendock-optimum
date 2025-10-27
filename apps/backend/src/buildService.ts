@@ -4,6 +4,7 @@ import { DeployService } from "./deployService";
 
 interface QueuedBuild extends BuildRequest {
   buildId: string;
+  environmentId: string;
 }
 
 export class BuildService {
@@ -18,6 +19,14 @@ export class BuildService {
       throw new Error("Project not found");
     }
 
+    const environment = store.resolveEnvironment(project.id, {
+      environmentId: request.environmentId,
+      slug: request.environmentSlug,
+    });
+    if (!environment) {
+      throw new Error("No environment available for deployment");
+    }
+
     const build = store.createBuild(project.id, request.branch ?? project.branch, request.commit);
     if (request.commit) {
       store.appendCommit(project.id, request.commit);
@@ -28,6 +37,7 @@ export class BuildService {
     this.queue.push({
       ...request,
       buildId: build.id,
+      environmentId: environment.id,
     });
 
     void this.processQueue();
@@ -58,7 +68,13 @@ export class BuildService {
     }
 
     store.setBuildStatus(job.buildId, "running");
-    store.appendBuildLog(job.buildId, `Starting pipeline for ${project.repoUrl}#${job.branch ?? project.branch}`);
+    const environment = store.findEnvironmentById(job.environmentId);
+    const environmentLabel = environment ? `${environment.name} (${environment.slug})` : "environment";
+
+    store.appendBuildLog(
+      job.buildId,
+      `Starting pipeline for ${project.repoUrl}#${job.branch ?? project.branch} targeting ${environmentLabel}`,
+    );
 
     await this.simulateStep(job.buildId, "Pulling latest changes", 1000);
 
@@ -78,14 +94,20 @@ export class BuildService {
     store.setBuildStatus(job.buildId, "success");
     store.appendBuildLog(job.buildId, "Build completed successfully");
 
+    if (!environment) {
+      store.appendBuildLog(job.buildId, "Environment missing; skipping deployment step");
+      return;
+    }
+
     const deployment = this.deployer.deploy({
       projectId: project.id,
       buildId: job.buildId,
+      environmentId: environment.id,
     });
 
     store.appendBuildLog(
       job.buildId,
-      `Deployment started on port ${deployment.port} (container ${deployment.containerId.slice(0, 12)})`,
+      `Deployment started in ${environment.name} on port ${deployment.port} (container ${deployment.containerId.slice(0, 12)})`,
     );
   }
 

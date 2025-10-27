@@ -11,10 +11,11 @@ import {
   PlayCircle,
   Server,
 } from "lucide-react";
-import type { BuildStatus, ProjectsResponse } from "@opendock/shared/types";
+import type { BuildStatus, HealthStatus, ProjectsResponse } from "@opendock/shared/types";
 import { fetchProject, fetchProjectLogs, triggerRedeploy } from "@/lib/api";
 
 type ProjectWithRelations = ProjectsResponse["projects"][number];
+type EnvironmentDetail = NonNullable<ProjectWithRelations["environments"]>[number];
 
 type DetailState =
   | { status: "loading"; project?: undefined; error?: undefined }
@@ -27,6 +28,12 @@ const statusClasses: Record<BuildStatus, string> = {
   running: "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200",
   success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
   failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+};
+
+const environmentHealthStyles: Record<HealthStatus, string> = {
+  up: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
+  down: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+  unknown: "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-200",
 };
 
 export default function ProjectDetailPage() {
@@ -67,6 +74,20 @@ export default function ProjectDetailPage() {
   const activeProjectId = state.status === "ready" ? state.project.id : null;
   const activeProjectBranch = state.status === "ready" ? state.project.branch : null;
 
+  const reloadProject = useCallback(async () => {
+    if (!activeProjectId) return;
+    try {
+      const response = await fetchProject(activeProjectId);
+      setState((prev) =>
+        prev.status === "ready" && prev.project.id === activeProjectId
+          ? { status: "ready", project: response.project }
+          : prev,
+      );
+    } catch (err) {
+      console.error("Failed to refresh project", err);
+    }
+  }, [activeProjectId]);
+
   const reloadLogs = useCallback(async () => {
     if (!activeProjectId) return;
     setRefreshingLogs(true);
@@ -87,13 +108,14 @@ export default function ProjectDetailPage() {
     setRedeploying(true);
     try {
       await triggerRedeploy(activeProjectId, activeProjectBranch);
+      await reloadProject();
       await reloadLogs();
     } catch (err) {
       console.error("Failed to trigger redeploy", err);
     } finally {
       setRedeploying(false);
     }
-  }, [activeProjectBranch, activeProjectId, reloadLogs]);
+  }, [activeProjectBranch, activeProjectId, reloadLogs, reloadProject]);
 
   if (state.status === "loading") {
     return (
@@ -291,41 +313,95 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-white">Deployment</h3>
-            {project.deployment ? (
-              <dl className="mt-4 space-y-3 text-sm text-neutral-500 dark:text-neutral-300">
-                <div className="flex items-center justify-between">
-                  <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Status</dt>
-                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-                    project.deployment.healthStatus === "up"
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200"
-                      : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
-                  }`}>
-                    {project.deployment.healthStatus.toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Port</dt>
-                  <dd className="mt-1 font-mono text-xs">{project.deployment.port}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">Last health check</dt>
-                  <dd className="mt-1">
-                    {project.deployment.lastHealthCheck
-                      ? new Date(project.deployment.lastHealthCheck).toLocaleString()
-                      : "Not reported"}
-                  </dd>
-                </div>
-              </dl>
+            <h3 className="text-base font-semibold text-neutral-900 dark:text-white">Environments</h3>
+            {project.environments && project.environments.length > 0 ? (
+              <ul className="mt-4 space-y-3">
+                {project.environments.map((environment) => (
+                  <EnvironmentSummaryCard key={environment.id} environment={environment} />
+                ))}
+              </ul>
             ) : (
               <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-300">
-                No deployment is running. Redeploy this project to start one.
+                Environments will appear here after the first deployment completes.
               </p>
             )}
           </div>
         </aside>
       </section>
     </div>
+  );
+}
+
+function EnvironmentSummaryCard({ environment }: { environment: EnvironmentDetail }) {
+  const deployment = environment.latestDeployment;
+  const badgeStyle = environmentHealthStyles[deployment?.healthStatus ?? "unknown"];
+  const recent = environment.recentDeployments ?? [];
+
+  return (
+    <li className="rounded-2xl border border-neutral-200 bg-white/70 p-4 text-sm text-neutral-500 shadow-sm dark:border-white/10 dark:bg-neutral-900/60 dark:text-neutral-300">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-neutral-900 dark:text-white">{environment.name}</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500">/{environment.slug}</p>
+        </div>
+        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${badgeStyle}`}>
+          {deployment ? deployment.healthStatus.toUpperCase() : "AWAITING DEPLOY"}
+        </span>
+      </div>
+
+      {deployment ? (
+        <dl className="mt-3 grid gap-2 text-xs text-neutral-500 dark:text-neutral-300 sm:grid-cols-2">
+          <div>
+            <dt className="uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">Port</dt>
+            <dd className="mt-1 font-mono text-xs">{deployment.port}</dd>
+          </div>
+          <div>
+            <dt className="uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">Updated</dt>
+            <dd className="mt-1">{new Date(deployment.updatedAt).toLocaleString()}</dd>
+          </div>
+          {deployment.healthUrl && (
+            <div className="sm:col-span-2">
+              <dt className="uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">Health URL</dt>
+              <dd className="mt-1">
+                <a
+                  href={deployment.healthUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 underline-offset-4 transition hover:text-neutral-900 hover:underline dark:text-neutral-300 dark:hover:text-white"
+                >
+                  {deployment.healthUrl}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              </dd>
+            </div>
+          )}
+        </dl>
+      ) : (
+        <p className="mt-3 text-xs text-neutral-500 dark:text-neutral-400">
+          Redeploy this project and target {environment.name.toLowerCase()} to generate telemetry.
+        </p>
+      )}
+
+      {recent.length > 0 && (
+        <div className="mt-4 space-y-2 text-xs">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+            Recent runs
+          </p>
+          <ul className="space-y-1">
+            {recent.slice(0, 3).map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-2 rounded-md bg-neutral-100/70 px-3 py-2 dark:bg-neutral-800/40">
+                <span className="font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+                  {new Date(item.startedAt).toLocaleString()}
+                </span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${environmentHealthStyles[item.healthStatus]}`}>
+                  {item.healthStatus.toUpperCase()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </li>
   );
 }
 

@@ -7,6 +7,7 @@ import type {
   BuildStatus,
   CommitInfo,
   Deployment,
+  Environment,
   HealthStatus,
   KanbanBoard,
   KanbanColumn,
@@ -22,6 +23,7 @@ export interface AppState {
   projects: Project[];
   builds: Build[];
   deployments: Deployment[];
+  environments: Environment[];
   kanbanBoards: KanbanBoard[];
   kanbanColumns: KanbanColumn[];
   kanbanTickets: KanbanTicket[];
@@ -34,6 +36,7 @@ const DEFAULT_STATE: AppState = {
   projects: [],
   builds: [],
   deployments: [],
+  environments: [],
   kanbanBoards: [],
   kanbanColumns: [],
   kanbanTickets: [],
@@ -66,6 +69,7 @@ export class StateStore {
         projects: parsed.projects ?? [],
         builds: parsed.builds ?? [],
         deployments: parsed.deployments ?? [],
+        environments: parsed.environments ?? [],
         kanbanBoards: parsed.kanbanBoards ?? [],
         kanbanColumns: parsed.kanbanColumns ?? [],
         kanbanTickets: parsed.kanbanTickets ?? [],
@@ -92,6 +96,7 @@ export class StateStore {
       projects: overrides.projects ? [...overrides.projects] : [],
       builds: overrides.builds ? [...overrides.builds] : [],
       deployments: overrides.deployments ? [...overrides.deployments] : [],
+      environments: overrides.environments ? [...overrides.environments] : [],
       kanbanBoards: overrides.kanbanBoards ? [...overrides.kanbanBoards] : [],
       kanbanColumns: overrides.kanbanColumns ? [...overrides.kanbanColumns] : [],
       kanbanTickets: overrides.kanbanTickets ? [...overrides.kanbanTickets] : [],
@@ -115,6 +120,77 @@ export class StateStore {
     return this.state.projects.find((project) => project.repoUrl.replace(/\.git$/, "").toLowerCase() === normalized);
   }
 
+  listEnvironments(projectId?: string): Environment[] {
+    if (!projectId) {
+      return [...this.state.environments];
+    }
+    return this.state.environments.filter((env) => env.projectId === projectId).sort((a, b) => a.order - b.order);
+  }
+
+  findEnvironmentById(environmentId: string): Environment | undefined {
+    return this.state.environments.find((env) => env.id === environmentId);
+  }
+
+  findEnvironmentBySlug(projectId: string, slug: string): Environment | undefined {
+    const normalized = slug.toLowerCase();
+    return this.state.environments.find((env) => env.projectId === projectId && env.slug.toLowerCase() === normalized);
+  }
+
+  createEnvironment(input: { projectId: string; slug: string; name: string; url?: string; order?: number }): Environment {
+    const now = new Date().toISOString();
+    const environment: Environment = {
+      id: randomUUID(),
+      projectId: input.projectId,
+      slug: input.slug,
+      name: input.name,
+      url: input.url,
+      order: input.order ?? this.listEnvironments(input.projectId).length,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.state.environments.push(environment);
+    this.persist();
+    return environment;
+  }
+
+  ensureDefaultEnvironments(projectId: string): void {
+    const existing = this.listEnvironments(projectId);
+    if (existing.length > 0) return;
+    const defaults: Array<{ slug: string; name: string }> = [
+      { slug: "development", name: "Development" },
+      { slug: "staging", name: "Staging" },
+      { slug: "production", name: "Production" },
+    ];
+    defaults.forEach((env, index) => {
+      this.createEnvironment({
+        projectId,
+        slug: env.slug,
+        name: env.name,
+        order: index,
+      });
+    });
+  }
+
+  resolveEnvironment(projectId: string, options: { environmentId?: string; slug?: string } = {}): Environment | undefined {
+    if (options.environmentId) {
+      return this.findEnvironmentById(options.environmentId);
+    }
+    if (options.slug) {
+      const env = this.findEnvironmentBySlug(projectId, options.slug);
+      if (env) {
+        return env;
+      }
+    }
+    const preferred = this.findEnvironmentBySlug(projectId, "production");
+    if (preferred) return preferred;
+    let environments = this.listEnvironments(projectId);
+    if (environments.length === 0) {
+      this.ensureDefaultEnvironments(projectId);
+      environments = this.listEnvironments(projectId);
+    }
+    return environments[0];
+  }
+
   createProject(input: { name: string; repoUrl: string; branch: string; buildConfig?: BuildConfig }): Project {
     const project: Project = {
       id: randomUUID(),
@@ -125,6 +201,7 @@ export class StateStore {
       buildConfig: input.buildConfig ?? {},
     };
     this.state.projects.push(project);
+    this.ensureDefaultEnvironments(project.id);
     this.persist();
     return project;
   }
@@ -201,6 +278,10 @@ export class StateStore {
     return this.state.builds.filter((build) => build.projectId === projectId);
   }
 
+  listDeploymentsByEnvironment(environmentId: string): Deployment[] {
+    return this.state.deployments.filter((deployment) => deployment.environmentId === environmentId);
+  }
+
   createDeployment(input: Omit<Deployment, "id" | "startedAt" | "updatedAt" | "healthStatus" | "lastHealthCheck">): Deployment {
     const deployment: Deployment = {
       id: randomUUID(),
@@ -223,8 +304,10 @@ export class StateStore {
     return deployment;
   }
 
-  findDeploymentByProject(projectId: string): Deployment | undefined {
-    return this.state.deployments.find((deployment) => deployment.projectId === projectId && deployment.status === "running");
+  findActiveDeploymentByEnvironment(environmentId: string): Deployment | undefined {
+    return this.state.deployments
+      .filter((deployment) => deployment.environmentId === environmentId)
+      .find((deployment) => deployment.status === "running");
   }
 
   updateHealth(deploymentId: string, status: HealthStatus): void {

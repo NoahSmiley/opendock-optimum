@@ -41,6 +41,7 @@ import {
 import clsx from "clsx";
 import type { KanbanBoard, KanbanBoardSnapshot, KanbanTicket, KanbanUser, ProjectsResponse } from "@opendock/shared/types";
 import { boardsApi, projectsApi } from "@/lib/api";
+import { calculateDropIndex, type DragBounds, type TicketLayoutSnapshot } from "@/lib/drop-index";
 import { upsertBoard } from "@/lib/board-state";
 import { fetchCsrfToken } from "@/lib/auth-client";
 import { useTheme } from "@/theme-provider";
@@ -87,6 +88,36 @@ const priorityFilterOptions: Array<{ value: "all" | KanbanTicket["priority"]; la
   { value: "medium", label: "Medium" },
   { value: "low", label: "Low" },
 ];
+
+const escapeDataAttribute = (value: string) => {
+  const css = (globalThis as { CSS?: { escape?: (input: string) => string } }).CSS;
+  return css?.escape ? css.escape(value) : value.replace(/[^a-zA-Z0-9_-]/g, (char) => `\\${char}`);
+};
+
+const collectColumnLayout = (columnId: string, activeTicketId: string): TicketLayoutSnapshot[] => {
+  if (typeof document === "undefined") {
+    return [];
+  }
+
+  const escapedId = escapeDataAttribute(columnId);
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(`[data-column-id="${escapedId}"] [data-ticket-id]`),
+  )
+    .map((node) => {
+      const id = node.dataset.ticketId;
+      if (!id || id === activeTicketId) {
+        return null;
+      }
+      const rect = node.getBoundingClientRect();
+      return {
+        id,
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+      };
+    })
+    .filter((snapshot): snapshot is TicketLayoutSnapshot => snapshot !== null);
+};
 
 function TicketCard({
   ticket,
@@ -250,8 +281,10 @@ function SortableTicket({
   onClick,
   activeTicketId,
   activeTicketColumnId,
+  interactive = true,
+  incoming = false,
 }: {
-  ticket: KanbanTicket;
+  ticket: KanbanTicket & { __incoming?: boolean };
   column: KanbanBoard["columns"][number];
   members: KanbanUser[];
   sprints: KanbanBoard["sprints"];
@@ -259,6 +292,8 @@ function SortableTicket({
   onClick?: () => void;
   activeTicketId: string | null;
   activeTicketColumnId: string | null;
+  interactive?: boolean;
+  incoming?: boolean;
 }) {
   const {
     setNodeRef,
@@ -312,7 +347,7 @@ function SortableTicket({
     willChange: isDragging ? "transform" : undefined,
     height: shouldCollapse ? 0 : undefined,
     margin: shouldCollapse ? 0 : undefined,
-    pointerEvents: isDragging ? "none" : undefined,
+    pointerEvents: interactive ? undefined : "none",
     overflow: shouldCollapse ? "hidden" : undefined,
   };
 
@@ -323,8 +358,8 @@ function SortableTicket({
       style={style}
       data-ticket-id={ticket.id}
       {...attributes}
-      {...listeners}
-      className="cursor-grab active:cursor-grabbing"
+      {...(interactive ? listeners : {})}
+      className={interactive ? "cursor-grab active:cursor-grabbing" : "cursor-default"}
     >
       <TicketCard
         ticket={ticket}
@@ -333,7 +368,8 @@ function SortableTicket({
         sprints={sprints}
         onAssigneeChange={onAssigneeChange}
         onClick={onClick}
-        highlight={isDragging}
+        highlight={isDragging || incoming}
+        interactive={interactive}
       />
     </div>
   );
@@ -471,6 +507,27 @@ function BoardsAppInner() {
   const [activeTicketColumnId, setActiveTicketColumnId] = useState<string | null>(null);
   const [activeTicketSourceColumnId, setActiveTicketSourceColumnId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [projectedDrop, setProjectedDrop] = useState<{ columnId: string; index: number; height: number } | null>(null);
+  const updateProjectedDrop = useCallback(
+    (next: { columnId: string; index: number; height: number } | null) => {
+      setProjectedDrop((prev) => {
+        if (prev === null && next === null) {
+          return prev;
+        }
+        if (
+          prev &&
+          next &&
+          prev.columnId === next.columnId &&
+          prev.index === next.index &&
+          Math.abs(prev.height - next.height) < 0.5
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1106,6 +1163,7 @@ function BoardsAppInner() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const columnId = event.active.data.current?.columnId as string | undefined;
+    updateProjectedDrop(null);
     setActiveTicketId(String(event.active.id));
     setActiveTicketColumnId(columnId ?? null);
     setActiveTicketSourceColumnId(columnId ?? null);
@@ -1119,11 +1177,13 @@ function BoardsAppInner() {
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
       if (!activeTicketId || !selectedBoard) {
+        updateProjectedDrop(null);
         return;
       }
 
-      const { over } = event;
+      const { active, over } = event;
       if (!over) {
+        updateProjectedDrop(null);
         setActiveTicketColumnId((prev) => (prev === null ? prev : null));
         return;
       }
@@ -1141,13 +1201,78 @@ function BoardsAppInner() {
       }
 
       if (!overColumnId) {
+        updateProjectedDrop(null);
         setActiveTicketColumnId((prev) => (prev === null ? prev : null));
         return;
       }
 
       setActiveTicketColumnId((prev) => (prev === overColumnId ? prev : overColumnId));
+
+      const fromColumnId = active.data.current?.columnId as string | undefined;
+      if (!fromColumnId) {
+        updateProjectedDrop(null);
+        return;
+      }
+
+      if (fromColumnId === overColumnId) {
+        updateProjectedDrop(null);
+        return;
+      }
+
+      const activeId = String(active.id);
+      const { initial, translated } = active.rect.current;
+      const resolvedTop =
+        initial?.top != null
+          ? initial.top + (translated?.top ?? event.delta.y)
+          : null;
+      const resolvedHeight = translated?.height ?? initial?.height ?? null;
+      const resolvedBottom =
+        resolvedTop !== null && resolvedHeight !== null ? resolvedTop + resolvedHeight : null;
+      const activeCenter =
+        resolvedTop !== null && resolvedHeight !== null ? resolvedTop + resolvedHeight / 2 : null;
+
+      const layoutBounds: DragBounds = {
+        top: resolvedTop,
+        bottom: resolvedBottom,
+        center: activeCenter,
+      };
+      const layout = collectColumnLayout(overColumnId, activeId);
+      const sortedLayout = [...layout].sort((a, b) => a.top - b.top);
+      const computedIndex = calculateDropIndex(sortedLayout, layoutBounds);
+      const clampedIndex = Math.max(0, Math.min(computedIndex, sortedLayout.length));
+      const projectedHeight =
+        resolvedHeight ??
+        sortedLayout[clampedIndex]?.height ??
+        sortedLayout[clampedIndex - 1]?.height ??
+        72;
+
+      debugDrag("Cross-column drag over", {
+        ticketId: activeId,
+        fromColumnId,
+        overColumnId,
+        layoutSnapshot: sortedLayout.map((item) => ({
+          id: item.id,
+          top: Math.round(item.top),
+          bottom: Math.round(item.bottom),
+          height: Math.round(item.height),
+        })),
+        bounds: {
+          top: resolvedTop,
+          bottom: resolvedBottom,
+          center: activeCenter,
+        },
+        computedIndex,
+        clampedIndex,
+        projectedHeight,
+      });
+
+      updateProjectedDrop({
+        columnId: overColumnId,
+        index: clampedIndex,
+        height: Math.max(projectedHeight, 48),
+      });
     },
-    [activeTicketId, columnIdSet, selectedBoard],
+    [activeTicketId, selectedBoard, updateProjectedDrop],
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -1155,6 +1280,8 @@ function BoardsAppInner() {
     setActiveTicketId(null);
     setActiveTicketColumnId(null);
     setActiveTicketSourceColumnId(null);
+    const projected = projectedDrop;
+    updateProjectedDrop(null);
     if (!selectedBoard || !over) {
       debugDrag("Drag ended without drop target", {
         ticketId: String(active.id),
@@ -1187,29 +1314,67 @@ function BoardsAppInner() {
     if (oldIndex === -1) return;
 
     let newIndex = destinationTickets.findIndex((ticket) => ticket.id === String(over.id));
-    if (over.data.current?.type === "column" || newIndex === -1) {
-      newIndex = destinationTickets.length;
-    } else if (
-      over.data.current?.type === "ticket" &&
-      newIndex !== -1 &&
-      String(over.id) !== activeTicketId &&
-      fromColumnId !== toColumnId
-    ) {
-      const overRect = over.rect;
-      const { initial, translated } = active.rect.current;
-      const resolvedTop = translated?.top ?? (initial ? initial.top + event.delta.y : null);
-      const resolvedHeight = translated?.height ?? initial?.height ?? null;
+    if (fromColumnId === toColumnId) {
+      if (
+        over.data.current?.type === "ticket" &&
+        newIndex !== -1 &&
+        String(over.id) !== activeTicketId
+      ) {
+        const overRect = over.rect;
+        const { initial, translated } = active.rect.current;
+        const resolvedTop = translated?.top ?? (initial ? initial.top + event.delta.y : null);
+        const resolvedHeight = translated?.height ?? initial?.height ?? null;
 
-      if (resolvedTop !== null && resolvedHeight !== null) {
-        const activeCenter = resolvedTop + resolvedHeight / 2;
-        const overCenter = overRect.top + overRect.height / 2;
+        if (resolvedTop !== null && resolvedHeight !== null) {
+          const activeCenter = resolvedTop + resolvedHeight / 2;
+          const overCenter = overRect.top + overRect.height / 2;
 
-        // When the dragged ticket crosses the midpoint of the target ticket,
-        // treat the drop as inserting after that ticket rather than before it.
-        if (activeCenter > overCenter) {
-          newIndex = Math.min(newIndex + 1, destinationTickets.length);
+          if (activeCenter > overCenter) {
+            newIndex = Math.min(newIndex + 1, destinationTickets.length);
+          }
         }
+      } else if (over.data.current?.type === "column" || newIndex === -1) {
+        newIndex = destinationTickets.length;
       }
+    } else {
+      const { initial, translated } = active.rect.current;
+      const resolvedTop =
+        initial?.top != null ? initial.top + (translated?.top ?? event.delta.y) : null;
+      const resolvedHeight = translated?.height ?? initial?.height ?? null;
+      const resolvedBottom =
+        resolvedTop !== null && resolvedHeight !== null ? resolvedTop + resolvedHeight : null;
+      const activeCenter =
+        resolvedTop !== null && resolvedHeight !== null ? resolvedTop + resolvedHeight / 2 : null;
+
+      const bounds: DragBounds = { top: resolvedTop, bottom: resolvedBottom, center: activeCenter };
+      const layout = collectColumnLayout(toColumnId, activeTicketId);
+      const sortedLayout = [...layout].sort((a, b) => a.top - b.top);
+      const computedIndex =
+        projected && projected.columnId === toColumnId
+          ? projected.index
+          : calculateDropIndex(sortedLayout, bounds);
+
+      debugDrag("Cross-column drop resolved", {
+        ticketId: activeTicketId,
+        fromColumnId,
+        toColumnId,
+        layoutSnapshot: sortedLayout.map((item) => ({
+          id: item.id,
+          top: Math.round(item.top),
+          bottom: Math.round(item.bottom),
+          height: Math.round(item.height),
+        })),
+        bounds: {
+          top: resolvedTop,
+          bottom: resolvedBottom,
+          center: activeCenter,
+        },
+        projectedIndex: projected?.index ?? null,
+        computedIndex,
+        destinationLength: destinationTickets.length,
+      });
+
+      newIndex = Math.max(0, Math.min(computedIndex, destinationTickets.length));
     }
 
     const nextTickets = selectedBoard.tickets.map((ticket) => ({ ...ticket }));
@@ -1308,6 +1473,7 @@ function BoardsAppInner() {
     setActiveTicketId(null);
     setActiveTicketColumnId(null);
     setActiveTicketSourceColumnId(null);
+    updateProjectedDrop(null);
     debugDrag("Drag cancelled", { lastOverId: lastOverIdRef.current });
     lastOverIdRef.current = null;
   };
@@ -2035,6 +2201,12 @@ function BoardsAppInner() {
                       {selectedBoard.columns.map((column) => {
                         const rawTickets = columnTicketMap.get(column.id) ?? [];
                         const filteredTickets = filteredTicketMap.get(column.id) ?? [];
+                        const baseTickets =
+                          activeTicketId &&
+                          activeTicketSourceColumnId === column.id &&
+                          activeTicketColumnId !== column.id
+                            ? filteredTickets.filter((ticket) => ticket.id !== activeTicketId)
+                            : filteredTickets;
                         const draft = getColumnDraft(column.id);
                         const composerOpen = activeComposerColumnId === column.id;
 
@@ -2042,17 +2214,33 @@ function BoardsAppInner() {
                           Boolean(activeTicketId) &&
                           activeTicketColumnId === column.id &&
                           activeTicketSourceColumnId !== column.id &&
-                          !filteredTickets.some((ticket) => ticket.id === activeTicketId);
+                          !baseTickets.some((ticket) => ticket.id === activeTicketId);
                         const previewTicket =
                           shouldPreviewIncoming && activeTicketId
                             ? selectedBoard.tickets.find((ticket) => ticket.id === activeTicketId) ?? null
                             : null;
+                        const shouldInjectIncoming =
+                          Boolean(projectedDrop) &&
+                          previewTicket &&
+                          projectedDrop?.columnId === column.id;
+                        const insertIndex =
+                          shouldInjectIncoming && projectedDrop
+                            ? Math.max(0, Math.min(projectedDrop.index, baseTickets.length))
+                            : null;
+                        const displayTickets =
+                          shouldInjectIncoming && previewTicket && insertIndex !== null
+                            ? [
+                                ...baseTickets.slice(0, insertIndex),
+                                { ...previewTicket, columnId: column.id, __incoming: true as const },
+                                ...baseTickets.slice(insertIndex),
+                              ]
+                            : baseTickets;
 
                         return (
                           <KanbanColumn
                             key={column.id}
                             column={column}
-                            tickets={filteredTickets}
+                            tickets={displayTickets}
                             totalCount={rawTickets.length}
                             footer={
                               <div className="space-y-3">
@@ -2141,31 +2329,24 @@ function BoardsAppInner() {
                               </div>
                             }
                           >
-                            {filteredTickets.map((ticket) => (
-                              <SortableTicket
-                                key={ticket.id}
-                                ticket={ticket}
-                                column={column}
-                                members={selectedBoard.members}
-                                sprints={selectedBoard.sprints}
-                                onAssigneeChange={handleAssigneeChange}
-                                onClick={() => setSelectedTicketId(ticket.id)}
-                                activeTicketId={activeTicketId}
-                                activeTicketColumnId={activeTicketColumnId}
-                              />
-                            ))}
-                            {previewTicket ? (
-                              <div aria-hidden="true" className="pointer-events-none opacity-0">
-                                <TicketCard
-                                  ticket={previewTicket}
+                            {displayTickets.map((ticket) => {
+                              const isIncoming = (ticket as KanbanTicket & { __incoming?: boolean }).__incoming === true;
+                              return (
+                                <SortableTicket
+                                  key={ticket.id}
+                                  ticket={ticket}
                                   column={column}
                                   members={selectedBoard.members}
                                   sprints={selectedBoard.sprints}
                                   onAssigneeChange={handleAssigneeChange}
-                                  interactive={false}
+                                  onClick={isIncoming ? undefined : () => setSelectedTicketId(ticket.id)}
+                                  activeTicketId={activeTicketId}
+                                  activeTicketColumnId={activeTicketColumnId}
+                                  interactive={!isIncoming}
+                                  incoming={isIncoming}
                                 />
-                              </div>
-                            ) : null}
+                              );
+                            })}
                           </KanbanColumn>
                         );
                       })}

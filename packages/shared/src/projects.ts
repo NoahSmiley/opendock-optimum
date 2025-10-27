@@ -6,6 +6,7 @@ import type {
   CommitInfo,
   Deployment,
   DeploymentStatus,
+  EnvironmentSummary,
   HealthStatus,
   Project,
   ProjectsResponse,
@@ -134,6 +135,10 @@ export const DeploymentSchema = z
       120,
       "Project id must be less than 120 characters.",
     ),
+    environmentId: nonEmptyTrimmed("Environment id is required.").max(
+      120,
+      "Environment id must be less than 120 characters.",
+    ),
     buildId: nonEmptyTrimmed("Build id is required.").max(
       120,
       "Build id must be less than 120 characters.",
@@ -153,6 +158,38 @@ export const DeploymentSchema = z
   .strict();
 
 type _DeploymentSchemaCheck = z.infer<typeof DeploymentSchema> extends Deployment ? true : never;
+
+export const EnvironmentSchema = z
+  .object({
+    id: nonEmptyTrimmed("Environment id is required.").max(
+      120,
+      "Environment id must be less than 120 characters.",
+    ),
+    projectId: nonEmptyTrimmed("Project id is required.").max(
+      120,
+      "Project id must be less than 120 characters.",
+    ),
+    slug: nonEmptyTrimmed("Environment slug is required.").max(
+      120,
+      "Environment slug must be less than 120 characters.",
+    ),
+    name: nonEmptyTrimmed("Environment name is required.").max(
+      160,
+      "Environment name must be less than 160 characters.",
+    ),
+    url: z.string().trim().url().optional(),
+    order: z.number().int().min(0),
+    createdAt: z.string().trim(),
+    updatedAt: z.string().trim(),
+  })
+  .strict();
+
+export const EnvironmentSummarySchema = EnvironmentSchema.extend({
+  latestDeployment: DeploymentSchema.optional(),
+  recentDeployments: z.array(DeploymentSchema),
+}).strict();
+
+type _EnvironmentSummarySchemaCheck = z.infer<typeof EnvironmentSummarySchema> extends EnvironmentSummary ? true : never;
 
 export const ProjectSchema = z
   .object({
@@ -175,6 +212,7 @@ export const ProjectWithRelationsSchema = ProjectSchema.extend({
   latestBuild: BuildSchema.optional(),
   deployment: DeploymentSchema.optional(),
   builds: z.array(BuildSchema).optional(),
+  environments: z.array(EnvironmentSummarySchema).optional(),
 }).strict();
 type _ProjectWithRelationsSchemaCheck = z.infer<typeof ProjectWithRelationsSchema> extends ProjectsResponse["projects"][number]
   ? true

@@ -6,6 +6,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>opendock</title>
     <script>
+      (function () {
+        if (window.__OPENDOCK_BOARDS_URL) return;
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        const portString = window.location.port;
+        const currentPort = Number.parseInt(portString, 10);
+        const devPorts = [5173, 5174, 5175, 5176];
+
+        const resolvePort = () => {
+          if (Number.isFinite(currentPort)) {
+            const next = devPorts.find((value) => value !== currentPort);
+            if (typeof next === "number") {
+              return next;
+            }
+            if (currentPort > 0 && currentPort < 65535) {
+              return currentPort + 1;
+            }
+          }
+          if (hostname === "localhost" || hostname === "127.0.0.1") {
+            return 5173;
+          }
+          return null;
+        };
+
+        const targetPort = resolvePort();
+        if (typeof targetPort === "number") {
+          window.__OPENDOCK_BOARDS_URL = `${protocol}//${hostname}:${targetPort}/dashboard`;
+        }
+      })();
+    </script>
+    <script>
       // Apply theme immediately to prevent flash
       (function() {
         const stored = localStorage.getItem('opendock-theme');

@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Kanban as KanbanIcon, PanelsTopLeft, UsersRound, Workflow } from "lucide-react";
 import { getBoardsAppUrl } from "@/lib/config";
+import { isBoardsUrlExternal, launchBoardsApp } from "@/lib/boards";
 
 const highlights = [
   {
@@ -26,15 +27,11 @@ const highlights = [
 
 export default function BoardsLanding() {
   const boardsUrl = useMemo(() => getBoardsAppUrl(), []);
-  const isExternal = useMemo(() => /^https?:\/\//i.test(boardsUrl), [boardsUrl]);
+  const isExternal = useMemo(() => isBoardsUrlExternal(boardsUrl), [boardsUrl]);
 
   const handleLaunch = useCallback(() => {
-    if (isExternal) {
-      window.open(boardsUrl, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.href = boardsUrl;
-    }
-  }, [boardsUrl, isExternal]);
+    launchBoardsApp(boardsUrl);
+  }, [boardsUrl]);
 
   return (
     <div className="space-y-10">

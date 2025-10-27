@@ -41,6 +41,7 @@ export type DeploymentStatus = "running" | "stopped" | "failed";
 export interface Deployment {
   id: string;
   projectId: string;
+  environmentId: string;
   buildId: string;
   port: number;
   containerId: string;
@@ -53,17 +54,36 @@ export interface Deployment {
   mode: "simulated" | "docker";
 }
 
+export interface Environment {
+  id: string;
+  projectId: string;
+  slug: string;
+  name: string;
+  url?: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnvironmentSummary extends Environment {
+  latestDeployment?: Deployment;
+  recentDeployments: Deployment[];
+}
+
 export interface ProjectsResponse {
   projects: (Project & {
     latestBuild?: Build;
     deployment?: Deployment;
     builds?: Build[];
+    environments?: EnvironmentSummary[];
   })[];
 }
 
 export interface BuildRequest {
   projectId: string;
   branch?: string;
+  environmentId?: string;
+  environmentSlug?: string;
   commit?: CommitInfo;
   reason: "webhook" | "manual";
 }
