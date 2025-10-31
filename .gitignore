@@ -6,3 +6,7 @@ apps/*/node_modules/
 apps/*/dist/
 apps/backend/data/state.json
 packages/*/dist/
+
+# Bun
+bun.lockb.bak
+.bun/

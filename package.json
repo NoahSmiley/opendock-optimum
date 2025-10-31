@@ -1,19 +1,22 @@
 {
   "name": "opendock-monorepo",
-  "private": true,
   "version": "0.1.0",
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "private": true,
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "dev:opendock": "bun run --filter 'opendock' dev",
+    "dev:boards": "bun run --filter 'boards' dev",
+    "dev:backend": "bun run --filter 'backend' dev",
+    "dev:all": "concurrently -n backend,boards,opendock -c blue,magenta,cyan \"bun run dev:backend\" \"bun run dev:boards\" \"bun run dev:opendock\""
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
-  "scripts": {
-    "build": "npm run build --workspaces",
-    "dev:opendock": "npm run dev --workspace=apps/opendock",
-    "dev:boards": "npm run dev --workspace=apps/boards",
-    "dev:backend": "npm run dev --workspace=apps/backend",
-    "dev:all": "concurrently -n backend,boards,opendock -c blue,magenta,cyan \"pnpm run dev:backend\" \"pnpm run dev:boards\" \"pnpm run dev:opendock\""
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.0"
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1"
   }
 }
