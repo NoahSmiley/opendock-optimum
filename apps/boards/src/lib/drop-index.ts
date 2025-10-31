@@ -11,6 +11,39 @@ export interface TicketLayoutSnapshot {
   height: number;
 }
 
+const safeEscapeCss = (value: string) => {
+  const css = (globalThis as { CSS?: { escape?: (input: string) => string } }).CSS;
+  if (css?.escape) {
+    return css.escape(value);
+  }
+  return value.replace(/[^a-zA-Z0-9_-]/g, (char) => `\\${char}`);
+};
+
+export function collectColumnLayout(columnId: string, activeTicketId: string): TicketLayoutSnapshot[] {
+  if (typeof document === "undefined") {
+    return [];
+  }
+
+  const escapedId = safeEscapeCss(columnId);
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(`[data-column-id="${escapedId}"] [data-ticket-id]`),
+  )
+    .map((node) => {
+      const id = node.dataset.ticketId;
+      if (!id || id === activeTicketId) {
+        return null;
+      }
+      const rect = node.getBoundingClientRect();
+      return {
+        id,
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+      };
+    })
+    .filter((snapshot): snapshot is TicketLayoutSnapshot => snapshot !== null);
+}
+
 export function calculateDropIndex(layout: TicketLayoutSnapshot[], bounds: DragBounds): number {
   if (layout.length === 0) {
     return 0;
