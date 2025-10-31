@@ -10,3 +10,22 @@ packages/*/dist/
 # Bun
 bun.lockb.bak
 .bun/
+
+# Backup and temporary files
+*.backup
+*.backup.*
+*.old
+*.old.*
+*.old[0-9].*
+*.broken
+*.broken.*
+*.bak
+*.bak.*
+*~
+*.tsx.backup
+*.ts.backup
+*.tsx.old
+*.ts.old
+*.tsx.broken
+*.ts.broken
+**/*.pre-placeholder-backup
