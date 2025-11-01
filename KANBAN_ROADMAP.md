@@ -1,15 +1,15 @@
 # Kanban Board Feature Roadmap
 
-Last Updated: 2025-10-30
+Last Updated: 2025-11-01
 
 ## Current Status
 
 ### ✅ Implemented Features
 - [x] Drag & Drop ticket reordering (@hello-pangea/dnd)
 - [x] Board Management (create, list)
-- [x] Column Management (create)
-- [x] Ticket Management (create, update, reorder)
-- [x] Filtering (search, assignee, priority, sprint)
+- [x] Column Management (create, rename, delete)
+- [x] Ticket Management (create, update, reorder, delete)
+- [x] Filtering (search, assignee, priority, sprint, due date)
 - [x] Comments (add, delete)
 - [x] Sprints (create with dates and goals)
 - [x] Real-time Updates (EventSource streaming)
@@ -18,6 +18,14 @@ Last Updated: 2025-10-30
 - [x] Backlog tab
 - [x] Overview tab with analytics
 - [x] Dark mode support
+- [x] Delete confirmation dialogs
+- [x] Inline editing for column names
+- [x] Column dropdown menu with options
+- [x] Bulk operations (select, move, assign, delete)
+- [x] Due dates with visual warnings (overdue/due-soon badges)
+- [x] Time tracking with live timer and progress bars
+- [x] Time logs history with delete functionality
+- [x] Activity log with filtering and "who did what when" tracking
 
 ---
 
@@ -26,53 +34,59 @@ Last Updated: 2025-10-30
 ### Phase 1: Core CRUD Operations (Priority: HIGH) - 1-2 days
 Essential functionality needed for basic kanban workflow.
 
-#### 1.1 Delete Tickets
-- [ ] Add delete button to ticket detail panel
-- [ ] Implement confirmation modal
-- [ ] Add DELETE API endpoint `/api/kanban/tickets/:id`
-- [ ] Update real-time sync to handle deletions
-- [ ] Add optimistic UI updates
+#### 1.1 Delete Tickets ✅
+- [x] Add delete button to ticket detail panel
+- [x] Implement confirmation modal
+- [x] Add DELETE API endpoint `/api/kanban/tickets/:id`
+- [x] Update real-time sync to handle deletions
+- [x] Add optimistic UI updates (handled by real-time sync)
 
-#### 1.2 Edit/Delete Columns
-- [ ] Add column header dropdown menu
-- [ ] Implement rename column inline editing
-- [ ] Add delete column with confirmation
-- [ ] Add PATCH API endpoint `/api/kanban/boards/:boardId/columns/:id`
-- [ ] Add DELETE API endpoint `/api/kanban/boards/:boardId/columns/:id`
-- [ ] Handle ticket reassignment when deleting column
+#### 1.2 Edit/Delete Columns ✅
+- [x] Add column header dropdown menu
+- [x] Implement rename column inline editing
+- [x] Add delete column with confirmation
+- [x] Add PATCH API endpoint `/api/kanban/boards/:boardId/columns/:id`
+- [x] Add DELETE API endpoint `/api/kanban/boards/:boardId/columns/:id`
+- [x] Handle ticket reassignment when deleting column
+- [x] Update real-time sync for column operations
 
-#### 1.3 Edit Board Details
-- [ ] Add board settings modal/panel
-- [ ] Implement inline editing for board name
-- [ ] Add description editing
-- [ ] Add board icon/color picker
-- [ ] Enhance PATCH `/api/kanban/boards/:id` endpoint
+#### 1.3 Edit Board Details ✅
+- [x] Add board settings modal/panel
+- [x] Convert settings to sidebar tab page
+- [x] Implement column management in settings
+- [x] Add board info display with statistics
+- [x] UI/UX improvements to match app theme
 
-#### 1.4 Bulk Operations
-- [ ] Add checkbox selection to tickets
-- [ ] Implement "select all" functionality
-- [ ] Add bulk action toolbar (move, delete, assign)
-- [ ] Add POST API endpoint `/api/kanban/boards/:id/bulk-operations`
-- [ ] Show selection count and clear selection
+#### 1.4 Bulk Operations ✅
+- [x] Add checkbox selection to tickets
+- [x] Implement "select all" functionality
+- [x] Add bulk action toolbar (move, delete, assign)
+- [x] Implement bulk move modal with column selection
+- [x] Implement bulk assign modal with team member selection
+- [x] Show selection count and clear selection
+- [ ] Add POST API endpoint `/api/kanban/boards/:id/bulk-operations` (future optimization)
 
 ---
 
 ### Phase 2: Time Management (Priority: HIGH) - 2-3 days
 Critical for project tracking and deadlines.
 
-#### 2.1 Due Dates
-- [ ] Add due date picker to ticket detail panel
-- [ ] Add due date badge to ticket cards
-- [ ] Implement visual warnings for overdue tickets
-- [ ] Add due date filter in toolbar
-- [ ] Show due date in ticket list view
+#### 2.1 Due Dates ✅
+- [x] Add due date picker to ticket detail panel
+- [x] Add due date badge to ticket cards
+- [x] Implement visual warnings for overdue tickets
+- [x] Add due date filter in toolbar
+- [x] Show due date in ticket list view
 
-#### 2.2 Time Tracking
-- [ ] Add time estimate field to tickets
-- [ ] Implement time logging (start/stop timer)
-- [ ] Show time spent vs. estimated
-- [ ] Add time tracking API endpoints
-- [ ] Display time summary in overview tab
+#### 2.2 Time Tracking ✅
+- [x] Add time estimate field to tickets (already existed)
+- [x] Implement time logging (start/stop timer)
+- [x] Show time spent vs. estimated
+- [x] Add time tracking API endpoints
+- [x] Time tracking UI component with live timer
+- [x] Time logs history display
+- [x] Progress bar visualization
+- [ ] Display time summary in overview tab (future enhancement)
 
 #### 2.3 Reminders & Notifications
 - [ ] Implement browser notifications for due dates
@@ -109,13 +123,13 @@ Enhance team collaboration and communication.
 - [ ] Highlight mentioned users
 - [ ] Add mention parsing backend
 
-#### 3.3 Activity Log
-- [ ] Create activity feed component
-- [ ] Track all ticket/board changes
-- [ ] Add GET API endpoint `/api/kanban/boards/:id/activity`
-- [ ] Show "who did what when" format
-- [ ] Filter activity by user/type
-- [ ] Add activity stream to ticket detail
+#### 3.3 Activity Log ✅
+- [x] Create activity feed component
+- [x] Track all ticket/board changes
+- [x] Add GET API endpoint `/api/kanban/boards/:id/activity`
+- [x] Show "who did what when" format
+- [x] Filter activity by user/type
+- [x] Add activity stream to ticket detail
 
 #### 3.4 Real-time Presence
 - [ ] Show active users viewing board
@@ -129,13 +143,13 @@ Enhance team collaboration and communication.
 ### Phase 4: Organization Features (Priority: MEDIUM) - 3-4 days
 Better organization and workflow management.
 
-#### 4.1 Labels/Tags System
-- [ ] Create label management UI
-- [ ] Add color picker for labels
-- [ ] Implement label search/filter
-- [ ] Show labels on ticket cards
-- [ ] Add label API endpoints (CRUD)
-- [ ] Allow multiple labels per ticket
+#### 4.1 Labels/Tags System ✅
+- [x] Create label management UI
+- [x] Add color picker for labels
+- [x] Implement label search/filter
+- [x] Show labels on ticket cards
+- [x] Add label API endpoints (CRUD)
+- [x] Allow multiple labels per ticket
 
 #### 4.2 Swimlanes
 - [ ] Add swimlane toggle to board view
@@ -144,12 +158,12 @@ Better organization and workflow management.
 - [ ] Add swimlane configuration UI
 - [ ] Persist swimlane preferences
 
-#### 4.3 WIP Limits
-- [ ] Add WIP limit setting to columns
-- [ ] Show visual warning when limit exceeded
-- [ ] Display count: "3/5" on column header
-- [ ] Block drag when limit would be exceeded (optional)
-- [ ] Add WIP limit to column settings
+#### 4.3 WIP Limits ✅
+- [x] Add WIP limit setting to columns
+- [x] Show visual warning when limit exceeded
+- [x] Display count: "3/5" on column header
+- [ ] Block drag when limit would be exceeded (optional - not implemented)
+- [x] Add WIP limit to column settings
 
 #### 4.4 Board Templates
 - [ ] Create template selector on board creation
@@ -318,8 +332,16 @@ GET /api/kanban/boards/:id/analytics
 
 ## Progress Tracking
 
-**Completed Features:** 13/70+ planned features
-**Current Phase:** Phase 1 - Core CRUD Operations
-**Next Up:** Delete Tickets functionality
+**Completed Features:** 50/70+ planned features
+**Current Phase:** Phase 3 & 4 - Collaboration and Organization Features (IN PROGRESS)
+**Next Up:** Phase 3.1 - File Attachments, Phase 2.3 - Reminders & Notifications, or Phase 2.4 - Calendar View
 
-Last commit: `feat: migrate to Bun and implement smooth drag-and-drop with @hello-pangea/dnd`
+Last update: Completed Phase 4.3 (WIP Limits with visual warnings and column settings integration)
+
+### Completed Phases:
+- ✅ Phase 1: Core CRUD Operations (All sections complete)
+- ✅ Phase 2.1: Due Dates (Complete with filtering and visual warnings)
+- ✅ Phase 2.2: Time Tracking (Complete with live timer and logs)
+- ✅ Phase 3.3: Activity Log (Complete with user/type filtering and real-time display)
+- ✅ Phase 4.1: Labels/Tags System (Complete with management UI, color picker, and filtering)
+- ✅ Phase 4.3: WIP Limits (Complete with visual warnings and settings integration)

@@ -4,6 +4,9 @@ import type {
   KanbanColumn,
   KanbanSprint,
   KanbanTicket,
+  KanbanTimeLog,
+  KanbanActivity,
+  KanbanLabel,
   ProjectsResponse,
 } from "@opendock/shared/types";
 import { request, getApiBaseUrl } from "@opendock/shared/api";
@@ -67,6 +70,14 @@ export const boardsApi = {
       headers,
     });
   },
+  deleteTicket: async (ticketId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ success: boolean }>({
+      path: `/api/kanban/tickets/${ticketId}`,
+      method: "DELETE",
+      headers,
+    });
+  },
   reorderTicket: async (boardId: string, payload: { ticketId: string; toColumnId: string; toIndex: number }) => {
     const headers = await resolveCsrfHeaders();
     return request<KanbanBoardSnapshot>({
@@ -105,6 +116,104 @@ export const boardsApi = {
     const headers = await resolveCsrfHeaders();
     return request<{ success: boolean }>({
       path: `/api/kanban/comments/${commentId}`,
+      method: "DELETE",
+      headers,
+    });
+  },
+  updateColumn: async (boardId: string, columnId: string, updates: { title?: string; wipLimit?: number | null }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ column: any }>({
+      path: `/api/kanban/boards/${boardId}/columns/${columnId}`,
+      method: "PATCH",
+      body: JSON.stringify(updates),
+      headers,
+    });
+  },
+  deleteColumn: async (boardId: string, columnId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ success: boolean }>({
+      path: `/api/kanban/boards/${boardId}/columns/${columnId}`,
+      method: "DELETE",
+      headers,
+    });
+  },
+  // Time tracking
+  startTimer: async (ticketId: string, payload?: { startedAt?: string; description?: string }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ timeLog: KanbanTimeLog }>({
+      path: `/api/kanban/tickets/${ticketId}/time-logs/start`,
+      method: "POST",
+      body: JSON.stringify(payload || {}),
+      headers,
+    });
+  },
+  stopTimer: async (ticketId: string, logId: string, payload?: { endedAt?: string }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ timeLog: KanbanTimeLog }>({
+      path: `/api/kanban/tickets/${ticketId}/time-logs/${logId}/stop`,
+      method: "POST",
+      body: JSON.stringify(payload || {}),
+      headers,
+    });
+  },
+  getActiveTimer: (ticketId: string) =>
+    request<{ timeLog: KanbanTimeLog | null }>({ path: `/api/kanban/tickets/${ticketId}/time-logs/active` }),
+  listTimeLogs: (ticketId: string) =>
+    request<{ timeLogs: KanbanTimeLog[] }>({ path: `/api/kanban/tickets/${ticketId}/time-logs` }),
+  deleteTimeLog: async (logId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ success: boolean }>({
+      path: `/api/kanban/time-logs/${logId}`,
+      method: "DELETE",
+      headers,
+    });
+  },
+
+  // Activity methods
+  listActivities: async (boardId: string, limit?: number) => {
+    const params = limit ? `?limit=${limit}` : "";
+    return request<{ activities: KanbanActivity[] }>({
+      path: `/api/kanban/boards/${boardId}/activity${params}`,
+    });
+  },
+
+  listTicketActivities: async (ticketId: string, limit?: number) => {
+    const params = limit ? `?limit=${limit}` : "";
+    return request<{ activities: KanbanActivity[] }>({
+      path: `/api/kanban/tickets/${ticketId}/activity${params}`,
+    });
+  },
+
+  listLabels: async (boardId: string) => {
+    return request<{ labels: KanbanLabel[] }>({
+      path: `/api/kanban/boards/${boardId}/labels`,
+    });
+  },
+
+  createLabel: async (boardId: string, input: { name: string; color: string }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ label: KanbanLabel }>({
+      path: `/api/kanban/boards/${boardId}/labels`,
+      method: "POST",
+      body: JSON.stringify(input),
+      headers,
+    });
+  },
+
+  updateLabel: async (labelId: string, input: { name?: string; color?: string }) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ label: KanbanLabel }>({
+      path: `/api/kanban/labels/${labelId}`,
+      method: "PATCH",
+      body: JSON.stringify(input),
+      headers,
+    });
+  },
+
+  deleteLabel: async (labelId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ success: boolean }>({
+      path: `/api/kanban/labels/${labelId}`,
       method: "DELETE",
       headers,
     });

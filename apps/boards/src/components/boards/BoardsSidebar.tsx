@@ -21,23 +21,29 @@ const sidebarSections = [
   {
     title: "Planning",
     items: [
-      { label: "Timeline", icon: CalendarClock, active: false },
-      { label: "Kanban board", icon: KanbanIcon, active: true },
-      { label: "Reports", icon: BarChart3, active: false },
+      { label: "Timeline", icon: CalendarClock, tab: "timeline" as const },
+      { label: "Kanban board", icon: KanbanIcon, tab: "kanban" as const },
+      { label: "Reports", icon: BarChart3, tab: "reports" as const },
     ],
   },
   {
     title: "Project",
     items: [
-      { label: "Issues", icon: ListChecks, active: false },
-      { label: "Components", icon: LayoutGrid, active: false },
+      { label: "Issues", icon: ListChecks, tab: "issues" as const },
+      { label: "Components", icon: LayoutGrid, tab: "components" as const },
     ],
   },
   {
     title: "Development",
     items: [
-      { label: "Code", icon: FileCode2, active: false },
-      { label: "Releases", icon: Rocket, active: false },
+      { label: "Code", icon: FileCode2, tab: "code" as const },
+      { label: "Releases", icon: Rocket, tab: "releases" as const },
+    ],
+  },
+  {
+    title: "Board",
+    items: [
+      { label: "Settings", icon: Settings2, tab: "settings" as const },
     ],
   },
 ] as const;
@@ -125,6 +131,8 @@ function BoardFormFields({
   );
 }
 
+export type BoardTab = "timeline" | "kanban" | "reports" | "issues" | "components" | "code" | "releases" | "settings";
+
 interface BoardsSidebarProps {
   collapsed: boolean;
   onToggleCollapsed: () => void;
@@ -140,6 +148,8 @@ interface BoardsSidebarProps {
   projectsLoading: boolean;
   projectsError: string | null;
   projectOptions: Array<{ value: string; label: string }>;
+  activeTab: BoardTab;
+  onTabChange: (tab: BoardTab) => void;
 }
 
 export function BoardsSidebar({
@@ -157,6 +167,8 @@ export function BoardsSidebar({
   projectsLoading,
   projectsError,
   projectOptions,
+  activeTab,
+  onTabChange,
 }: BoardsSidebarProps) {
   return (
     <aside
@@ -218,9 +230,10 @@ export function BoardsSidebar({
                 <li key={item.label}>
                   <button
                     type="button"
+                    onClick={() => onTabChange(item.tab)}
                     className={clsx(
                       "flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white",
-                      item.active && "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white",
+                      activeTab === item.tab && "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white",
                       collapsed && "justify-center",
                     )}
                     title={item.label}

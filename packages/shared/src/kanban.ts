@@ -5,7 +5,10 @@ import type {
   KanbanColumn,
   KanbanSprint,
   KanbanTicket,
+  KanbanTimeLog,
   KanbanUser,
+  KanbanActivity,
+  KanbanLabel,
 } from "./types";
 
 const nonEmptyTrimmed = (label: string, max = 160) =>
@@ -41,6 +44,7 @@ export const KanbanColumnSchema = z
     boardId: KanbanIdSchema,
     title: nonEmptyTrimmed("Column title", 120),
     order: z.number().int().min(0),
+    wipLimit: z.number().int().min(1).optional(),
   })
   .strict();
 type _KanbanColumnSchemaCheck = z.infer<typeof KanbanColumnSchema> extends KanbanColumn ? true : never;
@@ -58,6 +62,61 @@ export const KanbanSprintSchema = z
   .strict();
 type _KanbanSprintSchemaCheck = z.infer<typeof KanbanSprintSchema> extends KanbanSprint ? true : never;
 
+export const KanbanTimeLogSchema = z
+  .object({
+    id: KanbanIdSchema,
+    ticketId: KanbanIdSchema,
+    userId: KanbanIdSchema,
+    startedAt: nonEmptyTrimmed("Start timestamp", 40),
+    endedAt: optionalTrimmed("End timestamp", 40),
+    duration: z.number().int().min(0),
+    description: z.string().trim().max(500).optional(),
+    createdAt: nonEmptyTrimmed("Created timestamp", 40),
+    updatedAt: nonEmptyTrimmed("Updated timestamp", 40),
+  })
+  .strict();
+type _KanbanTimeLogSchemaCheck = z.infer<typeof KanbanTimeLogSchema> extends KanbanTimeLog ? true : never;
+
+export const KanbanActivitySchema = z
+  .object({
+    id: KanbanIdSchema,
+    boardId: KanbanIdSchema,
+    userId: KanbanIdSchema,
+    type: z.enum([
+      "ticket_created",
+      "ticket_updated",
+      "ticket_deleted",
+      "ticket_moved",
+      "ticket_assigned",
+      "comment_added",
+      "comment_deleted",
+      "column_created",
+      "column_updated",
+      "column_deleted",
+      "sprint_created",
+      "sprint_updated",
+      "board_updated",
+    ]),
+    ticketId: KanbanIdSchema.optional(),
+    columnId: KanbanIdSchema.optional(),
+    sprintId: KanbanIdSchema.optional(),
+    metadata: z.record(z.unknown()).optional(),
+    createdAt: nonEmptyTrimmed("Created timestamp", 40),
+  })
+  .strict();
+type _KanbanActivitySchemaCheck = z.infer<typeof KanbanActivitySchema> extends KanbanActivity ? true : never;
+
+export const KanbanLabelSchema = z
+  .object({
+    id: KanbanIdSchema,
+    boardId: KanbanIdSchema,
+    name: nonEmptyTrimmed("Label name", 50),
+    color: nonEmptyTrimmed("Label color", 20),
+    createdAt: nonEmptyTrimmed("Created timestamp", 40),
+  })
+  .strict();
+type _KanbanLabelSchemaCheck = z.infer<typeof KanbanLabelSchema> extends KanbanLabel ? true : never;
+
 export const KanbanTicketSchema = z
   .object({
     id: KanbanIdSchema,
@@ -67,9 +126,12 @@ export const KanbanTicketSchema = z
     description: z.string().trim().max(5000).optional(),
     assigneeIds: z.array(KanbanIdSchema),
     tags: z.array(nonEmptyTrimmed("Tag", 40)),
+    labelIds: z.array(KanbanIdSchema),
     estimate: z.number().positive().optional(),
+    timeSpent: z.number().int().min(0).optional(),
     priority: z.enum(["low", "medium", "high"]),
     sprintId: KanbanIdSchema.optional(),
+    dueDate: z.string().trim().max(40).optional(),
     createdAt: nonEmptyTrimmed("Created timestamp", 40),
     updatedAt: nonEmptyTrimmed("Updated timestamp", 40),
     order: z.number().int().min(0),
@@ -90,6 +152,7 @@ export const KanbanBoardSchema = z
     tickets: z.array(KanbanTicketSchema),
     sprints: z.array(KanbanSprintSchema),
     members: z.array(KanbanUserSchema),
+    labels: z.array(KanbanLabelSchema),
   })
   .strict();
 type _KanbanBoardSchemaCheck = z.infer<typeof KanbanBoardSchema> extends KanbanBoard ? true : never;
@@ -101,6 +164,7 @@ export const KanbanBoardSnapshotSchema = z
     tickets: z.array(KanbanTicketSchema),
     sprints: z.array(KanbanSprintSchema),
     members: z.array(KanbanUserSchema),
+    labels: z.array(KanbanLabelSchema),
   })
   .strict();
 type _KanbanBoardSnapshotSchemaCheck = z.infer<typeof KanbanBoardSnapshotSchema> extends KanbanBoardSnapshot
@@ -148,6 +212,14 @@ export const KanbanCreateColumnSchema = z
   .strict();
 export type KanbanCreateColumnInput = z.infer<typeof KanbanCreateColumnSchema>;
 
+export const KanbanUpdateColumnSchema = z
+  .object({
+    title: optionalTrimmed("Column title", 120),
+    wipLimit: z.number().int().min(1).nullable().optional(),
+  })
+  .strict();
+export type KanbanUpdateColumnInput = z.infer<typeof KanbanUpdateColumnSchema>;
+
 export const KanbanCreateTicketSchema = z
   .object({
     columnId: KanbanIdSchema,
@@ -155,9 +227,11 @@ export const KanbanCreateTicketSchema = z
     description: z.string().trim().max(5000).optional(),
     assigneeIds: z.array(KanbanIdSchema).optional(),
     tags: z.array(nonEmptyTrimmed("Tag", 40)).optional(),
+    labelIds: z.array(KanbanIdSchema).optional(),
     estimate: z.number().positive().optional(),
     priority: z.enum(["low", "medium", "high"]).optional(),
     sprintId: KanbanIdSchema.optional(),
+    dueDate: z.string().trim().max(40).optional(),
   })
   .strict();
 export type KanbanCreateTicketInput = z.infer<typeof KanbanCreateTicketSchema>;
@@ -168,9 +242,11 @@ export const KanbanUpdateTicketSchema = z
     description: z.string().trim().max(5000).optional(),
     assigneeIds: z.array(KanbanIdSchema).optional(),
     tags: z.array(nonEmptyTrimmed("Tag", 40)).optional(),
+    labelIds: z.array(KanbanIdSchema).optional(),
     estimate: z.number().positive().nullable().optional(),
     priority: z.enum(["low", "medium", "high"]).optional(),
     sprintId: KanbanIdSchema.nullish(),
+    dueDate: z.string().trim().max(40).nullable().optional(),
   })
   .strict();
 export type KanbanUpdateTicketInput = z.infer<typeof KanbanUpdateTicketSchema>;
@@ -194,3 +270,34 @@ export const KanbanCreateSprintSchema = z
   })
   .strict();
 export type KanbanCreateSprintInput = z.infer<typeof KanbanCreateSprintSchema>;
+
+export const KanbanCreateTimeLogSchema = z
+  .object({
+    startedAt: nonEmptyTrimmed("Start timestamp", 40).optional(),
+    description: z.string().trim().max(500).optional(),
+  })
+  .strict();
+export type KanbanCreateTimeLogInput = z.infer<typeof KanbanCreateTimeLogSchema>;
+
+export const KanbanStopTimeLogSchema = z
+  .object({
+    endedAt: nonEmptyTrimmed("End timestamp", 40).optional(),
+  })
+  .strict();
+export type KanbanStopTimeLogInput = z.infer<typeof KanbanStopTimeLogSchema>;
+
+export const KanbanCreateLabelSchema = z
+  .object({
+    name: nonEmptyTrimmed("Label name", 50),
+    color: nonEmptyTrimmed("Label color", 20),
+  })
+  .strict();
+export type KanbanCreateLabelInput = z.infer<typeof KanbanCreateLabelSchema>;
+
+export const KanbanUpdateLabelSchema = z
+  .object({
+    name: nonEmptyTrimmed("Label name", 50).optional(),
+    color: nonEmptyTrimmed("Label color", 20).optional(),
+  })
+  .strict();
+export type KanbanUpdateLabelInput = z.infer<typeof KanbanUpdateLabelSchema>;

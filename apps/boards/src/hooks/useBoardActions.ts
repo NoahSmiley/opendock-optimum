@@ -300,6 +300,61 @@ export function useBoardActions({ selectedBoard, refreshBoards, setError, mutate
     [mutateBoards, setError],
   );
 
+  const handleDeleteTicket = useCallback(
+    async (ticketId: string) => {
+      try {
+        await boardsApi.deleteTicket(ticketId);
+        await mutateBoards();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to delete ticket");
+        throw err; // Re-throw so the UI can handle it
+      }
+    },
+    [mutateBoards, setError],
+  );
+
+  const handleRenameColumn = useCallback(
+    async (columnId: string, newTitle: string) => {
+      if (!selectedBoard) return;
+      try {
+        await boardsApi.updateColumn(selectedBoard.id, columnId, { title: newTitle });
+        await mutateBoards();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to rename column");
+        throw err;
+      }
+    },
+    [selectedBoard, mutateBoards, setError],
+  );
+
+  const handleUpdateColumnWipLimit = useCallback(
+    async (columnId: string, wipLimit: number | null) => {
+      if (!selectedBoard) return;
+      try {
+        await boardsApi.updateColumn(selectedBoard.id, columnId, { wipLimit });
+        await mutateBoards();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to update WIP limit");
+        throw err;
+      }
+    },
+    [selectedBoard, mutateBoards, setError],
+  );
+
+  const handleDeleteColumn = useCallback(
+    async (columnId: string) => {
+      if (!selectedBoard) return;
+      try {
+        await boardsApi.deleteColumn(selectedBoard.id, columnId);
+        await mutateBoards();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to delete column");
+        throw err;
+      }
+    },
+    [selectedBoard, mutateBoards, setError],
+  );
+
   return {
     // State
     activeComposerColumnId,
@@ -338,5 +393,9 @@ export function useBoardActions({ selectedBoard, refreshBoards, setError, mutate
     handleTicketUpdate,
     handleAddComment,
     handleDeleteComment,
+    handleDeleteTicket,
+    handleRenameColumn,
+    handleUpdateColumnWipLimit,
+    handleDeleteColumn,
   };
 }

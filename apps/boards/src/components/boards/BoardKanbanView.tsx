@@ -26,6 +26,9 @@ interface BoardKanbanViewProps {
   onCreateColumn: (event: FormEvent, boardId: string) => void;
   onTicketClick: (ticketId: string) => void;
   onReorderTicket: (ticketId: string, toColumnId: string, toIndex: number) => void;
+  selectionMode?: boolean;
+  selectedTicketIds?: Set<string>;
+  onToggleTicketSelection?: (ticketId: string) => void;
 }
 
 export function BoardKanbanView({
@@ -45,6 +48,9 @@ export function BoardKanbanView({
   onCreateColumn,
   onTicketClick,
   onReorderTicket,
+  selectionMode = false,
+  selectedTicketIds = new Set(),
+  onToggleTicketSelection,
 }: BoardKanbanViewProps) {
   // Handle drag end with react-beautiful-dnd
   const handleDragEnd = useCallback((result: DropResult) => {
@@ -81,29 +87,6 @@ export function BoardKanbanView({
                     totalCount={rawTickets.length}
                     droppableProvided={provided}
                     isDraggingOver={snapshot.isDraggingOver}
-                    footer={
-                      <div className="flex flex-col gap-2">
-                        {composerOpen ? (
-                          <ColumnTicketComposer
-                            draft={draft}
-                            members={board.members}
-                            submitting={creatingColumnTicketId === column.id}
-                            onDraftChange={(patch) => onColumnDraftChange(column.id, patch)}
-                            onSubmit={(event) => onColumnTicketSubmit(event, column.id)}
-                            onCancel={onColumnComposerCancel}
-                          />
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => onColumnComposerOpen(column.id)}
-                            className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-slate-300/60 px-4 py-2 text-sm font-semibold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-white/20 dark:text-slate-300 dark:hover:border-white/30 dark:hover:bg-white/10 dark:hover:text-white"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Create issue
-                          </button>
-                        )}
-                      </div>
-                    }
                   >
                     {tickets.map((ticket, index) => (
                       <SortableTicketCard
@@ -112,8 +95,12 @@ export function BoardKanbanView({
                         index={index}
                         column={column}
                         members={board.members}
+                        labels={board.labels || []}
                         sprints={board.sprints}
                         onClick={() => onTicketClick(ticket.id)}
+                        selectionMode={selectionMode}
+                        isSelected={selectedTicketIds.has(ticket.id)}
+                        onToggleSelect={onToggleTicketSelection}
                       />
                     ))}
                   </KanbanColumn>

@@ -100,6 +100,7 @@ export interface KanbanColumn {
   boardId: string;
   title: string;
   order: number;
+  wipLimit?: number; // Work In Progress limit (optional)
 }
 
 export interface KanbanSprint {
@@ -121,6 +122,53 @@ export interface KanbanComment {
   updatedAt: string;
 }
 
+export interface KanbanTimeLog {
+  id: string;
+  ticketId: string;
+  userId: string;
+  startedAt: string;
+  endedAt?: string;
+  duration: number; // in seconds
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type KanbanActivityType =
+  | "ticket_created"
+  | "ticket_updated"
+  | "ticket_deleted"
+  | "ticket_moved"
+  | "ticket_assigned"
+  | "comment_added"
+  | "comment_deleted"
+  | "column_created"
+  | "column_updated"
+  | "column_deleted"
+  | "sprint_created"
+  | "sprint_updated"
+  | "board_updated";
+
+export interface KanbanActivity {
+  id: string;
+  boardId: string;
+  userId: string;
+  type: KanbanActivityType;
+  ticketId?: string;
+  columnId?: string;
+  sprintId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface KanbanLabel {
+  id: string;
+  boardId: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
 export interface KanbanTicket {
   id: string;
   boardId: string;
@@ -129,13 +177,17 @@ export interface KanbanTicket {
   description?: string;
   assigneeIds: string[];
   tags: string[];
+  labelIds: string[];
   estimate?: number;
+  timeSpent?: number; // in seconds, calculated from time logs
   priority: "low" | "medium" | "high";
   sprintId?: string;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
   order: number;
   comments?: KanbanComment[];
+  timeLogs?: KanbanTimeLog[];
 }
 
 export interface KanbanBoard {
@@ -150,6 +202,7 @@ export interface KanbanBoard {
   tickets: KanbanTicket[];
   sprints: KanbanSprint[];
   members: KanbanUser[];
+  labels: KanbanLabel[];
 }
 
 export interface KanbanBoardSnapshot {
@@ -158,6 +211,7 @@ export interface KanbanBoardSnapshot {
   tickets: KanbanTicket[];
   sprints: KanbanSprint[];
   members: KanbanUser[];
+  labels: KanbanLabel[];
 }
 
 export interface KanbanBoardsResponse {

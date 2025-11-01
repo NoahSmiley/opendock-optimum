@@ -37,11 +37,13 @@ export function createApp(options: CreateAppOptions = {}) {
           callback(null, true);
           return;
         }
+        console.warn(`[CORS] Origin ${origin} is not in allowed list:`, allowedOrigins);
         callback(new Error(`Origin ${origin} is not allowed by CORS`));
       },
       credentials: true,
       allowedHeaders: ["content-type", "x-opendock-csrf", "accept"],
       methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      exposedHeaders: ["content-type"],
     }),
   );
   app.use(cookieParser());

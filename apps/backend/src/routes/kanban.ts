@@ -2,11 +2,16 @@ import { Router } from "express";
 import {
   KanbanCreateBoardSchema,
   KanbanCreateColumnSchema,
+  KanbanUpdateColumnSchema,
   KanbanCreateSprintSchema,
   KanbanCreateTicketSchema,
+  KanbanCreateTimeLogSchema,
   KanbanReorderTicketSchema,
+  KanbanStopTimeLogSchema,
   KanbanUpdateTicketSchema,
   KanbanUpdateBoardSchema,
+  KanbanCreateLabelSchema,
+  KanbanUpdateLabelSchema,
 } from "@opendock/shared/kanban";
 import { authRequired, requireCsrfProtection } from "../auth";
 import { dal } from "../dal";
@@ -119,6 +124,30 @@ export function createKanbanRouter(): Router {
     res.status(201).json({ column });
   });
 
+  router.patch("/boards/:boardId/columns/:columnId", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanUpdateColumnSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+
+    const column = await dal.kanban.updateColumn(req.params.boardId, req.params.columnId, parsed.data);
+    if (!column) {
+      res.status(404).json({ error: { code: "COLUMN_NOT_FOUND", message: "Column not found." } });
+      return;
+    }
+    res.json({ column });
+  });
+
+  router.delete("/boards/:boardId/columns/:columnId", authRequired, requireCsrfProtection, async (req, res) => {
+    const success = await dal.kanban.deleteColumn(req.params.boardId, req.params.columnId);
+    if (!success) {
+      res.status(404).json({ error: { code: "COLUMN_NOT_FOUND", message: "Column not found." } });
+      return;
+    }
+    res.json({ success: true });
+  });
+
   router.post("/boards/:boardId/sprints", authRequired, requireCsrfProtection, async (req, res) => {
     const parsed = KanbanCreateSprintSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
@@ -155,6 +184,8 @@ export function createKanbanRouter(): Router {
   });
 
   router.patch("/tickets/:ticketId", authRequired, requireCsrfProtection, async (req, res) => {
+    console.log(`[PATCH /tickets/${req.params.ticketId}] Request received from ${req.get('origin')}`);
+    console.log(`[PATCH /tickets/${req.params.ticketId}] Body:`, JSON.stringify(req.body));
     const parsed = KanbanUpdateTicketSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
       res.status(400).json(validationError(parsed.error));
@@ -165,7 +196,17 @@ export function createKanbanRouter(): Router {
       res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
       return;
     }
+    console.log(`[PATCH /tickets/${req.params.ticketId}] Success`);
     res.json({ ticket });
+  });
+
+  router.delete("/tickets/:ticketId", authRequired, requireCsrfProtection, async (req, res) => {
+    const success = await dal.kanban.deleteTicket(req.params.ticketId);
+    if (!success) {
+      res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
+      return;
+    }
+    res.json({ success: true });
   });
 
   router.patch("/boards/:boardId/tickets/reorder", authRequired, requireCsrfProtection, async (req, res) => {
@@ -200,6 +241,108 @@ export function createKanbanRouter(): Router {
     const success = await dal.kanban.deleteComment(req.params.commentId);
     if (!success) {
       res.status(404).json({ error: { code: "COMMENT_NOT_FOUND", message: "Comment not found." } });
+      return;
+    }
+    res.json({ success: true });
+  });
+
+  // Time log routes
+  router.post("/tickets/:ticketId/time-logs/start", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanCreateTimeLogSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+    const userId = (req as any).user?.id || "anonymous";
+    const timeLog = await dal.kanban.startTimeLog(req.params.ticketId, userId, parsed.data);
+    if (!timeLog) {
+      res.status(400).json({ error: { code: "TIMER_ALREADY_ACTIVE", message: "Timer already running for this ticket." } });
+      return;
+    }
+    res.status(201).json({ timeLog });
+  });
+
+  router.post("/tickets/:ticketId/time-logs/:logId/stop", authRequired, requireCsrfProtection, async (req, res) => {
+    const parsed = KanbanStopTimeLogSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+    const timeLog = await dal.kanban.stopTimeLog(req.params.logId, parsed.data);
+    if (!timeLog) {
+      res.status(404).json({ error: { code: "TIME_LOG_NOT_FOUND", message: "Time log not found or already stopped." } });
+      return;
+    }
+    res.json({ timeLog });
+  });
+
+  router.get("/tickets/:ticketId/time-logs/active", authRequired, async (req, res) => {
+    const userId = (req as any).user?.id || "anonymous";
+    const timeLog = await dal.kanban.getActiveTimeLog(req.params.ticketId, userId);
+    res.json({ timeLog });
+  });
+
+  router.get("/tickets/:ticketId/time-logs", authRequired, async (req, res) => {
+    const timeLogs = await dal.kanban.listTimeLogs(req.params.ticketId);
+    res.json({ timeLogs });
+  });
+
+  router.delete("/time-logs/:logId", authRequired, requireCsrfProtection, async (req, res) => {
+    const success = await dal.kanban.deleteTimeLog(req.params.logId);
+    if (!success) {
+      res.status(404).json({ error: { code: "TIME_LOG_NOT_FOUND", message: "Time log not found." } });
+      return;
+    }
+    res.json({ success: true });
+  });
+
+  // Activity endpoints
+  router.get("/boards/:boardId/activity", authRequired, async (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const activities = await dal.kanban.listActivities(req.params.boardId, limit);
+    res.json({ activities });
+  });
+
+  router.get("/tickets/:ticketId/activity", authRequired, async (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const activities = await dal.kanban.listTicketActivities(req.params.ticketId, limit);
+    res.json({ activities });
+  });
+
+  // Label endpoints
+  router.get("/boards/:boardId/labels", authRequired, async (req, res) => {
+    const labels = await dal.kanban.listLabels(req.params.boardId);
+    res.json({ labels });
+  });
+
+  router.post("/boards/:boardId/labels", requireCsrfProtection, authRequired, async (req, res) => {
+    const parsed = KanbanCreateLabelSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+    const label = await dal.kanban.createLabel(req.params.boardId, parsed.data);
+    res.json({ label });
+  });
+
+  router.patch("/labels/:labelId", requireCsrfProtection, authRequired, async (req, res) => {
+    const parsed = KanbanUpdateLabelSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(validationError(parsed.error));
+      return;
+    }
+    const label = await dal.kanban.updateLabel(req.params.labelId, parsed.data);
+    if (!label) {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Label not found." } });
+      return;
+    }
+    res.json({ label });
+  });
+
+  router.delete("/labels/:labelId", requireCsrfProtection, authRequired, async (req, res) => {
+    const deleted = await dal.kanban.deleteLabel(req.params.labelId);
+    if (!deleted) {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Label not found." } });
       return;
     }
     res.json({ success: true });

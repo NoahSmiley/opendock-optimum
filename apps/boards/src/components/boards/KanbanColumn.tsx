@@ -37,9 +37,20 @@ export function KanbanColumn({
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{column.title}</h3>
           <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">Stage</p>
         </div>
-        <span className="flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+        <span className={clsx(
+          "flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+          column.wipLimit && tickets.length > column.wipLimit
+            ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400"
+            : column.wipLimit && tickets.length === column.wipLimit
+              ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+              : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+        )}>
           {tickets.length}
-          {totalCount !== tickets.length ? (
+          {column.wipLimit ? (
+            <span className="text-[10px] font-normal uppercase tracking-[0.3em]">
+              /{column.wipLimit}
+            </span>
+          ) : totalCount !== tickets.length ? (
             <span className="text-[10px] font-normal uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
               /{totalCount}
             </span>

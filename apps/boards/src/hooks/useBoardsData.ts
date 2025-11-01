@@ -163,7 +163,7 @@ export function useBoardsData(): UseBoardsDataResult {
         ignoreReorderUntil = Date.now() + durationMs;
       };
 
-      const mutationEvents = ["ticket-created", "ticket-updated", "ticket-reordered", "column-created", "sprint-created"];
+      const mutationEvents = ["ticket-created", "ticket-updated", "ticket-deleted", "ticket-reordered", "column-created", "column-updated", "column-deleted", "sprint-created"];
       source.addEventListener("board-snapshot", handleSnapshot);
       mutationEvents.forEach((eventName) => {
         source.addEventListener(eventName, mutationHandler);

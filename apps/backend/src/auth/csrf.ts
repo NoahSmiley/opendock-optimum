@@ -44,6 +44,9 @@ export function requireCsrfProtection(req: Request, res: Response, next: NextFun
     next();
     return;
   }
+  console.warn(`[CSRF] Token validation failed for ${req.method} ${req.path}`);
+  console.warn(`[CSRF] Cookie token present: ${!!req.cookies?.[CSRF_COOKIE_NAME]}`);
+  console.warn(`[CSRF] Header token present: ${!!req.get(CSRF_HEADER_NAME)}`);
   res.status(403).json({ error: { code: "CSRF_VALIDATION_FAILED", message: "Invalid CSRF token." } });
 }
 

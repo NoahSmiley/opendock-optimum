@@ -1,13 +1,20 @@
 import { useState, useEffect } from "react";
-import { X, Calendar, Tag, User, MessageSquare, Edit2, Save, Trash2 } from "lucide-react";
+import { X, Calendar, Tag, User, MessageSquare, Edit2, Save, Trash2, Activity as ActivityIcon } from "lucide-react";
 import clsx from "clsx";
-import type { KanbanTicket, KanbanUser } from "@opendock/shared/types";
+import type { KanbanTicket, KanbanTimeLog, KanbanUser, KanbanActivity, KanbanLabel } from "@opendock/shared/types";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { TimeTracker } from "./TimeTracker";
+import { ActivityFeed } from "./ActivityFeed";
+import { LabelSelector } from "./LabelSelector";
+import { boardsApi } from "@/lib/api";
 
 interface TicketDetailPanelProps {
   ticket: KanbanTicket;
   members: KanbanUser[];
+  labels: KanbanLabel[];
   onClose: () => void;
   onUpdate: (ticketId: string, updates: Partial<KanbanTicket>) => Promise<void>;
+  onDelete?: (ticketId: string) => Promise<void>;
   onAddComment: (ticketId: string, content: string) => Promise<void>;
   onDeleteComment?: (commentId: string) => Promise<void>;
   sidebarCollapsed?: boolean;
@@ -38,8 +45,10 @@ const formatDate = (dateString: string) => {
 export function TicketDetailPanel({
   ticket,
   members,
+  labels = [],
   onClose,
   onUpdate,
+  onDelete,
   onAddComment,
   onDeleteComment,
   sidebarCollapsed = false,
@@ -53,6 +62,15 @@ export function TicketDetailPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTimeLog, setActiveTimeLog] = useState<KanbanTimeLog | null>(null);
+  const [timeLogs, setTimeLogs] = useState<KanbanTimeLog[]>([]);
+  const [isLoadingTimer, setIsLoadingTimer] = useState(false);
+  const [activities, setActivities] = useState<KanbanActivity[]>([]);
+  const assigneeIds = Array.isArray(ticket.assigneeIds) ? ticket.assigneeIds : [];
+  const labelIds = Array.isArray(ticket.labelIds) ? ticket.labelIds : [];
+  const tags = Array.isArray(ticket.tags) ? ticket.tags : [];
 
   useEffect(() => {
     // Trigger slide-in animation after mount
@@ -60,6 +78,25 @@ export function TicketDetailPanel({
       setIsOpen(true);
     });
   }, []);
+
+  // Load time logs and activities on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [activeResponse, logsResponse, activitiesResponse] = await Promise.all([
+          boardsApi.getActiveTimer(ticket.id),
+          boardsApi.listTimeLogs(ticket.id),
+          boardsApi.listTicketActivities(ticket.id, 50),
+        ]);
+        setActiveTimeLog(activeResponse.timeLog);
+        setTimeLogs(logsResponse.timeLogs);
+        setActivities(activitiesResponse.activities);
+      } catch (error) {
+        console.error("Failed to load ticket data:", error);
+      }
+    };
+    loadData();
+  }, [ticket.id]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -112,10 +149,17 @@ export function TicketDetailPanel({
   };
 
   const handleAssigneeChange = async (assigneeId: string) => {
-    const newAssigneeIds = ticket.assigneeIds.includes(assigneeId)
-      ? ticket.assigneeIds.filter((id) => id !== assigneeId)
-      : [...ticket.assigneeIds, assigneeId];
+    const newAssigneeIds = assigneeIds.includes(assigneeId)
+      ? assigneeIds.filter((id) => id !== assigneeId)
+      : [...assigneeIds, assigneeId];
     await onUpdate(ticket.id, { assigneeIds: newAssigneeIds });
+  };
+
+  const handleLabelChange = async (labelId: string) => {
+    const newLabelIds = labelIds.includes(labelId)
+      ? labelIds.filter((id) => id !== labelId)
+      : [...labelIds, labelId];
+    await onUpdate(ticket.id, { labelIds: newLabelIds });
   };
 
   const handlePriorityChange = async (priority: KanbanTicket["priority"]) => {
@@ -131,13 +175,74 @@ export function TicketDetailPanel({
   };
 
   const handleAddTag = (tag: string) => {
-    if (tag.trim() && !ticket.tags.includes(tag.trim())) {
-      handleTagsChange([...ticket.tags, tag.trim()]);
+    if (tag.trim() && !tags.includes(tag.trim())) {
+      handleTagsChange([...tags, tag.trim()]);
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    handleTagsChange(ticket.tags.filter((tag) => tag !== tagToRemove));
+    handleTagsChange(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleDueDateChange = async (dateValue: string) => {
+    // If empty, clear the due date
+    if (!dateValue) {
+      await onUpdate(ticket.id, { dueDate: undefined });
+      return;
+    }
+
+    // Convert YYYY-MM-DD to ISO string at midnight local time
+    const localDate = new Date(dateValue + 'T00:00:00');
+    await onUpdate(ticket.id, { dueDate: localDate.toISOString() });
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(ticket.id);
+      handleClose();
+    } catch (error) {
+      console.error("Failed to delete ticket:", error);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleStartTimer = async () => {
+    setIsLoadingTimer(true);
+    try {
+      const response = await boardsApi.startTimer(ticket.id);
+      setActiveTimeLog(response.timeLog);
+      setTimeLogs((prev) => [response.timeLog, ...prev]);
+    } catch (error) {
+      console.error("Failed to start timer:", error);
+    } finally {
+      setIsLoadingTimer(false);
+    }
+  };
+
+  const handleStopTimer = async (logId: string) => {
+    setIsLoadingTimer(true);
+    try {
+      const response = await boardsApi.stopTimer(ticket.id, logId);
+      setActiveTimeLog(null);
+      setTimeLogs((prev) =>
+        prev.map((log) => (log.id === logId ? response.timeLog : log))
+      );
+    } catch (error) {
+      console.error("Failed to stop timer:", error);
+    } finally {
+      setIsLoadingTimer(false);
+    }
+  };
+
+  const handleDeleteTimeLog = async (logId: string) => {
+    try {
+      await boardsApi.deleteTimeLog(logId);
+      setTimeLogs((prev) => prev.filter((log) => log.id !== logId));
+    } catch (error) {
+      console.error("Failed to delete time log:", error);
+    }
   };
 
   return (
@@ -167,12 +272,23 @@ export function TicketDetailPanel({
               {ticket.priority}
             </span>
           </div>
-          <button
-            onClick={handleClose}
-            className="rounded-md p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="rounded-md p-2 text-neutral-500 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                title="Delete ticket"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="rounded-md p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
       {/* Content */}
@@ -292,7 +408,7 @@ export function TicketDetailPanel({
                   <label key={member.id} className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
-                      checked={ticket.assigneeIds.includes(member.id)}
+                      checked={assigneeIds.includes(member.id)}
                       onChange={() => handleAssigneeChange(member.id)}
                       className="rounded border-neutral-300 text-neutral-900 focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:ring-neutral-700"
                     />
@@ -301,6 +417,13 @@ export function TicketDetailPanel({
                 ))}
               </div>
             </div>
+
+            {/* Labels */}
+            <LabelSelector
+              labels={labels}
+              selectedLabelIds={labelIds}
+              onToggleLabel={handleLabelChange}
+            />
 
             {/* Priority */}
             <div>
@@ -333,6 +456,20 @@ export function TicketDetailPanel({
               />
             </div>
 
+            {/* Due Date */}
+            <div>
+              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+                <Calendar className="mr-1 inline h-3 w-3" />
+                Due Date
+              </label>
+              <input
+                type="date"
+                value={ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : ""}
+                onChange={(e) => handleDueDateChange(e.target.value)}
+                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+              />
+            </div>
+
             {/* Tags */}
             <div>
               <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
@@ -340,7 +477,7 @@ export function TicketDetailPanel({
                 Tags
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {ticket.tags.map((tag) => (
+                {tags.map((tag) => (
                   <span
                     key={tag}
                     className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-neutral-50 px-2 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
@@ -369,6 +506,18 @@ export function TicketDetailPanel({
               </div>
             </div>
           </div>
+
+          {/* Time Tracking */}
+          <TimeTracker
+            ticket={ticket}
+            members={members}
+            onStartTimer={handleStartTimer}
+            onStopTimer={handleStopTimer}
+            onDeleteTimeLog={handleDeleteTimeLog}
+            activeTimeLog={activeTimeLog}
+            timeLogs={timeLogs}
+            isLoading={isLoadingTimer}
+          />
 
           {/* Timestamps */}
           <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
@@ -460,9 +609,31 @@ export function TicketDetailPanel({
               )}
             </div>
           </div>
+
+          {/* Activity Section */}
+          <div className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
+              <ActivityIcon className="h-4 w-4" />
+              Activity
+            </h3>
+            <ActivityFeed activities={activities} users={members} showFilters={false} limit={20} />
+          </div>
         </div>
       </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Ticket"
+        message={`Are you sure you want to delete "${ticket.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

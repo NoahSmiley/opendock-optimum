@@ -15,7 +15,11 @@ import type {
   KanbanBoardSnapshot,
   KanbanSprint,
   KanbanTicket,
+  KanbanTimeLog,
   KanbanUser,
+  KanbanActivity,
+  KanbanActivityType,
+  KanbanLabel,
   Project,
 } from "@opendock/shared/types";
 
@@ -30,6 +34,9 @@ export interface AppState {
   kanbanSprints: KanbanSprint[];
   kanbanUsers: KanbanUser[];
   kanbanComments: KanbanComment[];
+  kanbanTimeLogs: KanbanTimeLog[];
+  kanbanActivities: KanbanActivity[];
+  kanbanLabels: KanbanLabel[];
 }
 
 const DEFAULT_STATE: AppState = {
@@ -43,6 +50,9 @@ const DEFAULT_STATE: AppState = {
   kanbanSprints: [],
   kanbanUsers: [],
   kanbanComments: [],
+  kanbanTimeLogs: [],
+  kanbanActivities: [],
+  kanbanLabels: [],
 };
 
 export class StateStore {
@@ -76,6 +86,9 @@ export class StateStore {
         kanbanSprints: parsed.kanbanSprints ?? [],
         kanbanUsers: parsed.kanbanUsers ?? [],
         kanbanComments: parsed.kanbanComments ?? [],
+        kanbanTimeLogs: parsed.kanbanTimeLogs ?? [],
+        kanbanActivities: parsed.kanbanActivities ?? [],
+        kanbanLabels: parsed.kanbanLabels ?? [],
       };
     } catch (error) {
       console.error("[state] failed to parse state file", error);
@@ -101,8 +114,11 @@ export class StateStore {
       kanbanColumns: overrides.kanbanColumns ? [...overrides.kanbanColumns] : [],
       kanbanTickets: overrides.kanbanTickets ? [...overrides.kanbanTickets] : [],
       kanbanSprints: overrides.kanbanSprints ? [...overrides.kanbanSprints] : [],
+      kanbanTimeLogs: overrides.kanbanTimeLogs ? [...overrides.kanbanTimeLogs] : [],
       kanbanUsers: overrides.kanbanUsers ? [...overrides.kanbanUsers] : [],
       kanbanComments: overrides.kanbanComments ? [...overrides.kanbanComments] : [],
+      kanbanActivities: overrides.kanbanActivities ? [...overrides.kanbanActivities] : [],
+      kanbanLabels: overrides.kanbanLabels ? [...overrides.kanbanLabels] : [],
     };
     this.persist();
   }
@@ -362,6 +378,7 @@ export class StateStore {
       tickets: [],
       sprints: [],
       members: [],
+      labels: [],
     };
     this.state.kanbanBoards.push(board);
     const defaultColumns = ["Backlog", "In Progress", "Review", "Done"];
@@ -404,6 +421,47 @@ export class StateStore {
     return column;
   }
 
+  updateColumn(boardId: string, columnId: string, updates: { title?: string; wipLimit?: number | null }): KanbanColumn | undefined {
+    const column = this.state.kanbanColumns.find((c) => c.id === columnId && c.boardId === boardId);
+    if (!column) return undefined;
+    if (updates.title !== undefined) {
+      column.title = updates.title;
+    }
+    if (updates.wipLimit !== undefined) {
+      column.wipLimit = updates.wipLimit === null ? undefined : updates.wipLimit;
+    }
+    this.persist();
+    return column;
+  }
+
+  deleteColumn(boardId: string, columnId: string): boolean {
+    const board = this.state.kanbanBoards.find((b) => b.id === boardId);
+    if (!board) return false;
+
+    const columnIndex = this.state.kanbanColumns.findIndex((c) => c.id === columnId && c.boardId === boardId);
+    if (columnIndex === -1) return false;
+
+    // Get the first column to move tickets to (or create one if none exist)
+    const remainingColumns = this.state.kanbanColumns.filter((c) => c.boardId === boardId && c.id !== columnId);
+    if (remainingColumns.length === 0) {
+      // Can't delete the last column
+      return false;
+    }
+
+    const targetColumn = remainingColumns[0];
+
+    // Move all tickets from the deleted column to the first column
+    const ticketsInColumn = this.state.kanbanTickets.filter((t) => t.columnId === columnId);
+    ticketsInColumn.forEach((ticket) => {
+      ticket.columnId = targetColumn.id;
+    });
+
+    // Delete the column
+    this.state.kanbanColumns.splice(columnIndex, 1);
+    this.persist();
+    return true;
+  }
+
   createSprint(boardId: string, input: { name: string; goal?: string; startDate: string; endDate: string; status?: "planned" | "active" | "completed" }): KanbanSprint {
     const sprint: KanbanSprint = {
       id: randomUUID(),
@@ -419,7 +477,21 @@ export class StateStore {
     return sprint;
   }
 
-  createTicket(boardId: string, input: { columnId: string; title: string; description?: string; assigneeIds?: string[]; tags?: string[]; estimate?: number; priority?: "low" | "medium" | "high"; sprintId?: string }): KanbanTicket {
+  createTicket(
+    boardId: string,
+    input: {
+      columnId: string;
+      title: string;
+      description?: string;
+      assigneeIds?: string[];
+      tags?: string[];
+      labelIds?: string[];
+      estimate?: number;
+      priority?: "low" | "medium" | "high";
+      sprintId?: string;
+      dueDate?: string;
+    },
+  ): KanbanTicket {
     const order = this.state.kanbanTickets.filter((ticket) => ticket.columnId === input.columnId).length;
     const ticket: KanbanTicket = {
       id: randomUUID(),
@@ -429,9 +501,11 @@ export class StateStore {
       description: input.description,
       assigneeIds: input.assigneeIds ?? [],
       tags: input.tags ?? [],
+      labelIds: input.labelIds ?? [],
       estimate: input.estimate,
       priority: input.priority ?? "medium",
       sprintId: input.sprintId,
+      dueDate: input.dueDate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       order,
@@ -494,6 +568,7 @@ export class StateStore {
     const members = board.memberIds
       .map((id) => this.state.kanbanUsers.find((user) => user.id === id))
       .filter((user): user is KanbanUser => Boolean(user));
+    const labels = this.state.kanbanLabels.filter((label) => label.boardId === boardId);
 
     return {
       board: {
@@ -502,16 +577,28 @@ export class StateStore {
         tickets,
         sprints,
         members,
+        labels,
       },
       columns,
       tickets,
       sprints,
       members,
+      labels,
     };
   }
 
   getTicket(ticketId: string): KanbanTicket | undefined {
     return this.state.kanbanTickets.find((ticket) => ticket.id === ticketId);
+  }
+
+  deleteTicket(ticketId: string): boolean {
+    const index = this.state.kanbanTickets.findIndex((ticket) => ticket.id === ticketId);
+    if (index === -1) return false;
+    this.state.kanbanTickets.splice(index, 1);
+    // Also delete all comments associated with this ticket
+    this.state.kanbanComments = this.state.kanbanComments.filter((comment) => comment.ticketId !== ticketId);
+    this.persist();
+    return true;
   }
 
   addComment(ticketId: string, userId: string, content: string): KanbanComment | null {
@@ -542,6 +629,185 @@ export class StateStore {
     this.state.kanbanComments.splice(index, 1);
     this.persist();
     return true;
+  }
+
+  // Time log methods
+  startTimeLog(ticketId: string, userId: string, startedAt?: string): KanbanTimeLog | null {
+    const ticket = this.getTicket(ticketId);
+    if (!ticket) return null;
+
+    // Check if user already has an active timer for this ticket
+    const existingActive = this.state.kanbanTimeLogs.find(
+      (log) => log.ticketId === ticketId && log.userId === userId && !log.endedAt
+    );
+    if (existingActive) return null;
+
+    const timeLog: KanbanTimeLog = {
+      id: randomUUID(),
+      ticketId,
+      userId,
+      startedAt: startedAt || new Date().toISOString(),
+      duration: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.state.kanbanTimeLogs.push(timeLog);
+    this.persist();
+    return timeLog;
+  }
+
+  stopTimeLog(timeLogId: string, endedAt?: string): KanbanTimeLog | null {
+    const timeLog = this.state.kanbanTimeLogs.find((log) => log.id === timeLogId);
+    if (!timeLog || timeLog.endedAt) return null;
+
+    const endTime = endedAt || new Date().toISOString();
+    const duration = Math.floor((new Date(endTime).getTime() - new Date(timeLog.startedAt).getTime()) / 1000);
+
+    timeLog.endedAt = endTime;
+    timeLog.duration = duration;
+    timeLog.updatedAt = new Date().toISOString();
+
+    // Update ticket's total time spent
+    const ticket = this.getTicket(timeLog.ticketId);
+    if (ticket) {
+      const allLogs = this.state.kanbanTimeLogs.filter((log) => log.ticketId === ticket.id);
+      const totalTime = allLogs.reduce((sum, log) => sum + log.duration, 0);
+      ticket.timeSpent = totalTime;
+    }
+
+    this.persist();
+    return timeLog;
+  }
+
+  getActiveTimeLog(ticketId: string, userId: string): KanbanTimeLog | null {
+    return this.state.kanbanTimeLogs.find(
+      (log) => log.ticketId === ticketId && log.userId === userId && !log.endedAt
+    ) || null;
+  }
+
+  getTimeLog(timeLogId: string): KanbanTimeLog | undefined {
+    return this.state.kanbanTimeLogs.find((log) => log.id === timeLogId);
+  }
+
+  listTimeLogs(ticketId: string): KanbanTimeLog[] {
+    return this.state.kanbanTimeLogs
+      .filter((log) => log.ticketId === ticketId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  deleteTimeLog(timeLogId: string): boolean {
+    const timeLog = this.getTimeLog(timeLogId);
+    if (!timeLog) return false;
+
+    const index = this.state.kanbanTimeLogs.findIndex((log) => log.id === timeLogId);
+    if (index === -1) return false;
+
+    this.state.kanbanTimeLogs.splice(index, 1);
+
+    // Recalculate ticket's total time spent
+    const ticket = this.getTicket(timeLog.ticketId);
+    if (ticket) {
+      const allLogs = this.state.kanbanTimeLogs.filter((log) => log.ticketId === ticket.id);
+      const totalTime = allLogs.reduce((sum, log) => sum + log.duration, 0);
+      ticket.timeSpent = totalTime;
+    }
+
+    this.persist();
+    return true;
+  }
+
+  // Activity tracking methods
+  createActivity(
+    boardId: string,
+    userId: string,
+    type: KanbanActivityType,
+    options?: {
+      ticketId?: string;
+      columnId?: string;
+      sprintId?: string;
+      metadata?: Record<string, unknown>;
+    }
+  ): KanbanActivity {
+    const activity: KanbanActivity = {
+      id: randomUUID(),
+      boardId,
+      userId,
+      type,
+      ticketId: options?.ticketId,
+      columnId: options?.columnId,
+      sprintId: options?.sprintId,
+      metadata: options?.metadata,
+      createdAt: new Date().toISOString(),
+    };
+    this.state.kanbanActivities.push(activity);
+    this.persist();
+    return activity;
+  }
+
+  listActivities(boardId: string, limit?: number): KanbanActivity[] {
+    const activities = this.state.kanbanActivities
+      .filter((activity) => activity.boardId === boardId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return limit ? activities.slice(0, limit) : activities;
+  }
+
+  listTicketActivities(ticketId: string, limit?: number): KanbanActivity[] {
+    const activities = this.state.kanbanActivities
+      .filter((activity) => activity.ticketId === ticketId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return limit ? activities.slice(0, limit) : activities;
+  }
+
+  // Label management methods
+  createLabel(boardId: string, name: string, color: string): KanbanLabel {
+    const label: KanbanLabel = {
+      id: randomUUID(),
+      boardId,
+      name,
+      color,
+      createdAt: new Date().toISOString(),
+    };
+    this.state.kanbanLabels.push(label);
+    this.persist();
+    return label;
+  }
+
+  updateLabel(labelId: string, updates: { name?: string; color?: string }): KanbanLabel | null {
+    const label = this.state.kanbanLabels.find((l) => l.id === labelId);
+    if (!label) return null;
+
+    if (updates.name !== undefined) label.name = updates.name;
+    if (updates.color !== undefined) label.color = updates.color;
+
+    this.persist();
+    return label;
+  }
+
+  deleteLabel(labelId: string): boolean {
+    const index = this.state.kanbanLabels.findIndex((l) => l.id === labelId);
+    if (index === -1) return false;
+
+    // Remove label from all tickets
+    this.state.kanbanTickets.forEach((ticket) => {
+      ticket.labelIds = ticket.labelIds.filter((id) => id !== labelId);
+    });
+
+    this.state.kanbanLabels.splice(index, 1);
+    this.persist();
+    return true;
+  }
+
+  listLabels(boardId: string): KanbanLabel[] {
+    return this.state.kanbanLabels
+      .filter((label) => label.boardId === boardId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  getLabel(labelId: string): KanbanLabel | undefined {
+    return this.state.kanbanLabels.find((l) => l.id === labelId);
   }
 }
 

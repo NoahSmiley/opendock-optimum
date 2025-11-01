@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { KanbanBoard, KanbanTicket } from "@opendock/shared/types";
+import type { DueDateFilter } from "@/components/boards/BoardToolbar";
 
 interface UseBoardFiltersParams {
   selectedBoard: KanbanBoard | null;
@@ -15,6 +16,10 @@ interface UseBoardFiltersResult {
   setSelectedPriorityFilter: React.Dispatch<React.SetStateAction<"all" | KanbanTicket["priority"]>>;
   selectedSprintFilter: string;
   setSelectedSprintFilter: React.Dispatch<React.SetStateAction<string>>;
+  selectedDueDateFilter: DueDateFilter;
+  setSelectedDueDateFilter: React.Dispatch<React.SetStateAction<DueDateFilter>>;
+  selectedLabelFilter: string;
+  setSelectedLabelFilter: React.Dispatch<React.SetStateAction<string>>;
   showUnassignedOnly: boolean;
   setShowUnassignedOnly: React.Dispatch<React.SetStateAction<boolean>>;
   recentOnly: boolean;
@@ -31,6 +36,8 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
   const [selectedAssigneeFilter, setSelectedAssigneeFilter] = useState<string>("all");
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<"all" | KanbanTicket["priority"]>("all");
   const [selectedSprintFilter, setSelectedSprintFilter] = useState<string>("all");
+  const [selectedDueDateFilter, setSelectedDueDateFilter] = useState<DueDateFilter>("all");
+  const [selectedLabelFilter, setSelectedLabelFilter] = useState<string>("all");
   const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
   const [recentOnly, setRecentOnly] = useState(false);
 
@@ -43,10 +50,12 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
           selectedAssigneeFilter !== "all" ||
           selectedPriorityFilter !== "all" ||
           selectedSprintFilter !== "all" ||
+          selectedDueDateFilter !== "all" ||
+          selectedLabelFilter !== "all" ||
           showUnassignedOnly ||
           recentOnly,
       ),
-    [normalizedSearchQuery, selectedAssigneeFilter, selectedPriorityFilter, selectedSprintFilter, showUnassignedOnly, recentOnly],
+    [normalizedSearchQuery, selectedAssigneeFilter, selectedPriorityFilter, selectedSprintFilter, selectedDueDateFilter, selectedLabelFilter, showUnassignedOnly, recentOnly],
   );
 
   const columnIdSet = useMemo(() => {
@@ -75,6 +84,37 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
           : selectedSprintFilter === "backlog"
             ? !ticket.sprintId
             : ticket.sprintId === selectedSprintFilter;
+
+      // Due date filter logic
+      const matchesDueDate = (() => {
+        if (selectedDueDateFilter === "all") return true;
+        if (selectedDueDateFilter === "no-due-date") return !ticket.dueDate;
+        if (!ticket.dueDate) return false;
+
+        const dueDate = new Date(ticket.dueDate);
+        const now = new Date();
+        const diffMs = dueDate.getTime() - now.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+        switch (selectedDueDateFilter) {
+          case "overdue":
+            return diffDays < 0;
+          case "due-this-week":
+            return diffDays >= 0 && diffDays <= 7;
+          case "due-this-month":
+            return diffDays >= 0 && diffDays <= 30;
+          default:
+            return true;
+        }
+      })();
+
+      const matchesLabel =
+        selectedLabelFilter === "all"
+          ? true
+          : selectedLabelFilter === "no-label"
+            ? (ticket.labelIds?.length ?? 0) === 0
+            : ticket.labelIds?.includes(selectedLabelFilter) ?? false;
+
       const matchesUnassigned = showUnassignedOnly ? ticket.assigneeIds.length === 0 : true;
       const matchesRecency = !recentOnly
         ? true
@@ -85,6 +125,8 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
         matchesAssignee &&
         matchesPriority &&
         matchesSprint &&
+        matchesDueDate &&
+        matchesLabel &&
         matchesUnassigned &&
         matchesRecency
       );
@@ -95,6 +137,8 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
       selectedAssigneeFilter,
       selectedPriorityFilter,
       selectedSprintFilter,
+      selectedDueDateFilter,
+      selectedLabelFilter,
       showUnassignedOnly,
     ],
   );
@@ -133,6 +177,8 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
     setSelectedAssigneeFilter("all");
     setSelectedPriorityFilter("all");
     setSelectedSprintFilter("all");
+    setSelectedDueDateFilter("all");
+    setSelectedLabelFilter("all");
     setShowUnassignedOnly(false);
     setRecentOnly(false);
   }, []);
@@ -146,6 +192,10 @@ export function useBoardFilters({ selectedBoard, columnTicketMap }: UseBoardFilt
     setSelectedPriorityFilter,
     selectedSprintFilter,
     setSelectedSprintFilter,
+    selectedDueDateFilter,
+    setSelectedDueDateFilter,
+    selectedLabelFilter,
+    setSelectedLabelFilter,
     showUnassignedOnly,
     setShowUnassignedOnly,
     recentOnly,

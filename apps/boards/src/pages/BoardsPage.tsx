@@ -3,8 +3,14 @@ import clsx from "clsx";
 import { useTheme } from "@/theme-provider";
 import { ThemeToggle } from "@/theme-toggle";
 import { TicketDetailPanel } from "@/components/TicketDetailPanel";
-import { BoardsSidebar, BoardsSidebarMobile } from "@/components/boards/BoardsSidebar";
+import { CreateTicketPanel } from "@/components/CreateTicketPanel";
+import { BoardsSidebar, BoardsSidebarMobile, type BoardTab } from "@/components/boards/BoardsSidebar";
 import { BoardToolbar } from "@/components/boards/BoardToolbar";
+import { BoardSettingsModal } from "@/components/boards/BoardSettingsModal";
+import { SettingsPage } from "@/components/boards/SettingsPage";
+import { BulkActionsToolbar } from "@/components/boards/BulkActionsToolbar";
+import { BulkMoveModal } from "@/components/boards/BulkMoveModal";
+import { BulkAssignModal } from "@/components/boards/BulkAssignModal";
 import { OverviewTab } from "@/components/boards/OverviewTab";
 import { BacklogTab } from "@/components/boards/BacklogTab";
 import { BoardKanbanView } from "@/components/boards/BoardKanbanView";
@@ -40,12 +46,18 @@ function BoardsAppInner() {
     mutateBoards((boards) => boards);
   }, [mutateBoards]);
 
-  const [activeTab, setActiveTab] = useState<"board" | "overview" | "backlog">("board");
+  const [activeTab, setActiveTab] = useState<BoardTab>("kanban");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [creatingColumnId, setCreatingColumnId] = useState<string | null>(null);
   const [creatingBacklogTicket, setCreatingBacklogTicket] = useState(false);
   const [creatingSprint, setCreatingSprint] = useState(false);
+  const [showBoardSettings, setShowBoardSettings] = useState(false);
+  const [showCreateTicket, setShowCreateTicket] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
+  const [showBulkMoveModal, setShowBulkMoveModal] = useState(false);
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const mutationInProgressRef = useRef<string | null>(null);
   const mutationAppliedRef = useRef(false);
 
@@ -80,6 +92,10 @@ function BoardsAppInner() {
     handleTicketUpdate,
     handleAddComment,
     handleDeleteComment,
+    handleDeleteTicket,
+    handleRenameColumn,
+    handleUpdateColumnWipLimit,
+    handleDeleteColumn,
   } = useBoardActions({ selectedBoard, refreshBoards, setError, mutateBoards: mutateAsync });
 
   const {
@@ -91,6 +107,10 @@ function BoardsAppInner() {
     setSelectedPriorityFilter,
     selectedSprintFilter,
     setSelectedSprintFilter,
+    selectedDueDateFilter,
+    setSelectedDueDateFilter,
+    selectedLabelFilter,
+    setSelectedLabelFilter,
     showUnassignedOnly,
     setShowUnassignedOnly,
     recentOnly,
@@ -234,10 +254,134 @@ function BoardsAppInner() {
     resetFilters();
   }, [resetFilters]);
 
+  // Bulk selection handlers
+  const handleToggleSelectionMode = useCallback(() => {
+    setSelectionMode((prev) => !prev);
+    if (selectionMode) {
+      // Clear selections when exiting selection mode
+      setSelectedTicketIds(new Set());
+    }
+  }, [selectionMode]);
+
+  const handleToggleTicketSelection = useCallback((ticketId: string) => {
+    setSelectedTicketIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(ticketId)) {
+        newSet.delete(ticketId);
+      } else {
+        newSet.add(ticketId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (!selectedBoard) return;
+    const allTicketIds = new Set(selectedBoard.tickets.map((t) => t.id));
+    setSelectedTicketIds(allTicketIds);
+  }, [selectedBoard]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTicketIds(new Set());
+    setSelectionMode(false);
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!selectedBoard || selectedTicketIds.size === 0) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedTicketIds.size} ticket${selectedTicketIds.size > 1 ? 's' : ''}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      // Delete tickets one by one (we'll implement bulk API later)
+      for (const ticketId of selectedTicketIds) {
+        await handleDeleteTicket(ticketId);
+      }
+      setSelectedTicketIds(new Set());
+      setSelectionMode(false);
+    } catch (error) {
+      console.error("Failed to delete tickets:", error);
+      setError("Failed to delete some tickets");
+    }
+  }, [selectedBoard, selectedTicketIds, handleDeleteTicket, setError]);
+
+  const handleBulkMove = useCallback(() => {
+    setShowBulkMoveModal(true);
+  }, []);
+
+  const handleBulkMoveConfirm = useCallback(async (targetColumnId: string) => {
+    if (!selectedBoard || selectedTicketIds.size === 0) return;
+
+    try {
+      const columnOrder = new Map(
+        selectedBoard.columns
+          .slice()
+          .sort((a, b) => a.order - b.order)
+          .map((column, index) => [column.id, index]),
+      );
+
+      const ticketsToMove = selectedBoard.tickets
+        .filter((ticket) => selectedTicketIds.has(ticket.id) && ticket.columnId !== targetColumnId)
+        .sort((a, b) => {
+          const columnRankA = columnOrder.get(a.columnId) ?? Number.MAX_SAFE_INTEGER;
+          const columnRankB = columnOrder.get(b.columnId) ?? Number.MAX_SAFE_INTEGER;
+          if (columnRankA === columnRankB) {
+            return a.order - b.order;
+          }
+          return columnRankA - columnRankB;
+        });
+
+      let nextIndex = selectedBoard.tickets.filter((t) => t.columnId === targetColumnId).length;
+
+      for (const ticket of ticketsToMove) {
+        await boardsApi.reorderTicket(selectedBoard.id, {
+          ticketId: ticket.id,
+          toColumnId: targetColumnId,
+          toIndex: nextIndex,
+        });
+        nextIndex += 1;
+      }
+      await refreshBoards();
+      setSelectedTicketIds(new Set());
+      setSelectionMode(false);
+      setShowBulkMoveModal(false);
+    } catch (error) {
+      console.error("Failed to move tickets:", error);
+      setError("Failed to move some tickets");
+    }
+  }, [selectedBoard, selectedTicketIds, refreshBoards, setError]);
+
+  const handleBulkAssign = useCallback(() => {
+    setShowBulkAssignModal(true);
+  }, []);
+
+  const handleBulkAssignConfirm = useCallback(async (assigneeIds: string[]) => {
+    if (!selectedBoard || selectedTicketIds.size === 0) return;
+
+    try {
+      // Assign tickets one by one (we'll implement bulk API later)
+      for (const ticketId of selectedTicketIds) {
+        await boardsApi.updateTicket(ticketId, { assigneeIds });
+      }
+      await refreshBoards();
+      setSelectedTicketIds(new Set());
+      setSelectionMode(false);
+      setShowBulkAssignModal(false);
+    } catch (error) {
+      console.error("Failed to assign tickets:", error);
+      setError("Failed to assign some tickets");
+    }
+  }, [selectedBoard, selectedTicketIds, refreshBoards, setError]);
+
   useEffect(() => {
     resetFilters();
     setActiveComposerColumnId(null);
     setColumnDrafts({});
+    setSelectionMode(false);
+    setSelectedTicketIds(new Set());
   }, [resetFilters, selectedBoardId, setActiveComposerColumnId, setColumnDrafts]);
 
   return (
@@ -257,6 +401,8 @@ function BoardsAppInner() {
         projectsLoading={projectsLoading}
         projectsError={projectsError}
         projectOptions={projectOptions}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
       <div className={clsx(
         "flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300",
@@ -280,30 +426,30 @@ function BoardsAppInner() {
               <nav className="hidden items-center gap-6 text-sm text-neutral-500 dark:text-neutral-300 sm:flex">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("overview")}
+                  onClick={() => setActiveTab("timeline")}
                   className={clsx(
                     "transition hover:text-neutral-900 dark:hover:text-white",
-                    activeTab === "overview" && "text-neutral-900 dark:text-white"
+                    activeTab === "timeline" && "text-neutral-900 dark:text-white"
                   )}
                 >
                   Overview
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab("board")}
+                  onClick={() => setActiveTab("kanban")}
                   className={clsx(
                     "transition hover:text-neutral-900 dark:hover:text-white",
-                    activeTab === "board" && "text-neutral-900 dark:text-white"
+                    activeTab === "kanban" && "text-neutral-900 dark:text-white"
                   )}
                 >
                   Board
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab("backlog")}
+                  onClick={() => setActiveTab("issues")}
                   className={clsx(
                     "transition hover:text-neutral-900 dark:hover:text-white",
-                    activeTab === "backlog" && "text-neutral-900 dark:text-white"
+                    activeTab === "issues" && "text-neutral-900 dark:text-white"
                   )}
                 >
                   Backlog
@@ -345,7 +491,7 @@ function BoardsAppInner() {
             </div>
           ) : selectedBoard ? (
             <>
-            {activeTab === "board" && (
+            {activeTab === "kanban" && (
               <BoardToolbar
                 board={selectedBoard}
                 searchQuery={searchQuery}
@@ -357,68 +503,102 @@ function BoardsAppInner() {
                 sprintOptions={sprintOptions}
                 selectedPriorityFilter={selectedPriorityFilter}
                 onPriorityFilterChange={setSelectedPriorityFilter}
+                selectedDueDateFilter={selectedDueDateFilter}
+                onDueDateFilterChange={setSelectedDueDateFilter}
+                selectedLabelFilter={selectedLabelFilter}
+                onLabelFilterChange={setSelectedLabelFilter}
                 showUnassignedOnly={showUnassignedOnly}
                 onToggleUnassignedOnly={handleToggleUnassignedOnly}
                 recentOnly={recentOnly}
                 onToggleRecentOnly={handleToggleRecentOnly}
                 filtersActive={filtersActive}
                 onClearFilters={handleClearFilters}
+                onCreateTicket={() => setShowCreateTicket(true)}
+                selectionMode={selectionMode}
+                onToggleSelectionMode={handleToggleSelectionMode}
               />
             )}
-            <div className="mt-8 space-y-8">
-              {activeTab === "overview" ? (
-                <OverviewTab
-                  board={selectedBoard}
-                  boardStats={boardStats}
-                  teamWorkload={teamWorkload}
-                  maxWorkloadCount={maxWorkloadCount}
-                  priorityBreakdown={priorityBreakdown}
-                  maxPriorityCount={maxPriorityCount}
-                  activeSprint={activeSprint}
-                  sprintForm={sprintForm}
-                  onSprintFormChange={handleSprintFormChange}
-                  onCreateSprint={handleCreateSprint}
-                  creatingSprint={creatingSprint}
-                />
-              ) : null}
-              {activeTab === "backlog" ? (
-                <BacklogTab
-                  board={selectedBoard}
-                  backlogColumn={backlogColumn}
-                  backlogForm={backlogForm}
-                  onBacklogFormChange={handleBacklogFormChange}
-                  onCreateBacklogTicket={handleCreateBacklogTicket}
-                  creatingBacklogTicket={creatingBacklogTicket}
-                />
-              ) : null}
-              {activeTab === "board" && selectedBoard ? (
-                <>
-                  <BoardKanbanView
+            {activeTab === "settings" ? (
+              <SettingsPage
+                board={selectedBoard}
+                onCreateColumn={async (title) => {
+                  await boardsApi.createColumn(selectedBoard.id, title);
+                  await refreshBoards();
+                }}
+                onRenameColumn={handleRenameColumn}
+                onDeleteColumn={handleDeleteColumn}
+                onCreateLabel={async (name, color) => {
+                  await boardsApi.createLabel(selectedBoard.id, { name, color });
+                  await refreshBoards();
+                }}
+                onUpdateLabel={async (labelId, name, color) => {
+                  await boardsApi.updateLabel(labelId, { name, color });
+                  await refreshBoards();
+                }}
+                onDeleteLabel={async (labelId) => {
+                  await boardsApi.deleteLabel(labelId);
+                  await refreshBoards();
+                }}
+              />
+            ) : (
+              <div className="mt-8 space-y-8">
+                {activeTab === "timeline" ? (
+                  <OverviewTab
                     board={selectedBoard}
-                    columnTicketMap={columnTicketMap}
-                    filteredTicketMap={filteredTicketMap}
-                    activeComposerColumnId={activeComposerColumnId}
-                    creatingColumnTicketId={creatingColumnTicketId}
-                    columnTitle={columnTitle}
-                    creatingColumnId={creatingColumnId}
-                    getColumnDraft={getColumnDraft}
-                    onColumnDraftChange={updateColumnDraft}
-                    onColumnTicketSubmit={handleColumnTicketSubmit}
-                    onColumnComposerOpen={handleColumnComposerOpen}
-                    onColumnComposerCancel={handleColumnComposerCancel}
-                    onColumnTitleChange={setColumnTitle}
-                    onCreateColumn={handleCreateColumn}
-                    onTicketClick={setSelectedTicketId}
-                    onReorderTicket={handleReorderTicket}
+                    boardStats={boardStats}
+                    teamWorkload={teamWorkload}
+                    maxWorkloadCount={maxWorkloadCount}
+                    priorityBreakdown={priorityBreakdown}
+                    maxPriorityCount={maxPriorityCount}
+                    activeSprint={activeSprint}
+                    sprintForm={sprintForm}
+                    onSprintFormChange={handleSprintFormChange}
+                    onCreateSprint={handleCreateSprint}
+                    creatingSprint={creatingSprint}
                   />
-                  
-                  {/* Codepen Demo for comparison */}
-                  <div className="mt-8">
-                    <CodepenDemo />
-                  </div>
-                </>
-              ) : null}
-            </div>
+                ) : null}
+                {activeTab === "issues" ? (
+                  <BacklogTab
+                    board={selectedBoard}
+                    backlogColumn={backlogColumn}
+                    backlogForm={backlogForm}
+                    onBacklogFormChange={handleBacklogFormChange}
+                    onCreateBacklogTicket={handleCreateBacklogTicket}
+                    creatingBacklogTicket={creatingBacklogTicket}
+                  />
+                ) : null}
+                {activeTab === "kanban" && selectedBoard ? (
+                  <>
+                    <BoardKanbanView
+                      board={selectedBoard}
+                      columnTicketMap={columnTicketMap}
+                      filteredTicketMap={filteredTicketMap}
+                      activeComposerColumnId={activeComposerColumnId}
+                      creatingColumnTicketId={creatingColumnTicketId}
+                      columnTitle={columnTitle}
+                      creatingColumnId={creatingColumnId}
+                      getColumnDraft={getColumnDraft}
+                      onColumnDraftChange={updateColumnDraft}
+                      onColumnTicketSubmit={handleColumnTicketSubmit}
+                      onColumnComposerOpen={handleColumnComposerOpen}
+                      onColumnComposerCancel={handleColumnComposerCancel}
+                      onColumnTitleChange={setColumnTitle}
+                      onCreateColumn={handleCreateColumn}
+                      onTicketClick={setSelectedTicketId}
+                      onReorderTicket={handleReorderTicket}
+                      selectionMode={selectionMode}
+                      selectedTicketIds={selectedTicketIds}
+                      onToggleTicketSelection={handleToggleTicketSelection}
+                    />
+
+                    {/* Codepen Demo for comparison */}
+                    <div className="mt-8">
+                      <CodepenDemo />
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            )}
             </>
           ) : (
             <div className="mx-auto mt-12 max-w-7xl rounded-xl border border-slate-200/70 bg-white/80 px-8 py-12 text-center text-sm text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
@@ -434,14 +614,81 @@ function BoardsAppInner() {
           <TicketDetailPanel
             ticket={selectedTicket}
             members={selectedBoard.members}
+            labels={selectedBoard.labels}
             onClose={() => setSelectedTicketId(null)}
             onUpdate={handleTicketUpdate}
+            onDelete={handleDeleteTicket}
             onAddComment={handleAddComment}
             onDeleteComment={handleDeleteComment}
             sidebarCollapsed={sidebarCollapsed}
           />
         ) : null;
       })()}
+
+      {/* Board Settings Modal */}
+      {selectedBoard && (
+        <BoardSettingsModal
+          isOpen={showBoardSettings}
+          board={selectedBoard}
+          onClose={() => setShowBoardSettings(false)}
+          onCreateColumn={async (title) => {
+            await boardsApi.createColumn(selectedBoard.id, title);
+            await refreshBoards();
+          }}
+          onRenameColumn={handleRenameColumn}
+          onUpdateColumnWipLimit={handleUpdateColumnWipLimit}
+          onDeleteColumn={handleDeleteColumn}
+        />
+      )}
+
+      {/* Create Ticket Panel */}
+      {showCreateTicket && selectedBoard && (
+        <CreateTicketPanel
+          board={selectedBoard}
+          onClose={() => setShowCreateTicket(false)}
+          onCreate={async (ticketData) => {
+            await boardsApi.createTicket(selectedBoard.id, ticketData);
+            await refreshBoards();
+          }}
+          sidebarCollapsed={sidebarCollapsed}
+        />
+      )}
+
+      {/* Bulk Actions Toolbar */}
+      {selectionMode && selectedTicketIds.size > 0 && selectedBoard && (
+        <BulkActionsToolbar
+          selectedCount={selectedTicketIds.size}
+          totalCount={selectedBoard.tickets.length}
+          onSelectAll={handleSelectAll}
+          onClearSelection={handleClearSelection}
+          onBulkDelete={handleBulkDelete}
+          onBulkMove={handleBulkMove}
+          onBulkAssign={handleBulkAssign}
+          board={selectedBoard}
+        />
+      )}
+
+      {/* Bulk Move Modal */}
+      {selectedBoard && (
+        <BulkMoveModal
+          isOpen={showBulkMoveModal}
+          board={selectedBoard}
+          selectedCount={selectedTicketIds.size}
+          onClose={() => setShowBulkMoveModal(false)}
+          onConfirm={handleBulkMoveConfirm}
+        />
+      )}
+
+      {/* Bulk Assign Modal */}
+      {selectedBoard && (
+        <BulkAssignModal
+          isOpen={showBulkAssignModal}
+          board={selectedBoard}
+          selectedCount={selectedTicketIds.size}
+          onClose={() => setShowBulkAssignModal(false)}
+          onConfirm={handleBulkAssignConfirm}
+        />
+      )}
     </div>
   );
 }

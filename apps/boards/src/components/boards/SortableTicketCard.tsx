@@ -1,5 +1,5 @@
 import { Draggable } from "@hello-pangea/dnd";
-import type { KanbanTicket, KanbanColumn, BoardMember, KanbanSprint } from "@opendock/shared/types";
+import type { KanbanTicket, KanbanColumn, BoardMember, KanbanSprint, KanbanLabel } from "@opendock/shared/types";
 import { TicketCard } from "./TicketCard";
 
 interface SortableTicketCardProps {
@@ -7,8 +7,12 @@ interface SortableTicketCardProps {
   index: number;
   column: KanbanColumn;
   members: BoardMember[];
+  labels: KanbanLabel[];
   sprints?: KanbanSprint[];
   onClick?: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (ticketId: string) => void;
 }
 
 export function SortableTicketCard({
@@ -16,11 +20,15 @@ export function SortableTicketCard({
   index,
   column,
   members,
+  labels,
   sprints,
   onClick,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: SortableTicketCardProps) {
   return (
-    <Draggable draggableId={ticket.id} index={index}>
+    <Draggable draggableId={ticket.id} index={index} isDragDisabled={selectionMode}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
@@ -32,8 +40,12 @@ export function SortableTicketCard({
             ticket={ticket}
             column={column}
             members={members}
+            labels={labels}
             sprints={sprints}
             onClick={onClick}
+            selectionMode={selectionMode}
+            isSelected={isSelected}
+            onToggleSelect={onToggleSelect}
           />
         </div>
       )}
