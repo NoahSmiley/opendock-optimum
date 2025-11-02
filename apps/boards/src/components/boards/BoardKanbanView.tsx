@@ -1,12 +1,10 @@
 import type { FormEvent } from "react";
 import { useCallback } from "react";
-import { Plus } from "lucide-react";
 import type { KanbanBoard, KanbanTicket } from "@opendock/shared/types";
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./KanbanColumn";
 import { SortableTicketCard } from "./SortableTicketCard";
 import { ColumnTicketComposer } from "./forms/ColumnTicketComposer";
-import { AddColumnForm } from "./forms/AddColumnForm";
 import type { ColumnDraftState } from "./forms/types";
 
 interface BoardKanbanViewProps {
@@ -15,15 +13,11 @@ interface BoardKanbanViewProps {
   filteredTicketMap: Map<string, KanbanTicket[]>;
   activeComposerColumnId: string | null;
   creatingColumnTicketId: string | null;
-  columnTitle: string;
-  creatingColumnId: string | null;
   getColumnDraft: (columnId: string) => ColumnDraftState;
   onColumnDraftChange: (columnId: string, patch: Partial<ColumnDraftState>) => void;
   onColumnTicketSubmit: (event: FormEvent, columnId: string) => void;
   onColumnComposerOpen: (columnId: string) => void;
   onColumnComposerCancel: () => void;
-  onColumnTitleChange: (value: string) => void;
-  onCreateColumn: (event: FormEvent, boardId: string) => void;
   onTicketClick: (ticketId: string) => void;
   onReorderTicket: (ticketId: string, toColumnId: string, toIndex: number) => void;
   selectionMode?: boolean;
@@ -37,15 +31,11 @@ export function BoardKanbanView({
   filteredTicketMap,
   activeComposerColumnId,
   creatingColumnTicketId,
-  columnTitle,
-  creatingColumnId,
   getColumnDraft,
   onColumnDraftChange,
   onColumnTicketSubmit,
   onColumnComposerOpen,
   onColumnComposerCancel,
-  onColumnTitleChange,
-  onCreateColumn,
   onTicketClick,
   onReorderTicket,
   selectionMode = false,
@@ -70,7 +60,7 @@ export function BoardKanbanView({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex h-full gap-4 overflow-x-auto pb-4 scroll-smooth select-none">
+      <div className="flex h-full gap-4 overflow-x-auto pb-4 scroll-smooth select-none pl-4 sm:pl-6 lg:pl-8 xl:pl-10">
         <div className="flex gap-4">
           {board.columns.map((column, columnIndex) => {
             const tickets = filteredTicketMap.get(column.id) ?? [];
@@ -108,13 +98,6 @@ export function BoardKanbanView({
               </Droppable>
             );
           })}
-
-          <AddColumnForm
-            title={columnTitle}
-            onTitleChange={onColumnTitleChange}
-            onSubmit={(event) => onCreateColumn(event, board.id)}
-            creating={creatingColumnId === board.id}
-          />
         </div>
       </div>
     </DragDropContext>

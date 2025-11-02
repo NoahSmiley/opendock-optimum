@@ -14,7 +14,6 @@ import { BulkAssignModal } from "@/components/boards/BulkAssignModal";
 import { OverviewTab } from "@/components/boards/OverviewTab";
 import { BacklogTab } from "@/components/boards/BacklogTab";
 import { BoardKanbanView } from "@/components/boards/BoardKanbanView";
-import { CodepenDemo } from "@/components/boards/CodepenDemo";
 import { useBoardsData } from "@/hooks/useBoardsData";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardActions } from "@/hooks/useBoardActions";
@@ -49,7 +48,6 @@ function BoardsAppInner() {
   const [activeTab, setActiveTab] = useState<BoardTab>("kanban");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  const [creatingColumnId, setCreatingColumnId] = useState<string | null>(null);
   const [creatingBacklogTicket, setCreatingBacklogTicket] = useState(false);
   const [creatingSprint, setCreatingSprint] = useState(false);
   const [showBoardSettings, setShowBoardSettings] = useState(false);
@@ -74,8 +72,6 @@ function BoardsAppInner() {
     setActiveComposerColumnId,
     setColumnDrafts,
     creatingColumnTicketId,
-    columnTitle,
-    setColumnTitle,
     sprintForm,
     backlogForm,
     getColumnDraft,
@@ -83,7 +79,6 @@ function BoardsAppInner() {
     handleColumnComposerOpen,
     handleColumnComposerCancel,
     handleColumnTicketSubmit,
-    handleCreateColumn,
     handleSprintFormChange,
     handleCreateSprint,
     handleBacklogFormChange,
@@ -385,7 +380,7 @@ function BoardsAppInner() {
   }, [resetFilters, selectedBoardId, setActiveComposerColumnId, setColumnDrafts]);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-white text-neutral-900 transition-colors dark:bg-black dark:text-neutral-100">
+    <div className="flex min-h-screen overflow-x-hidden bg-white text-neutral-900 transition-colors dark:bg-dark-bg dark:text-neutral-100">
       <BoardsSidebar
         collapsed={sidebarCollapsed}
         onToggleCollapsed={handleToggleSidebar}
@@ -404,15 +399,9 @@ function BoardsAppInner() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
-      <div className={clsx(
-        "flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300",
-        sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
-      )}>
-        <header className={clsx(
-          "fixed right-0 top-0 z-50 bg-white transition-all duration-300 dark:bg-black",
-          sidebarCollapsed ? "left-0 lg:left-16" : "left-0 lg:left-64"
-        )}>
-          <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-52">
+        <header className="fixed right-0 top-0 z-50 bg-white dark:bg-dark-bg left-0 lg:left-52">
+          <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 lg:hidden">
                 <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -461,7 +450,7 @@ function BoardsAppInner() {
             </div>
           </div>
         </header>
-        <main className="mt-[57px] flex h-[calc(100vh-57px)] min-w-0 flex-col overflow-x-hidden bg-white dark:bg-black">
+        <main className="mt-[57px] flex h-[calc(100vh-57px)] min-w-0 flex-col overflow-x-hidden bg-white dark:bg-dark-bg">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-10">
           {error ? (
             <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-500 dark:border-rose-400/30 dark:text-rose-200">
@@ -487,7 +476,7 @@ function BoardsAppInner() {
           </div>
           {loading ? (
             <div className="mx-auto mt-8 max-w-7xl rounded-xl border border-slate-200/70 bg-white/80 px-6 py-10 text-center text-sm text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-              Loading boards…
+              Loading boards...
             </div>
           ) : selectedBoard ? (
             <>
@@ -568,34 +557,23 @@ function BoardsAppInner() {
                   />
                 ) : null}
                 {activeTab === "kanban" && selectedBoard ? (
-                  <>
-                    <BoardKanbanView
-                      board={selectedBoard}
-                      columnTicketMap={columnTicketMap}
-                      filteredTicketMap={filteredTicketMap}
-                      activeComposerColumnId={activeComposerColumnId}
-                      creatingColumnTicketId={creatingColumnTicketId}
-                      columnTitle={columnTitle}
-                      creatingColumnId={creatingColumnId}
-                      getColumnDraft={getColumnDraft}
-                      onColumnDraftChange={updateColumnDraft}
-                      onColumnTicketSubmit={handleColumnTicketSubmit}
-                      onColumnComposerOpen={handleColumnComposerOpen}
-                      onColumnComposerCancel={handleColumnComposerCancel}
-                      onColumnTitleChange={setColumnTitle}
-                      onCreateColumn={handleCreateColumn}
-                      onTicketClick={setSelectedTicketId}
-                      onReorderTicket={handleReorderTicket}
-                      selectionMode={selectionMode}
-                      selectedTicketIds={selectedTicketIds}
-                      onToggleTicketSelection={handleToggleTicketSelection}
-                    />
-
-                    {/* Codepen Demo for comparison */}
-                    <div className="mt-8">
-                      <CodepenDemo />
-                    </div>
-                  </>
+                  <BoardKanbanView
+                    board={selectedBoard}
+                    columnTicketMap={columnTicketMap}
+                    filteredTicketMap={filteredTicketMap}
+                    activeComposerColumnId={activeComposerColumnId}
+                    creatingColumnTicketId={creatingColumnTicketId}
+                    getColumnDraft={getColumnDraft}
+                    onColumnDraftChange={updateColumnDraft}
+                    onColumnTicketSubmit={handleColumnTicketSubmit}
+                    onColumnComposerOpen={handleColumnComposerOpen}
+                    onColumnComposerCancel={handleColumnComposerCancel}
+                    onTicketClick={setSelectedTicketId}
+                    onReorderTicket={handleReorderTicket}
+                    selectionMode={selectionMode}
+                    selectedTicketIds={selectedTicketIds}
+                    onToggleTicketSelection={handleToggleTicketSelection}
+                  />
                 ) : null}
               </div>
             )}

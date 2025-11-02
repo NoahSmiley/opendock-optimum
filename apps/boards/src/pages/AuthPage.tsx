@@ -64,7 +64,7 @@ export function AuthPage() {
   }, [mode]);
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-4 py-8 dark:bg-neutral-950">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-4 py-8 dark:bg-dark-bg">
       <div className="absolute right-6 top-6">
         <ThemeToggle />
       </div>
@@ -81,9 +81,9 @@ export function AuthPage() {
                 required
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="Ada Lovelace"
+                placeholder="********"
                 disabled={isLoading}
-                className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+                className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-60 dark:border-neutral-700 dark:bg-dark-bg dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
               />
             </label>
           ) : null}
@@ -94,9 +94,9 @@ export function AuthPage() {
               type="email"
               value={form.email}
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-              placeholder="you@example.com"
+              placeholder="********"
               disabled={isLoading}
-              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-60 dark:border-neutral-700 dark:bg-dark-bg dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm font-medium text-neutral-600 dark:text-neutral-200">
@@ -106,9 +106,9 @@ export function AuthPage() {
               type="password"
               value={form.password}
               onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-              placeholder="••••••••"
+              placeholder="********"
               disabled={isLoading}
-              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-60 dark:border-neutral-700 dark:bg-dark-bg dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
             />
           </label>
           {feedback || error ? (

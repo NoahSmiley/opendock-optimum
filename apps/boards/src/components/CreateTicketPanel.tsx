@@ -33,6 +33,8 @@ export function CreateTicketPanel({
   const [isCreating, setIsCreating] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(672); // Default max-w-2xl is ~672px
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     // Trigger open animation after mount
@@ -46,6 +48,28 @@ export function CreateTicketPanel({
       setColumnId(board.columns[0].id);
     }
   }, [board.columns]);
+
+  // Handle resize
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      setPanelWidth(Math.max(672, Math.min(newWidth, window.innerWidth * 0.9)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -99,18 +123,26 @@ export function CreateTicketPanel({
       {/* Backdrop */}
       <div
         className={clsx(
-          "fixed inset-y-0 right-0 left-0 z-30 bg-black/40 transition-opacity duration-200",
+          "fixed inset-y-0 right-0 left-0 z-30 transition-opacity duration-200 pointer-events-none",
           sidebarCollapsed ? "lg:left-16" : "lg:left-64",
           isOpen && !isClosing ? "opacity-100" : "opacity-0"
         )}
-        onClick={handleClose}
       />
 
       {/* Panel */}
-      <div className={clsx(
-        "fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-neutral-950",
-        isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
-      )}>
+      <div
+        className={clsx(
+          "fixed inset-y-0 right-0 z-50 flex flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-dark-bg",
+          isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+        )}
+        style={{ width: `${panelWidth}px` }}
+      >
+        {/* Resize Handle */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 transition-colors"
+          onMouseDown={() => setIsResizing(true)}
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-5 dark:border-neutral-800">
           <div>
@@ -131,7 +163,7 @@ export function CreateTicketPanel({
         <div className="space-y-5">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
               Title <span className="text-red-500">*</span>
             </label>
             <input
@@ -146,7 +178,7 @@ export function CreateTicketPanel({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
               Description
             </label>
             <textarea
@@ -162,7 +194,7 @@ export function CreateTicketPanel({
           <div className="grid gap-5 sm:grid-cols-2">
             {/* Column */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+              <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
                 Column <span className="text-red-500">*</span>
               </label>
               <select
@@ -180,7 +212,7 @@ export function CreateTicketPanel({
 
             {/* Priority */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+              <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
                 Priority
               </label>
               <div className="mt-2 flex gap-2">
@@ -190,7 +222,7 @@ export function CreateTicketPanel({
                     type="button"
                     onClick={() => setPriority(p)}
                     className={clsx(
-                      "flex-1 rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wide transition",
+                      "flex-1 rounded-lg px-3 py-2 text-xs font-bold transition",
                       priority === p
                         ? p === "high"
                           ? "bg-rose-600 text-white shadow-sm dark:bg-rose-500"
@@ -209,7 +241,7 @@ export function CreateTicketPanel({
 
           {/* Assignees */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
               Assignees
             </label>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -237,7 +269,7 @@ export function CreateTicketPanel({
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
               Tags
             </label>
             {tags.length > 0 && (
