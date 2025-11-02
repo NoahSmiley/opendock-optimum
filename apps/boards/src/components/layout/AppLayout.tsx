@@ -72,8 +72,8 @@ export function AppLayout() {
   }, [location, closeMobileNav]);
 
   return (
-    <div className="flex min-h-screen bg-white text-neutral-900 transition-colors dark:bg-black dark:text-neutral-100">
-      <aside className="hidden w-64 flex-shrink-0 bg-white px-6 py-4 dark:bg-black lg:flex">
+    <div className="flex min-h-screen bg-white text-neutral-900 transition-colors dark:bg-dark-bg dark:text-neutral-100">
+      <aside className="hidden w-64 flex-shrink-0 bg-white px-6 py-4 dark:bg-dark-bg lg:flex">
         <div className="flex w-full flex-col gap-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export function AppLayout() {
         </div>
       </aside>
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="sticky top-0 z-30 bg-white px-4 py-4 dark:bg-black">
+        <header className="sticky top-0 z-30 bg-white px-4 py-4 dark:bg-dark-bg">
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -127,7 +127,7 @@ export function AppLayout() {
           </div>
           <MobileNav open={mobileNavOpen} onClose={closeMobileNav} />
         </header>
-        <main className="flex flex-1 flex-col bg-white px-4 py-6 dark:bg-black sm:px-6 lg:px-8">
+        <main className="flex flex-1 flex-col bg-white px-4 py-6 dark:bg-dark-bg sm:px-6 lg:px-8">
           <Outlet />
         </main>
       </div>

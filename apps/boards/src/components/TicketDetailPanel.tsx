@@ -68,6 +68,8 @@ export function TicketDetailPanel({
   const [timeLogs, setTimeLogs] = useState<KanbanTimeLog[]>([]);
   const [isLoadingTimer, setIsLoadingTimer] = useState(false);
   const [activities, setActivities] = useState<KanbanActivity[]>([]);
+  const [panelWidth, setPanelWidth] = useState(672); // Default max-w-2xl is ~672px
+  const [isResizing, setIsResizing] = useState(false);
   const assigneeIds = Array.isArray(ticket.assigneeIds) ? ticket.assigneeIds : [];
   const labelIds = Array.isArray(ticket.labelIds) ? ticket.labelIds : [];
   const tags = Array.isArray(ticket.tags) ? ticket.tags : [];
@@ -97,6 +99,28 @@ export function TicketDetailPanel({
     };
     loadData();
   }, [ticket.id]);
+
+  // Handle resize
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      setPanelWidth(Math.max(672, Math.min(newWidth, window.innerWidth * 0.9)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -250,25 +274,33 @@ export function TicketDetailPanel({
       {/* Backdrop - positioned to not cover sidebar/navbar */}
       <div
         className={clsx(
-          "fixed inset-y-0 right-0 left-0 z-30 bg-black/40 transition-opacity duration-200",
+          "fixed inset-y-0 right-0 left-0 z-30 transition-opacity duration-200 pointer-events-none",
           sidebarCollapsed ? "lg:left-16" : "lg:left-64",
           isOpen && !isClosing ? "opacity-100" : "opacity-0"
         )}
-        onClick={handleClose}
       />
       
       {/* Panel */}
-      <div className={clsx(
-        "fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-neutral-950",
-        isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
-      )}>
+      <div
+        className={clsx(
+          "fixed inset-y-0 right-0 z-50 flex flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-dark-bg",
+          isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+        )}
+        style={{ width: `${panelWidth}px` }}
+      >
+        {/* Resize Handle */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 active:bg-blue-600 transition-colors"
+          onMouseDown={() => setIsResizing(true)}
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-200 p-6 dark:border-neutral-800">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">
+            <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500">
               {formatTicketKey(ticket)}
             </span>
-            <span className={clsx("rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.25em]", priorityStyles[ticket.priority])}>
+            <span className={clsx("rounded-md px-2 py-1 text-[10px] font-semibold", priorityStyles[ticket.priority])}>
               {ticket.priority}
             </span>
           </div>
@@ -297,7 +329,7 @@ export function TicketDetailPanel({
           {/* Title */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 Title
               </label>
               {!isEditingTitle && (
@@ -346,7 +378,7 @@ export function TicketDetailPanel({
           {/* Description */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 Description
               </label>
               {!isEditingDescription && (
@@ -399,7 +431,7 @@ export function TicketDetailPanel({
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Assignees */}
             <div>
-              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 <User className="mr-1 inline h-3 w-3" />
                 Assignees
               </label>
@@ -427,7 +459,7 @@ export function TicketDetailPanel({
 
             {/* Priority */}
             <div>
-              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 Priority
               </label>
               <select
@@ -443,7 +475,7 @@ export function TicketDetailPanel({
 
             {/* Estimate */}
             <div>
-              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 Estimate (points)
               </label>
               <input
@@ -458,7 +490,7 @@ export function TicketDetailPanel({
 
             {/* Due Date */}
             <div>
-              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 <Calendar className="mr-1 inline h-3 w-3" />
                 Due Date
               </label>
@@ -472,7 +504,7 @@ export function TicketDetailPanel({
 
             {/* Tags */}
             <div>
-              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                 <Tag className="mr-1 inline h-3 w-3" />
                 Tags
               </label>

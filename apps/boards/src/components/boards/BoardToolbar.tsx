@@ -71,12 +71,12 @@ export function BoardToolbar({
   onToggleSelectionMode,
 }: BoardToolbarProps) {
   return (
-    <header className="flex w-full flex-shrink-0 border-b border-neutral-200 bg-white/95 py-3 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-black/90">
+    <header className="flex w-full flex-shrink-0 border-b border-neutral-200 bg-white/95 py-3 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/80">
       <div className="flex w-full flex-col gap-3 px-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between lg:px-8 xl:px-10">
         <div className="space-y-1 lg:min-w-[280px]">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-base font-semibold text-neutral-900 dark:text-white">{board.name}</h2>
-            <span className="text-xs uppercase text-neutral-400 dark:text-neutral-500">{board.tickets.length} tickets</span>
+            <span className="text-xs text-neutral-400 dark:text-neutral-500">{board.tickets.length} tickets</span>
           </div>
           {board.description ? (
             <p className="hidden text-xs text-neutral-500 dark:text-neutral-400 sm:block">{board.description}</p>
@@ -93,7 +93,7 @@ export function BoardToolbar({
                   "flex items-center gap-1.5 rounded-2xl border px-4 py-2.5 text-sm font-medium shadow-sm transition",
                   selectionMode
                     ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700 dark:border-blue-400 dark:bg-blue-400 dark:text-neutral-900 dark:hover:bg-blue-300"
-                    : "border-neutral-200 bg-white/90 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                    : "border-neutral-200 bg-white/90 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-900/50 dark:hover:text-white"
                 )}
                 title={selectionMode ? "Exit selection mode" : "Select multiple tickets"}
               >
@@ -104,14 +104,14 @@ export function BoardToolbar({
             {onCreateTicket && (
               <button
                 onClick={onCreateTicket}
-                className="flex items-center gap-1.5 rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                className="flex items-center gap-1.5 rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-900/50 dark:hover:text-white"
                 title="Create new ticket"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">New Ticket</span>
               </button>
             )}
-            <label className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm text-neutral-600 shadow-sm focus-within:border-neutral-400 focus-within:ring-2 focus-within:ring-neutral-200/60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus-within:border-neutral-600 dark:focus-within:ring-neutral-800/60">
+            <label className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm text-neutral-600 shadow-sm focus-within:border-neutral-400 focus-within:ring-2 focus-within:ring-neutral-200/60 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-100 dark:focus-within:border-neutral-500 dark:focus-within:ring-neutral-800/60">
               <Search className="h-3.5 w-3.5 shrink-0 opacity-60" />
               <input
                 value={searchQuery}
@@ -123,7 +123,7 @@ export function BoardToolbar({
             <select
               value={selectedAssigneeFilter}
               onChange={(event) => onAssigneeFilterChange(event.target.value)}
-              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-600 dark:focus:ring-neutral-800/60"
+              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-800/60"
             >
               <option value="all">All assignees</option>
               <option value="unassigned">Unassigned</option>
@@ -136,7 +136,7 @@ export function BoardToolbar({
             <select
               value={selectedSprintFilter}
               onChange={(event) => onSprintFilterChange(event.target.value)}
-              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-600 dark:focus:ring-neutral-800/60"
+              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-800/60"
             >
               {sprintOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -147,7 +147,7 @@ export function BoardToolbar({
             <select
               value={selectedDueDateFilter}
               onChange={(event) => onDueDateFilterChange(event.target.value as DueDateFilter)}
-              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-600 dark:focus:ring-neutral-800/60"
+              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-800/60"
             >
               {dueDateFilterOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -158,7 +158,7 @@ export function BoardToolbar({
             <select
               value={selectedLabelFilter}
               onChange={(event) => onLabelFilterChange(event.target.value)}
-              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-600 dark:focus:ring-neutral-800/60"
+              className="rounded-2xl border border-neutral-200 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-600 shadow-sm focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200/60 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-800/60"
             >
               <option value="all">All labels</option>
               <option value="no-label">No label</option>
@@ -170,14 +170,14 @@ export function BoardToolbar({
             </select>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:justify-end lg:justify-end">
-            <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/90 px-1.5 py-1 text-xs shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white/90 px-1.5 py-1 text-xs shadow-sm dark:border-neutral-700 dark:bg-neutral-900/70">
               {priorityFilterOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => onPriorityFilterChange(option.value)}
                   className={clsx(
-                    "rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase transition",
+                    "rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
                     selectedPriorityFilter === option.value
                       ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
                       : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white",
@@ -191,9 +191,9 @@ export function BoardToolbar({
               type="button"
               onClick={onToggleUnassignedOnly}
               className={clsx(
-                "rounded-full border border-neutral-200 bg-white/90 px-4 py-1.5 text-xs font-semibold uppercase text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:text-white",
+                "rounded-full border border-neutral-200 bg-white/90 px-4 py-1.5 text-xs font-semibold text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white",
                 showUnassignedOnly &&
-                  "border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white/30 dark:bg-white dark:text-neutral-900",
+                  "border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white/20 dark:bg-white dark:text-neutral-900",
               )}
             >
               Unassigned
@@ -202,9 +202,9 @@ export function BoardToolbar({
               type="button"
               onClick={onToggleRecentOnly}
               className={clsx(
-                "rounded-full border border-neutral-200 bg-white/90 px-4 py-1.5 text-xs font-semibold uppercase text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:text-white",
+                "rounded-full border border-neutral-200 bg-white/90 px-4 py-1.5 text-xs font-semibold text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white",
                 recentOnly &&
-                  "border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white/30 dark:bg-white dark:text-neutral-900",
+                  "border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white/20 dark:bg-white dark:text-neutral-900",
               )}
             >
               Updated 7d
@@ -213,7 +213,7 @@ export function BoardToolbar({
               <button
                 type="button"
                 onClick={onClearFilters}
-                className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-500 underline-offset-4 hover:underline dark:text-neutral-400"
+                className="text-xs font-semibold text-neutral-500 underline-offset-4 hover:underline dark:text-neutral-400"
               >
                 Clear
               </button>

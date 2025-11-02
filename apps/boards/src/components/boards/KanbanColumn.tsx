@@ -27,7 +27,7 @@ export function KanbanColumn({
   return (
     <div
       className={clsx(
-        "flex min-w-[22rem] max-w-[22rem] flex-col gap-3 self-start rounded-lg border border-neutral-200 bg-white p-4 transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-950",
+        "flex min-w-[22rem] max-w-[22rem] flex-col gap-3 self-start rounded-lg border border-neutral-200 bg-white p-4 transition-all duration-300 dark:border-neutral-800 dark:bg-dark-bg",
         className
       )}
       data-column-id={column.id}
@@ -35,7 +35,7 @@ export function KanbanColumn({
       <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{column.title}</h3>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">Stage</p>
+          <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Stage</p>
         </div>
         <span className={clsx(
           "flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
@@ -47,11 +47,11 @@ export function KanbanColumn({
         )}>
           {tickets.length}
           {column.wipLimit ? (
-            <span className="text-[10px] font-normal uppercase tracking-[0.3em]">
+            <span className="text-[10px] font-normal">
               /{column.wipLimit}
             </span>
           ) : totalCount !== tickets.length ? (
-            <span className="text-[10px] font-normal uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+            <span className="text-[10px] font-normal text-neutral-400 dark:text-neutral-500">
               /{totalCount}
             </span>
           ) : null}
@@ -72,11 +72,11 @@ export function KanbanColumn({
           {droppableProvided.placeholder}
           {tickets.length === 0 && !isDraggingOver ? (
             totalCount > 0 ? (
-              <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
+              <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-dark-bg dark:text-neutral-500">
                 No issues match the active filters.
               </div>
             ) : (
-              <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-500">
+              <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-center text-xs text-neutral-400 dark:border-neutral-700 dark:bg-dark-bg dark:text-neutral-500">
                 Drop issues here
               </div>
             )

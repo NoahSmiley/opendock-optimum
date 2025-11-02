@@ -1,16 +1,7 @@
 import { Fragment } from "react";
 import {
-  BarChart3,
-  CalendarClock,
-  Expand,
-  Kanban as KanbanIcon,
-  LayoutGrid,
-  ListChecks,
-  Minimize,
   Plus,
-  Rocket,
   Settings2,
-  FileCode2,
   Loader2,
 } from "lucide-react";
 import clsx from "clsx";
@@ -21,29 +12,29 @@ const sidebarSections = [
   {
     title: "Planning",
     items: [
-      { label: "Timeline", icon: CalendarClock, tab: "timeline" as const },
-      { label: "Kanban board", icon: KanbanIcon, tab: "kanban" as const },
-      { label: "Reports", icon: BarChart3, tab: "reports" as const },
+      { label: "Timeline", tab: "timeline" as const },
+      { label: "Kanban board", tab: "kanban" as const },
+      { label: "Reports", tab: "reports" as const },
     ],
   },
   {
     title: "Project",
     items: [
-      { label: "Issues", icon: ListChecks, tab: "issues" as const },
-      { label: "Components", icon: LayoutGrid, tab: "components" as const },
+      { label: "Issues", tab: "issues" as const },
+      { label: "Components", tab: "components" as const },
     ],
   },
   {
     title: "Development",
     items: [
-      { label: "Code", icon: FileCode2, tab: "code" as const },
-      { label: "Releases", icon: Rocket, tab: "releases" as const },
+      { label: "Code", tab: "code" as const },
+      { label: "Releases", tab: "releases" as const },
     ],
   },
   {
     title: "Board",
     items: [
-      { label: "Settings", icon: Settings2, tab: "settings" as const },
+      { label: "Settings", tab: "settings" as const },
     ],
   },
 ] as const;
@@ -73,7 +64,7 @@ function BoardFormFields({
 
   return (
     <Fragment>
-      <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
         Board name
         <input
           required
@@ -82,7 +73,7 @@ function BoardFormFields({
           className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15"
         />
       </label>
-      <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
         Description
         <textarea
           value={boardForm.description}
@@ -91,7 +82,7 @@ function BoardFormFields({
           className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15"
         />
       </label>
-      <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
         Members
         <input
           value={boardForm.members}
@@ -100,7 +91,7 @@ function BoardFormFields({
           className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15"
         />
       </label>
-      <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
         Project
         <select
           value={boardForm.projectId}
@@ -172,37 +163,14 @@ export function BoardsSidebar({
 }: BoardsSidebarProps) {
   return (
     <aside
-      className={clsx(
-        "fixed left-0 top-0 hidden h-screen flex-shrink-0 flex-col overflow-y-auto bg-white pb-6 pt-4 transition-all duration-300 dark:bg-black lg:flex",
-        collapsed ? "w-16 px-3" : "w-64 px-6",
-      )}
+      className="fixed left-0 top-0 hidden h-screen w-52 flex-shrink-0 flex-col overflow-y-auto bg-white px-4 pb-6 dark:bg-dark-bg lg:flex"
     >
-      <div className="mb-6 flex items-center justify-between gap-2">
-        <div
-          className={clsx(
-            "flex items-center gap-2 overflow-hidden transition-all duration-300",
-            collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-          )}
-        >
-          <span className="whitespace-nowrap text-sm font-semibold text-neutral-700 dark:text-neutral-300">OpenDock</span>
-          <span className="text-neutral-300 dark:text-neutral-700">/</span>
-          <span className="whitespace-nowrap text-sm font-semibold text-neutral-900 dark:text-white">Boards</span>
-        </div>
-        <button
-          type="button"
-          onClick={onToggleCollapsed}
-          className="rounded-md p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <Expand className="h-4 w-4" /> : <Minimize className="h-4 w-4" />}
-        </button>
+      <div className="mb-4 flex items-center gap-2 pt-4">
+        <span className="whitespace-nowrap text-sm font-semibold text-neutral-700 dark:text-neutral-300">OpenDock</span>
+        <span className="text-neutral-300 dark:text-neutral-700">/</span>
+        <span className="whitespace-nowrap text-sm font-semibold text-neutral-900 dark:text-white">Boards</span>
       </div>
-      <div
-        className={clsx(
-          "mb-6 flex items-center justify-between gap-2 overflow-hidden transition-all duration-300",
-          collapsed ? "max-h-0 opacity-0" : "max-h-20 opacity-100",
-        )}
-      >
+      <div className="mb-4 flex items-center justify-between gap-2">
         <div>
           <p className="whitespace-nowrap text-xs text-neutral-400 dark:text-neutral-500">Projects</p>
           <p className="mt-1 whitespace-nowrap text-base font-semibold text-neutral-900 dark:text-white">Beyond Gravity</p>
@@ -214,37 +182,26 @@ export function BoardsSidebar({
           <Settings2 className="h-4 w-4" />
         </button>
       </div>
-      <div className="mt-6 flex-1 space-y-8 overflow-y-auto">
+      <div className="mt-3 flex-1 space-y-4 overflow-y-auto">
         {sidebarSections.map((section) => (
           <div key={section.title}>
-            <p
-              className={clsx(
-                "overflow-hidden text-xs font-semibold uppercase text-neutral-400 transition-all duration-300 dark:text-neutral-500",
-                collapsed ? "max-h-0 opacity-0" : "max-h-10 opacity-100",
-              )}
-            >
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
               {section.title}
             </p>
-            <ul className={clsx("space-y-1", !collapsed && "mt-3")}>
+            <ul className="mt-1.5 space-y-0.5">
               {section.items.map((item) => (
                 <li key={item.label}>
                   <button
                     type="button"
                     onClick={() => onTabChange(item.tab)}
                     className={clsx(
-                      "flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white",
-                      activeTab === item.tab && "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white",
-                      collapsed && "justify-center",
+                      "flex w-full items-center rounded-md border px-2 py-1 text-sm font-medium transition",
+                      activeTab === item.tab
+                        ? "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                        : "border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     )}
-                    title={item.label}
                   >
-                    <item.icon className="h-4 w-4 flex-shrink-0" />
-                    <span
-                      className={clsx(
-                        "overflow-hidden whitespace-nowrap transition-all duration-300",
-                        collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                      )}
-                    >
+                    <span className="overflow-hidden whitespace-nowrap">
                       {item.label}
                     </span>
                   </button>
@@ -253,17 +210,12 @@ export function BoardsSidebar({
             </ul>
           </div>
         ))}
-        <div
-          className={clsx(
-            "overflow-hidden transition-all duration-300",
-            collapsed ? "max-h-0 opacity-0" : "max-h-[500px] opacity-100",
-          )}
-        >
-          <div className="flex items-center justify-between text-xs uppercase text-neutral-400 dark:text-neutral-500">
+        <div>
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
             <span className="whitespace-nowrap">Boards</span>
             <span>{boards.length}</span>
           </div>
-          <div className="mt-3 space-y-1">
+          <div className="mt-1.5 space-y-0.5">
             {boards.length > 0 ? (
               boards.map((board) => (
                 <button
@@ -271,8 +223,10 @@ export function BoardsSidebar({
                   type="button"
                   onClick={() => onSelectBoard(board.id)}
                   className={clsx(
-                    "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white",
-                    selectedBoardId === board.id && "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white",
+                    "flex w-full items-center justify-between rounded-md border px-2 py-1 text-sm font-medium transition",
+                    selectedBoardId === board.id
+                      ? "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                      : "border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                   )}
                 >
                   <span className="truncate">{board.name}</span>
@@ -285,12 +239,7 @@ export function BoardsSidebar({
           </div>
         </div>
       </div>
-      <div
-        className={clsx(
-          "mt-6 overflow-hidden border-t border-neutral-200 pt-4 transition-all duration-300 dark:border-neutral-800",
-          collapsed ? "max-h-0 opacity-0" : "max-h-20 opacity-100",
-        )}
-      >
+      <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
         <button
           type="button"
           onClick={onToggleBoardForm}
@@ -347,8 +296,8 @@ export function BoardsSidebarMobile({
 }: BoardsSidebarMobileProps) {
   return (
     <>
-      <div className="rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
-        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+      <div className="rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
+        <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
           <span>Boards</span>
           <span>{boards.length}</span>
         </div>
@@ -360,7 +309,7 @@ export function BoardsSidebarMobile({
                 type="button"
                 onClick={() => onSelectBoard(board.id)}
                 className={clsx(
-                  "flex w-full items-center justify-between rounded-lg border border-transparent bg-white/70 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:bg-white/10 dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white",
+                  "flex w-full items-center justify-between rounded-lg border border-transparent bg-white/70 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:bg-neutral-900/60 dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white",
                   selectedBoardId === board.id &&
                     "border-slate-900 bg-slate-900/80 text-white shadow-sm dark:border-white/30 dark:bg-white/15 dark:text-white",
                 )}
@@ -374,11 +323,11 @@ export function BoardsSidebarMobile({
           )}
         </div>
       </div>
-      <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+      <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
         <button
           type="button"
           onClick={onToggleBoardForm}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-neutral-900/60 dark:text-white dark:hover:bg-neutral-900/40"
         >
           <Plus className="h-4 w-4" />
           New board

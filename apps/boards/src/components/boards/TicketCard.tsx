@@ -49,7 +49,7 @@ export function TicketCard({
     <div
       onClick={handleClick}
       className={clsx(
-        "group relative flex flex-col gap-2 rounded-lg border bg-white p-3 text-neutral-700 transition-[transform,box-shadow,border-color,opacity] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 dark:bg-neutral-950 dark:text-neutral-200",
+        "group relative flex flex-col gap-2 rounded-lg border bg-white p-3 text-neutral-700 transition-[transform,box-shadow,border-color,opacity] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 dark:bg-dark-bg dark:text-neutral-200",
         selectionMode ? "pl-10" : "pl-5",
         isComplete
           ? "border-emerald-500 bg-emerald-50/50 hover:border-emerald-600 dark:border-emerald-400 dark:bg-emerald-950/20 dark:hover:border-emerald-300"
@@ -83,7 +83,7 @@ export function TicketCard({
       )}
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500">
+          <p className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
             {formatTicketKey(ticket)}
           </p>
           <p className="text-sm font-medium text-neutral-900 dark:text-white">{ticket.title}</p>
@@ -124,7 +124,7 @@ export function TicketCard({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-neutral-400 dark:text-neutral-500">
+      <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
         <span className={clsx("rounded-md px-2 py-1", priorityStyles[ticket.priority])}>{ticket.priority}</span>
         {sprint ? (
           <span className="rounded-md border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500 dark:border-neutral-700 dark:text-neutral-300">
@@ -145,11 +145,11 @@ export function TicketCard({
             <p className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-200">
               {assignee ? assignee.name : "Unassigned"}
             </p>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">Assignee</p>
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Assignee</p>
           </div>
         </div>
         {ticket.tags.length > 0 ? (
-          <div className="flex flex-wrap gap-1 text-[10px] font-medium uppercase tracking-[0.25em] text-neutral-400 dark:text-neutral-500">
+          <div className="flex flex-wrap gap-1 text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
             {ticket.tags.map((tag) => (
               <span key={tag} className="rounded-md border border-neutral-200 px-2 py-0.5 dark:border-neutral-700">
                 {tag}
