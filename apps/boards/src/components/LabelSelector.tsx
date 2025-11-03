@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Tag, X, ChevronDown } from "lucide-react";
+import { Tag, X, ChevronDown, Plus } from "lucide-react";
 import clsx from "clsx";
 import type { KanbanLabel } from "@opendock/shared/types";
 
@@ -56,7 +56,7 @@ export function LabelSelector({ labels, selectedLabelIds, onToggleLabel }: Label
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+      <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
         <Tag className="mr-1 inline h-3 w-3" />
         Labels
       </label>
@@ -65,7 +65,7 @@ export function LabelSelector({ labels, selectedLabelIds, onToggleLabel }: Label
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "min-h-[42px] cursor-pointer rounded-md border bg-white px-3 py-2 transition",
+          "min-h-[44px] cursor-pointer rounded-lg border bg-white px-3 py-2 transition shadow-sm",
           isOpen
             ? "border-neutral-400 ring-2 ring-neutral-200/60 dark:border-neutral-500 dark:ring-neutral-700/60"
             : "border-neutral-300 hover:border-neutral-400 dark:border-neutral-700 dark:hover:border-neutral-600",
@@ -92,7 +92,10 @@ export function LabelSelector({ labels, selectedLabelIds, onToggleLabel }: Label
               </div>
             ))
           ) : (
-            <span className="text-sm text-neutral-400 dark:text-neutral-500">Select labels...</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100/70 px-2.5 py-1 text-xs font-medium text-neutral-500 dark:bg-neutral-800/60 dark:text-neutral-400">
+              <Plus className="h-3 w-3" />
+              Add label
+            </span>
           )}
           <ChevronDown
             className={clsx(

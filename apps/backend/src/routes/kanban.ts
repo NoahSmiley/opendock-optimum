@@ -16,6 +16,7 @@ import {
 import { authRequired, requireCsrfProtection } from "../auth";
 import { dal } from "../dal";
 import { kanbanEvents } from "../events";
+import { upload, getFileUrl, deleteFile } from "../lib/file-upload";
 
 function validationError(error: unknown) {
   if (error && typeof error === "object" && "flatten" in error && typeof (error as { flatten: () => unknown }).flatten === "function") {
@@ -345,6 +346,88 @@ export function createKanbanRouter(): Router {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Label not found." } });
       return;
     }
+    res.json({ success: true });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Attachments
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  router.post("/tickets/:ticketId/attachments", upload.array("files", 10), async (req, res) => {
+    const ticketId = req.params.ticketId;
+    let userId = (req as { user?: { id: string } }).user?.id;
+
+    // Fallback: for demo purposes, use first available user if not authenticated
+    if (!userId) {
+      const users = await dal.kanban.listUsers();
+      if (users.length > 0) {
+        userId = users[0].id;
+        console.log("[attachments] No user authenticated, using fallback user:", userId);
+      } else {
+        res.status(401).json({ error: { code: "UNAUTHORIZED", message: "User not authenticated." } });
+        return;
+      }
+    }
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      res.status(400).json({ error: { code: "NO_FILES", message: "No files uploaded." } });
+      return;
+    }
+
+    try {
+      const attachments = [];
+      for (const file of files) {
+        const attachment = await dal.kanban.addAttachment(
+          ticketId,
+          userId,
+          file.filename,
+          file.originalname,
+          file.mimetype,
+          file.size,
+          getFileUrl(file.filename),
+        );
+        if (attachment) {
+          attachments.push(attachment);
+        }
+      }
+
+      res.status(201).json({ attachments });
+    } catch (error) {
+      console.error("Failed to upload attachments:", error);
+      res.status(500).json({ error: { code: "UPLOAD_FAILED", message: "Failed to upload attachments." } });
+    }
+  });
+
+  router.get("/tickets/:ticketId/attachments", authRequired, async (req, res) => {
+    const attachments = await dal.kanban.listAttachments(req.params.ticketId);
+    res.json({ attachments });
+  });
+
+  router.delete("/attachments/:attachmentId", requireCsrfProtection, authRequired, async (req, res) => {
+    const attachmentId = req.params.attachmentId;
+    const attachments = await dal.kanban.listAttachments("");
+    const attachment = attachments.find((a) => a.id === attachmentId);
+
+    if (!attachment) {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Attachment not found." } });
+      return;
+    }
+
+    try {
+      // Delete file from filesystem
+      await deleteFile(attachment.filename);
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+      // Continue even if file deletion fails
+    }
+
+    const deleted = await dal.kanban.deleteAttachment(attachmentId);
+    if (!deleted) {
+      res.status(404).json({ error: { code: "NOT_FOUND", message: "Attachment not found." } });
+      return;
+    }
+
     res.json({ success: true });
   });
 

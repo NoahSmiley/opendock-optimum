@@ -9,6 +9,7 @@ import type {
   KanbanUser,
   KanbanActivity,
   KanbanLabel,
+  KanbanAttachment,
 } from "@opendock/shared/types";
 import type {
   KanbanCreateBoardInput,
@@ -238,5 +239,41 @@ export class StateKanbanRepository implements KanbanRepository {
 
   async listLabels(boardId: string): Promise<KanbanLabel[]> {
     return store.listLabels(boardId);
+  }
+
+  async addAttachment(
+    ticketId: string,
+    userId: string,
+    filename: string,
+    originalFilename: string,
+    mimeType: string,
+    size: number,
+    url: string,
+  ): Promise<KanbanAttachment | null> {
+    const attachment = store.addAttachment(ticketId, userId, filename, originalFilename, mimeType, size, url);
+    if (attachment) {
+      const ticket = store.getTicket(ticketId);
+      if (ticket) {
+        kanbanEvents.broadcast({ type: "board-snapshot", boardId: ticket.boardId });
+      }
+    }
+    return attachment;
+  }
+
+  async deleteAttachment(attachmentId: string): Promise<boolean> {
+    const attachment = store.getAttachment(attachmentId);
+    if (!attachment) return false;
+    const success = store.deleteAttachment(attachmentId);
+    if (success) {
+      const ticket = store.getTicket(attachment.ticketId);
+      if (ticket) {
+        kanbanEvents.broadcast({ type: "board-snapshot", boardId: ticket.boardId });
+      }
+    }
+    return success;
+  }
+
+  async listAttachments(ticketId: string): Promise<KanbanAttachment[]> {
+    return store.listAttachments(ticketId);
   }
 }

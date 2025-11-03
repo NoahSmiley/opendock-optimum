@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
+import path from "path";
 import { store } from "./state";
 import { DeployService } from "./deployService";
 import { BuildService } from "./buildService";
@@ -66,6 +67,10 @@ export function createApp(options: CreateAppOptions = {}) {
   app.get("/api/state", (_req, res) => {
     res.json(store.snapshot());
   });
+
+  // Serve uploaded files
+  const uploadsPath = path.join(process.cwd(), "uploads");
+  app.use("/api/uploads", express.static(uploadsPath));
 
   app.use("/api/auth", authRouter);
   app.use("/api/github", createGitHubRouter());

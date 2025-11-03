@@ -6,6 +6,7 @@ apps/*/node_modules/
 apps/*/dist/
 apps/backend/data/state.json
 apps/backend/src/dal/sql/prisma/dev.db
+apps/backend/uploads/
 packages/*/dist/
 
 # Bun

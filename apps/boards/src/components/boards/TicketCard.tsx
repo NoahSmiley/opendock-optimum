@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Check, Calendar } from "lucide-react";
+import { Check, Calendar, Paperclip } from "lucide-react";
 import type { KanbanBoard, KanbanTicket, KanbanUser, KanbanLabel } from "@opendock/shared/types";
 import { formatTicketKey, priorityAccent, priorityStyles, getDueDateStatus, dueDateBadgeStyles, formatDueDate } from "@/lib/ticketStyles";
 
@@ -98,16 +98,24 @@ export function TicketCard({
         <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{ticket.description}</p>
       ) : null}
 
-      {/* Due Date Badge */}
-      {ticket.dueDate && (
-        <div className={clsx(
-          "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-medium",
-          dueDateBadgeStyles[dueDateStatus]
-        )}>
-          <Calendar className="h-3 w-3" />
-          <span>{formatDueDate(ticket.dueDate)}</span>
-        </div>
-      )}
+      {/* Due Date & Attachments Badges */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {ticket.dueDate && (
+          <div className={clsx(
+            "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-medium",
+            dueDateBadgeStyles[dueDateStatus]
+          )}>
+            <Calendar className="h-3 w-3" />
+            <span>{formatDueDate(ticket.dueDate)}</span>
+          </div>
+        )}
+        {ticket.attachments && ticket.attachments.length > 0 && (
+          <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-[10px] font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+            <Paperclip className="h-3 w-3" />
+            <span>{ticket.attachments.length}</span>
+          </div>
+        )}
+      </div>
 
       {/* Labels */}
       {ticketLabels.length > 0 && (

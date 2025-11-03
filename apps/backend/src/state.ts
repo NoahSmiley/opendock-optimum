@@ -20,6 +20,7 @@ import type {
   KanbanActivity,
   KanbanActivityType,
   KanbanLabel,
+  KanbanAttachment,
   Project,
 } from "@opendock/shared/types";
 
@@ -37,6 +38,7 @@ export interface AppState {
   kanbanTimeLogs: KanbanTimeLog[];
   kanbanActivities: KanbanActivity[];
   kanbanLabels: KanbanLabel[];
+  kanbanAttachments: KanbanAttachment[];
 }
 
 const DEFAULT_STATE: AppState = {
@@ -53,6 +55,7 @@ const DEFAULT_STATE: AppState = {
   kanbanTimeLogs: [],
   kanbanActivities: [],
   kanbanLabels: [],
+  kanbanAttachments: [],
 };
 
 export class StateStore {
@@ -89,6 +92,7 @@ export class StateStore {
         kanbanTimeLogs: parsed.kanbanTimeLogs ?? [],
         kanbanActivities: parsed.kanbanActivities ?? [],
         kanbanLabels: parsed.kanbanLabels ?? [],
+        kanbanAttachments: parsed.kanbanAttachments ?? [],
       };
     } catch (error) {
       console.error("[state] failed to parse state file", error);
@@ -563,6 +567,7 @@ export class StateStore {
     const tickets = rawTickets.map((ticket) => ({
       ...ticket,
       comments: this.state.kanbanComments.filter((comment) => comment.ticketId === ticket.id),
+      attachments: this.state.kanbanAttachments.filter((attachment) => attachment.ticketId === ticket.id),
     }));
     const sprints = this.state.kanbanSprints.filter((sprint) => sprint.boardId === boardId);
     const members = board.memberIds
@@ -808,6 +813,72 @@ export class StateStore {
 
   getLabel(labelId: string): KanbanLabel | undefined {
     return this.state.kanbanLabels.find((l) => l.id === labelId);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Attachments
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  addAttachment(
+    ticketId: string,
+    userId: string,
+    filename: string,
+    originalFilename: string,
+    mimeType: string,
+    size: number,
+    url: string,
+  ): KanbanAttachment | null {
+    const ticket = this.getTicket(ticketId);
+    if (!ticket) return null;
+
+    const attachment: KanbanAttachment = {
+      id: randomUUID(),
+      ticketId,
+      userId,
+      filename,
+      originalFilename,
+      mimeType,
+      size,
+      url,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.state.kanbanAttachments.push(attachment);
+    this.createActivity(ticket.boardId, userId, "attachment_added", {
+      ticketId,
+      metadata: { filename: originalFilename },
+    });
+    this.persist();
+    return attachment;
+  }
+
+  deleteAttachment(attachmentId: string): boolean {
+    const attachment = this.state.kanbanAttachments.find((a) => a.id === attachmentId);
+    if (!attachment) return false;
+
+    const ticket = this.getTicket(attachment.ticketId);
+    this.state.kanbanAttachments = this.state.kanbanAttachments.filter((a) => a.id !== attachmentId);
+
+    if (ticket) {
+      this.createActivity(ticket.boardId, attachment.userId, "attachment_deleted", {
+        ticketId: attachment.ticketId,
+        metadata: { filename: attachment.originalFilename },
+      });
+    }
+
+    this.persist();
+    return true;
+  }
+
+  listAttachments(ticketId: string): KanbanAttachment[] {
+    return this.state.kanbanAttachments
+      .filter((attachment) => attachment.ticketId === ticketId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getAttachment(attachmentId: string): KanbanAttachment | undefined {
+    return this.state.kanbanAttachments.find((a) => a.id === attachmentId);
   }
 }
 

@@ -9,6 +9,7 @@ import type {
   KanbanUser,
   KanbanActivity,
   KanbanLabel,
+  KanbanAttachment,
 } from "./types";
 
 const nonEmptyTrimmed = (label: string, max = 160) =>
@@ -77,6 +78,22 @@ export const KanbanTimeLogSchema = z
   .strict();
 type _KanbanTimeLogSchemaCheck = z.infer<typeof KanbanTimeLogSchema> extends KanbanTimeLog ? true : never;
 
+export const KanbanAttachmentSchema = z
+  .object({
+    id: KanbanIdSchema,
+    ticketId: KanbanIdSchema,
+    userId: KanbanIdSchema,
+    filename: nonEmptyTrimmed("Filename", 255),
+    originalFilename: nonEmptyTrimmed("Original filename", 255),
+    mimeType: nonEmptyTrimmed("MIME type", 127),
+    size: z.number().int().min(0).max(50 * 1024 * 1024), // Max 50MB
+    url: nonEmptyTrimmed("URL", 500),
+    createdAt: nonEmptyTrimmed("Created timestamp", 40),
+    updatedAt: nonEmptyTrimmed("Updated timestamp", 40),
+  })
+  .strict();
+type _KanbanAttachmentSchemaCheck = z.infer<typeof KanbanAttachmentSchema> extends KanbanAttachment ? true : never;
+
 export const KanbanActivitySchema = z
   .object({
     id: KanbanIdSchema,
@@ -90,6 +107,8 @@ export const KanbanActivitySchema = z
       "ticket_assigned",
       "comment_added",
       "comment_deleted",
+      "attachment_added",
+      "attachment_deleted",
       "column_created",
       "column_updated",
       "column_deleted",
@@ -135,6 +154,7 @@ export const KanbanTicketSchema = z
     createdAt: nonEmptyTrimmed("Created timestamp", 40),
     updatedAt: nonEmptyTrimmed("Updated timestamp", 40),
     order: z.number().int().min(0),
+    attachments: z.array(KanbanAttachmentSchema).optional(),
   })
   .strict();
 type _KanbanTicketSchemaCheck = z.infer<typeof KanbanTicketSchema> extends KanbanTicket ? true : never;

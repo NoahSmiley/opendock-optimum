@@ -9,6 +9,7 @@ import type {
   KanbanUser,
   KanbanLabel,
   KanbanActivity,
+  KanbanAttachment,
 } from "@opendock/shared/types";
 import type {
   KanbanCreateBoardInput,
@@ -56,4 +57,16 @@ export interface KanbanRepository {
   updateLabel(labelId: string, input: KanbanUpdateLabelInput): Promise<KanbanLabel | null>;
   deleteLabel(labelId: string): Promise<boolean>;
   listLabels(boardId: string): Promise<KanbanLabel[]>;
+
+  addAttachment(
+    ticketId: string,
+    userId: string,
+    filename: string,
+    originalFilename: string,
+    mimeType: string,
+    size: number,
+    url: string,
+  ): Promise<KanbanAttachment | null>;
+  deleteAttachment(attachmentId: string): Promise<boolean>;
+  listAttachments(ticketId: string): Promise<KanbanAttachment[]>;
 }

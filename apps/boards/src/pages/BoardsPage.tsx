@@ -598,6 +598,7 @@ function BoardsAppInner() {
             onDelete={handleDeleteTicket}
             onAddComment={handleAddComment}
             onDeleteComment={handleDeleteComment}
+            onRefresh={refreshBoards}
             sidebarCollapsed={sidebarCollapsed}
           />
         ) : null;

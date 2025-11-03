@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { X, Calendar, Tag, User, MessageSquare, Edit2, Save, Trash2, Activity as ActivityIcon } from "lucide-react";
+import { X, Calendar, Tag, User, MessageSquare, Edit2, Save, Trash2, ChevronDown, Paperclip, Activity as ActivityIcon } from "lucide-react";
 import clsx from "clsx";
-import type { KanbanTicket, KanbanTimeLog, KanbanUser, KanbanActivity, KanbanLabel } from "@opendock/shared/types";
+import type { KanbanTicket, KanbanTimeLog, KanbanUser, KanbanActivity, KanbanLabel, KanbanComment } from "@opendock/shared/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { TimeTracker } from "./TimeTracker";
 import { ActivityFeed } from "./ActivityFeed";
 import { LabelSelector } from "./LabelSelector";
+import { FileAttachments } from "./FileAttachments";
 import { boardsApi } from "@/lib/api";
 
 interface TicketDetailPanelProps {
@@ -17,6 +18,7 @@ interface TicketDetailPanelProps {
   onDelete?: (ticketId: string) => Promise<void>;
   onAddComment: (ticketId: string, content: string) => Promise<void>;
   onDeleteComment?: (commentId: string) => Promise<void>;
+  onRefresh?: () => void;
   sidebarCollapsed?: boolean;
 }
 
@@ -51,6 +53,7 @@ export function TicketDetailPanel({
   onDelete,
   onAddComment,
   onDeleteComment,
+  onRefresh,
   sidebarCollapsed = false,
 }: TicketDetailPanelProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -70,9 +73,13 @@ export function TicketDetailPanel({
   const [activities, setActivities] = useState<KanbanActivity[]>([]);
   const [panelWidth, setPanelWidth] = useState(672); // Default max-w-2xl is ~672px
   const [isResizing, setIsResizing] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(true);
+  const [showCommentsSection, setShowCommentsSection] = useState(true);
+  const [showActivitySection, setShowActivitySection] = useState(true);
   const assigneeIds = Array.isArray(ticket.assigneeIds) ? ticket.assigneeIds : [];
   const labelIds = Array.isArray(ticket.labelIds) ? ticket.labelIds : [];
   const tags = Array.isArray(ticket.tags) ? ticket.tags : [];
+  const comments = Array.isArray(ticket.comments) ? ticket.comments : [];
 
   useEffect(() => {
     // Trigger slide-in animation after mount
@@ -283,7 +290,7 @@ export function TicketDetailPanel({
       {/* Panel */}
       <div
         className={clsx(
-          "fixed inset-y-0 right-0 z-50 flex flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-dark-bg",
+          "fixed inset-y-0 right-0 z-50 flex flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-in-out dark:border-neutral-800 dark:bg-neutral-950",
           isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
         )}
         style={{ width: `${panelWidth}px` }}
@@ -295,7 +302,7 @@ export function TicketDetailPanel({
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-200 p-6 dark:border-neutral-800">
+        <div className="flex items-center justify-between border-b border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-950">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500">
               {formatTicketKey(ticket)}
@@ -325,11 +332,11 @@ export function TicketDetailPanel({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Title */}
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
                 Title
               </label>
               {!isEditingTitle && (
@@ -347,14 +354,14 @@ export function TicketDetailPanel({
                   type="text"
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-lg font-semibold text-neutral-900 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+                  className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-base font-semibold text-neutral-900 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
                   autoFocus
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveTitle}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                    className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                   >
                     <Save className="h-3.5 w-3.5" />
                     Save
@@ -364,21 +371,21 @@ export function TicketDetailPanel({
                       setEditedTitle(ticket.title);
                       setIsEditingTitle(false);
                     }}
-                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{ticket.title}</h2>
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">{ticket.title}</h2>
             )}
           </div>
 
           {/* Description */}
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
                 Description
               </label>
               {!isEditingDescription && (
@@ -404,7 +411,7 @@ export function TicketDetailPanel({
                   <button
                     onClick={handleSaveDescription}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                    className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                   >
                     <Save className="h-3.5 w-3.5" />
                     Save
@@ -414,7 +421,7 @@ export function TicketDetailPanel({
                       setEditedDescription(ticket.description || "");
                       setIsEditingDescription(false);
                     }}
-                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
                   >
                     Cancel
                   </button>
@@ -427,114 +434,130 @@ export function TicketDetailPanel({
             )}
           </div>
 
-          {/* Metadata */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Assignees */}
-            <div>
-              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                <User className="mr-1 inline h-3 w-3" />
-                Assignees
-              </label>
-              <div className="space-y-2">
-                {members.map((member) => (
-                  <label key={member.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={assigneeIds.includes(member.id)}
-                      onChange={() => handleAssigneeChange(member.id)}
-                      className="rounded border-neutral-300 text-neutral-900 focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:ring-neutral-700"
-                    />
-                    <span className="text-neutral-700 dark:text-neutral-300">{member.name}</span>
-                  </label>
-                ))}
+          {/* Meta badges */}
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+            <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200/70 bg-white/80 px-3 py-1 shadow-sm dark:border-neutral-800/60 dark:bg-neutral-900/60">
+              <Calendar className="h-3 w-3" />
+              Created {formatDate(ticket.createdAt)}
+            </span>
+            {ticket.updatedAt !== ticket.createdAt && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200/70 bg-white/80 px-3 py-1 shadow-sm dark:border-neutral-800/60 dark:bg-neutral-900/60">
+                <Calendar className="h-3 w-3" />
+                Updated {formatDate(ticket.updatedAt)}
+              </span>
+            )}
+          </div>
+
+          {/* Metadata Section */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Assignees */}
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
+                  <User className="mr-1 inline h-3 w-3" />
+                  Assignees
+                </label>
+                <div className="space-y-1.5">
+                  {members.map((member) => (
+                    <label key={member.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={assigneeIds.includes(member.id)}
+                        onChange={() => handleAssigneeChange(member.id)}
+                        className="rounded border-neutral-300 text-neutral-900 focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:ring-neutral-700"
+                      />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300">{member.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Labels */}
-            <LabelSelector
-              labels={labels}
-              selectedLabelIds={labelIds}
-              onToggleLabel={handleLabelChange}
-            />
-
-            {/* Priority */}
-            <div>
-              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                Priority
-              </label>
-              <select
-                value={ticket.priority}
-                onChange={(e) => handlePriorityChange(e.target.value as KanbanTicket["priority"])}
-                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-
-            {/* Estimate */}
-            <div>
-              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                Estimate (points)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={ticket.estimate || ""}
-                onChange={(e) => handleEstimateChange(e.target.value ? Number(e.target.value) : null)}
-                placeholder="No estimate"
-                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+              {/* Labels */}
+              <LabelSelector
+                labels={labels}
+                selectedLabelIds={labelIds}
+                onToggleLabel={handleLabelChange}
               />
-            </div>
 
-            {/* Due Date */}
-            <div>
-              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                <Calendar className="mr-1 inline h-3 w-3" />
-                Due Date
-              </label>
-              <input
-                type="date"
-                value={ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : ""}
-                onChange={(e) => handleDueDateChange(e.target.value)}
-                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
-              />
-            </div>
+              {/* Priority */}
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
+                  Priority
+                </label>
+                <select
+                  value={ticket.priority}
+                  onChange={(e) => handlePriorityChange(e.target.value as KanbanTicket["priority"])}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
 
-            {/* Tags */}
-            <div>
-              <label className="mb-2 block text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                <Tag className="mr-1 inline h-3 w-3" />
-                Tags
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-neutral-50 px-2 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-                  >
-                    {tag}
-                    <button
-                      onClick={() => handleRemoveTag(tag)}
-                      className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
+              {/* Estimate */}
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
+                  Estimate (points)
+                </label>
                 <input
-                  type="text"
-                  placeholder="Add tag..."
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddTag(e.currentTarget.value);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                  className="min-w-[100px] rounded-md border border-dashed border-neutral-300 bg-transparent px-2 py-1 text-xs text-neutral-700 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:text-neutral-300 dark:placeholder:text-neutral-500"
+                  type="number"
+                  min="0"
+                  value={ticket.estimate || ""}
+                  onChange={(e) => handleEstimateChange(e.target.value ? Number(e.target.value) : null)}
+                  placeholder="No estimate"
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
                 />
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
+                  <Calendar className="mr-1 inline h-3 w-3" />
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : ""}
+                  onChange={(e) => handleDueDateChange(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
+                  <Tag className="mr-1 inline h-3 w-3" />
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+                    >
+                      {tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="text-neutral-400 transition hover:text-neutral-600 dark:hover:text-neutral-200"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Add tag..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag(e.currentTarget.value);
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                    className="min-w-[110px] rounded-md border border-dashed border-neutral-300/70 bg-transparent px-3 py-1 text-xs text-neutral-700 placeholder:text-neutral-400 transition focus:border-neutral-400 focus:outline-none dark:border-neutral-700/70 dark:text-neutral-300 dark:placeholder:text-neutral-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -551,104 +574,159 @@ export function TicketDetailPanel({
             isLoading={isLoadingTimer}
           />
 
-          {/* Timestamps */}
-          <div className="flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>Created {formatDate(ticket.createdAt)}</span>
-            </div>
-            {ticket.updatedAt !== ticket.createdAt && (
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>Updated {formatDate(ticket.updatedAt)}</span>
+          {/* File Attachments */}
+          <div className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
+            <button
+              type="button"
+              onClick={() => setShowAttachments((prev) => !prev)}
+              className="flex w-full items-center justify-between rounded-lg bg-transparent px-2 py-1 text-left text-xs font-semibold uppercase tracking-[0.28em] text-neutral-500 transition hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+              aria-expanded={showAttachments}
+            >
+              <span className="flex items-center gap-2">
+                <Paperclip className="h-3.5 w-3.5" />
+                Attachments ({ticket.attachments?.length ?? 0})
+              </span>
+              <ChevronDown
+                className={clsx(
+                  "h-4 w-4 transition-transform",
+                  showAttachments ? "rotate-0" : "-rotate-90"
+                )}
+              />
+            </button>
+            {showAttachments && (
+              <div className="mt-4">
+            <FileAttachments
+              ticketId={ticket.id}
+              attachments={ticket.attachments}
+              onAttachmentsUpdate={onRefresh}
+              showHeader={false}
+            />
               </div>
             )}
           </div>
 
           {/* Comments Section */}
           <div className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
-              <MessageSquare className="h-4 w-4" />
-              Comments ({(ticket as any).comments?.length || 0})
-            </h3>
-
-            {/* Comment Form */}
-            <form onSubmit={handleAddComment} className="mb-6">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                rows={3}
-                placeholder="Add a comment..."
-                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+            <button
+              type="button"
+              onClick={() => setShowCommentsSection((prev) => !prev)}
+              className="flex w-full items-center justify-between rounded-lg bg-transparent px-2 py-1 text-left text-xs font-semibold uppercase tracking-[0.28em] text-neutral-500 transition hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+              aria-expanded={showCommentsSection}
+            >
+              <span className="flex items-center gap-2">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Comments ({comments.length})
+              </span>
+              <ChevronDown
+                className={clsx(
+                  "h-4 w-4 transition-transform",
+                  showCommentsSection ? "rotate-0" : "-rotate-90"
+                )}
               />
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || isSubmittingComment}
-                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                >
-                  {isSubmittingComment ? "Adding..." : "Add Comment"}
-                </button>
-              </div>
-            </form>
+            </button>
 
-            {/* Comments List */}
-            <div className="space-y-4">
-              {(ticket as any).comments && (ticket as any).comments.length > 0 ? (
-                (ticket as any).comments.map((comment: any) => {
-                  const author = members.find((m) => m.id === comment.userId);
-                  return (
-                    <div
-                      key={comment.id}
-                      className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900"
+            {showCommentsSection && (
+              <div className="mt-4 space-y-4">
+                {/* Comment Form */}
+                <form onSubmit={handleAddComment} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={3}
+                    placeholder="Add a comment..."
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-800 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+                  />
+                  <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-neutral-400 dark:text-neutral-500">
+                    <span>
+                      Tip: <kbd className="rounded border border-neutral-300 px-1 py-0.5 text-[10px] text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">⌘</kbd>
+                      +<kbd className="ml-1 rounded border border-neutral-300 px-1 py-0.5 text-[10px] text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">Enter</kbd>
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={!newComment.trim() || isSubmittingComment}
+                      className="rounded-md bg-neutral-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                     >
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white"
-                            style={{ backgroundColor: author?.avatarColor || "#666" }}
-                          >
-                            {(author?.name || "U").slice(0, 2).toUpperCase()}
+                      {isSubmittingComment ? "Adding..." : "Add Comment"}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Comments List */}
+                <div className="space-y-2.5">
+                  {comments.length > 0 ? (
+                    comments.map((comment: KanbanComment) => {
+                      const author = members.find((m) => m.id === comment.userId);
+                      return (
+                        <div
+                          key={comment.id}
+                          className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+                        >
+                          <div className="mb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                                style={{ backgroundColor: author?.avatarColor || "#666" }}
+                              >
+                                {(author?.name || "U").slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-neutral-900 dark:text-white">
+                                  {author?.name || "Unknown"}
+                                </p>
+                                <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                                  {formatDate(comment.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                            {onDeleteComment && (
+                              <button
+                                onClick={() => onDeleteComment(comment.id)}
+                                className="rounded p-1 text-neutral-400 transition hover:bg-neutral-200 hover:text-red-600 dark:hover:bg-neutral-800 dark:hover:text-red-400"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                              {author?.name || "Unknown"}
-                            </p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                              {formatDate(comment.createdAt)}
-                            </p>
-                          </div>
+                          <p className="text-xs leading-relaxed text-neutral-700 dark:text-neutral-300">
+                            {comment.content}
+                          </p>
                         </div>
-                        {onDeleteComment && (
-                          <button
-                            onClick={() => onDeleteComment(comment.id)}
-                            className="rounded p-1 text-neutral-400 transition hover:bg-neutral-200 hover:text-red-600 dark:hover:bg-neutral-800 dark:hover:text-red-400"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
-                        {comment.content}
-                      </p>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-center text-sm italic text-neutral-400 dark:text-neutral-500">
-                  No comments yet
-                </p>
-              )}
-            </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-center text-xs italic text-neutral-400 dark:text-neutral-500">
+                      No comments yet
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Activity Section */}
-          <div className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
-              <ActivityIcon className="h-4 w-4" />
-              Activity
-            </h3>
-            <ActivityFeed activities={activities} users={members} showFilters={false} limit={20} />
+          <div className="border-t border-neutral-200/70 pt-6 dark:border-neutral-800/60">
+            <button
+              type="button"
+              onClick={() => setShowActivitySection((prev) => !prev)}
+              className="flex w-full items-center justify-between rounded-lg bg-transparent px-2 py-1 text-left text-xs font-semibold uppercase tracking-[0.28em] text-neutral-500 transition hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+              aria-expanded={showActivitySection}
+            >
+              <span className="flex items-center gap-2">
+                <ActivityIcon className="h-3.5 w-3.5" />
+                Activity
+              </span>
+              <ChevronDown
+                className={clsx(
+                  "h-4 w-4 transition-transform",
+                  showActivitySection ? "rotate-0" : "-rotate-90"
+                )}
+              />
+            </button>
+            {showActivitySection && (
+              <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+                <ActivityFeed activities={activities} users={members} showFilters={false} limit={20} />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Play, Square, Clock, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import type { KanbanTicket, KanbanTimeLog, KanbanUser } from "@opendock/shared/types";
-import { formatDuration, formatDurationLong, calculateTimeProgress } from "@/lib/ticketStyles";
+import { formatDuration, calculateTimeProgress } from "@/lib/ticketStyles";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 interface TimeTrackerProps {
@@ -68,7 +68,7 @@ export function TimeTracker({
   const hasEstimate = ticket.estimate && ticket.estimate > 0;
 
   return (
-    <div className="space-y-4 rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+    <div className="space-y-4 rounded-xl border border-neutral-200/70 bg-white/90 p-5 shadow-md backdrop-blur supports-[backdrop-filter]:bg-white/65 dark:border-neutral-800/60 dark:bg-neutral-900/70">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
           <Clock className="h-4 w-4" />
@@ -85,7 +85,7 @@ export function TimeTracker({
       <div className="space-y-3">
         {activeTimeLog ? (
           <div className="space-y-2">
-            <div className="flex items-center justify-between rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/30">
+            <div className="flex items-center justify-between rounded-lg border border-green-200/70 bg-green-50/80 p-4 shadow-inner dark:border-green-900/50 dark:bg-green-950/40">
               <div>
                 <div className="text-xs font-medium uppercase tracking-wider text-green-700 dark:text-green-300">
                   Timer Running
@@ -97,7 +97,7 @@ export function TimeTracker({
               <button
                 onClick={() => onStopTimer(activeTimeLog.id)}
                 disabled={isLoading}
-                className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+                className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
               >
                 <Square className="h-4 w-4" />
                 Stop
@@ -108,7 +108,7 @@ export function TimeTracker({
           <button
             onClick={onStartTimer}
             disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-transparent px-4 py-3 text-sm font-semibold text-neutral-900 transition hover:border-neutral-400 hover:bg-white/80 hover:shadow-[0_0_0_1px_rgba(0,0,0,0.08)] disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-50 dark:hover:border-neutral-500 dark:hover:bg-neutral-900/70 dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
           >
             <Play className="h-4 w-4" />
             Start Timer
@@ -160,8 +160,8 @@ export function TimeTracker({
 
       {/* Time Logs List */}
       {timeLogs.length > 0 && (
-        <div className="space-y-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+          <div className="space-y-2 border-t border-neutral-200/70 pt-4 dark:border-neutral-800/60">
+          <h4 className="text-xs font-semibold uppercase tracking-[0.28em] text-neutral-500 dark:text-neutral-400">
             Time Logs ({timeLogs.length})
           </h4>
           <div className="max-h-60 space-y-2 overflow-y-auto">
@@ -173,10 +173,10 @@ export function TimeTracker({
                 <div
                   key={log.id}
                   className={clsx(
-                    "flex items-center justify-between rounded-md border p-2",
+                    "flex items-center justify-between rounded-lg border p-3 transition-shadow",
                     isActive
-                      ? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/20"
-                      : "border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900"
+                      ? "border-green-200/70 bg-green-50/80 shadow-inner dark:border-green-900/60 dark:bg-green-950/30"
+                      : "border-neutral-200/70 bg-white/80 shadow-sm hover:shadow dark:border-neutral-700/60 dark:bg-neutral-900/70"
                   )}
                 >
                   <div className="flex-1">

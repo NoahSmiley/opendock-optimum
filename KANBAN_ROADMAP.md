@@ -107,14 +107,14 @@ Critical for project tracking and deadlines.
 ### Phase 3: Collaboration Features (Priority: MEDIUM) - 2-3 days
 Enhance team collaboration and communication.
 
-#### 3.1 File Attachments
-- [ ] Add file upload UI to ticket detail
-- [ ] Implement drag-and-drop file upload
-- [ ] Add POST API endpoint `/api/kanban/tickets/:id/attachments`
-- [ ] Store files (local/S3/cloud storage)
-- [ ] Show attachment previews (images)
-- [ ] Add file download functionality
-- [ ] Show attachment count on ticket cards
+#### 3.1 File Attachments ✅
+- [x] Add file upload UI to ticket detail
+- [x] Implement drag-and-drop file upload
+- [x] Add POST API endpoint `/api/kanban/tickets/:id/attachments`
+- [x] Store files (local/S3/cloud storage)
+- [x] Show attachment previews (images)
+- [x] Add file download functionality
+- [x] Show attachment count on ticket cards
 
 #### 3.2 Mentions
 - [ ] Implement @mention autocomplete in comments
@@ -332,16 +332,17 @@ GET /api/kanban/boards/:id/analytics
 
 ## Progress Tracking
 
-**Completed Features:** 50/70+ planned features
+**Completed Features:** 57/70+ planned features
 **Current Phase:** Phase 3 & 4 - Collaboration and Organization Features (IN PROGRESS)
-**Next Up:** Phase 3.1 - File Attachments, Phase 2.3 - Reminders & Notifications, or Phase 2.4 - Calendar View
+**Next Up:** Phase 3.2 - Mentions, Phase 2.3 - Reminders & Notifications, or Phase 2.4 - Calendar View
 
-Last update: Completed Phase 4.3 (WIP Limits with visual warnings and column settings integration)
+Last update: Completed Phase 3.1 (File Attachments with drag-and-drop, preview, download, and count badges)
 
 ### Completed Phases:
 - ✅ Phase 1: Core CRUD Operations (All sections complete)
 - ✅ Phase 2.1: Due Dates (Complete with filtering and visual warnings)
 - ✅ Phase 2.2: Time Tracking (Complete with live timer and logs)
+- ✅ Phase 3.1: File Attachments (Complete with drag-and-drop, preview, download, and count badges)
 - ✅ Phase 3.3: Activity Log (Complete with user/type filtering and real-time display)
 - ✅ Phase 4.1: Labels/Tags System (Complete with management UI, color picker, and filtering)
 - ✅ Phase 4.3: WIP Limits (Complete with visual warnings and settings integration)

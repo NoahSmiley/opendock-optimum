@@ -7,6 +7,7 @@ import type {
   KanbanTimeLog,
   KanbanActivity,
   KanbanLabel,
+  KanbanAttachment,
   ProjectsResponse,
 } from "@opendock/shared/types";
 import { request, getApiBaseUrl } from "@opendock/shared/api";
@@ -214,6 +215,33 @@ export const boardsApi = {
     const headers = await resolveCsrfHeaders();
     return request<{ success: boolean }>({
       path: `/api/kanban/labels/${labelId}`,
+      method: "DELETE",
+      headers,
+    });
+  },
+
+  uploadAttachments: async (ticketId: string, formData: FormData) => {
+    const API_BASE = getApiBaseUrl();
+    const response = await fetch(`${API_BASE}/api/kanban/tickets/${ticketId}/attachments`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+    return response.json() as Promise<{ attachments: KanbanAttachment[] }>;
+  },
+
+  listAttachments: (ticketId: string) =>
+    request<{ attachments: KanbanAttachment[] }>({
+      path: `/api/kanban/tickets/${ticketId}/attachments`,
+    }),
+
+  deleteAttachment: async (attachmentId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ success: boolean }>({
+      path: `/api/kanban/attachments/${attachmentId}`,
       method: "DELETE",
       headers,
     });

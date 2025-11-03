@@ -10,6 +10,7 @@ import {
   Columns,
   Calendar,
   Filter,
+  Paperclip,
 } from "lucide-react";
 import clsx from "clsx";
 import type { KanbanActivity, KanbanUser, KanbanActivityType } from "@opendock/shared/types";
@@ -36,6 +37,8 @@ const activityIcons: Record<KanbanActivityType, typeof Activity> = {
   sprint_created: Calendar,
   sprint_updated: Edit,
   board_updated: Edit,
+  attachment_added: Paperclip,
+  attachment_deleted: Trash2,
 };
 
 const activityColors: Record<KanbanActivityType, string> = {
@@ -52,6 +55,8 @@ const activityColors: Record<KanbanActivityType, string> = {
   sprint_created: "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-950",
   sprint_updated: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950",
   board_updated: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950",
+  attachment_added: "text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950",
+  attachment_deleted: "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950",
 };
 
 const formatActivityMessage = (activity: KanbanActivity, user: KanbanUser | undefined): string => {
@@ -93,6 +98,10 @@ const formatActivityMessage = (activity: KanbanActivity, user: KanbanUser | unde
       return `${userName} updated sprint "${metadata.name || "a sprint"}"`;
     case "board_updated":
       return `${userName} updated board settings`;
+    case "attachment_added":
+      return `${userName} added attachment "${metadata.filename || "a file"}"`;
+    case "attachment_deleted":
+      return `${userName} deleted attachment "${metadata.filename || "a file"}"`;
     default:
       return `${userName} performed an action`;
   }

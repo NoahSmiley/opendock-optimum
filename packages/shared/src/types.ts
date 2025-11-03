@@ -134,6 +134,19 @@ export interface KanbanTimeLog {
   updatedAt: string;
 }
 
+export interface KanbanAttachment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  filename: string;
+  originalFilename: string;
+  mimeType: string;
+  size: number; // in bytes
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type KanbanActivityType =
   | "ticket_created"
   | "ticket_updated"
@@ -142,6 +155,8 @@ export type KanbanActivityType =
   | "ticket_assigned"
   | "comment_added"
   | "comment_deleted"
+  | "attachment_added"
+  | "attachment_deleted"
   | "column_created"
   | "column_updated"
   | "column_deleted"
@@ -188,6 +203,7 @@ export interface KanbanTicket {
   order: number;
   comments?: KanbanComment[];
   timeLogs?: KanbanTimeLog[];
+  attachments?: KanbanAttachment[];
 }
 
 export interface KanbanBoard {
