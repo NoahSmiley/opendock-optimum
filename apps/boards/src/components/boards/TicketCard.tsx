@@ -1,11 +1,13 @@
 import clsx from "clsx";
 import { Check, Calendar, Paperclip } from "lucide-react";
 import type { KanbanBoard, KanbanTicket, KanbanUser, KanbanLabel } from "@opendock/shared/types";
-import { formatTicketKey, priorityAccent, priorityStyles, getDueDateStatus, dueDateBadgeStyles, formatDueDate } from "@/lib/ticketStyles";
+import { priorityAccent, priorityStyles, getDueDateStatus, dueDateBadgeStyles, formatDueDate } from "@/lib/ticketStyles";
+import { formatTicketKey } from "@/lib/ticketUtils";
 import { IssueTypeIcon } from "../IssueTypeSelector";
 
 export interface TicketCardProps {
   ticket: KanbanTicket;
+  board?: KanbanBoard;
   column?: KanbanBoard["columns"][number];
   members: KanbanUser[];
   labels: KanbanLabel[];
@@ -20,6 +22,7 @@ export interface TicketCardProps {
 
 export function TicketCard({
   ticket,
+  board,
   column,
   members,
   labels = [],
@@ -50,125 +53,114 @@ export function TicketCard({
     <div
       onClick={handleClick}
       className={clsx(
-        "group relative flex flex-col gap-2 rounded-lg border bg-white p-3 text-neutral-700 transition-[transform,box-shadow,border-color,opacity] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 dark:bg-dark-bg dark:text-neutral-200",
-        selectionMode ? "pl-10" : "pl-5",
+        "group relative rounded-md border bg-white p-2.5 shadow-sm transition-[transform,box-shadow,border-color] hover:shadow-md dark:bg-neutral-900",
+        selectionMode ? "pl-9" : "",
         isComplete
-          ? "border-emerald-500 bg-emerald-50/50 hover:border-emerald-600 dark:border-emerald-400 dark:bg-emerald-950/20 dark:hover:border-emerald-300"
-          : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-800",
+          ? "border-neutral-200 dark:border-neutral-800"
+          : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700",
         highlight && "ring-2 ring-blue-400/30 dark:ring-blue-500/30",
-        isSelected && "border-neutral-400 shadow-sm opacity-60 dark:border-neutral-600",
+        isSelected && "border-blue-500 shadow-md dark:border-blue-400",
         (onClick || selectionMode) && "cursor-pointer",
         className,
       )}
     >
       {/* Selection Checkbox */}
       {selectionMode && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2">
+        <div className="absolute left-2.5 top-3">
           <div className={clsx(
             "flex h-4 w-4 items-center justify-center rounded transition",
             isSelected
-              ? "bg-neutral-900 dark:bg-white"
-              : "border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"
+              ? "bg-blue-600 dark:bg-blue-500"
+              : "border-2 border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"
           )}>
-            {isSelected && <Check className="h-3 w-3 text-white dark:text-neutral-900" />}
+            {isSelected && <Check className="h-3 w-3 text-white" />}
           </div>
         </div>
       )}
 
-      {/* Priority Indicator */}
-      {!selectionMode && (
-        <span
-          aria-hidden
-          className={clsx("absolute inset-y-2 left-2 w-1 rounded-full", priorityAccent[ticket.priority])}
-        />
-      )}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <IssueTypeIcon type={ticket.issueType || "task"} size="sm" className="mt-0.5 p-1" />
-          <div className="space-y-0.5">
-            <p className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-              {formatTicketKey(ticket)}
-            </p>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">{ticket.title}</p>
-          </div>
+      {/* Title Row - Always visible, single line */}
+      <div className="mb-2 flex items-start gap-2">
+        <IssueTypeIcon type={ticket.issueType || "task"} size="sm" className="mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+            {ticket.title}
+          </p>
         </div>
-        {ticket.storyPoints || ticket.estimate ? (
-          <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-white/10 dark:text-neutral-300">
-            {ticket.storyPoints || ticket.estimate} pts
+      </div>
+
+      {/* Metadata Row - Compact, single line */}
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Ticket Key */}
+          <span className="shrink-0 font-semibold text-neutral-500 hover:text-blue-600 dark:text-neutral-400 dark:hover:text-blue-400">
+            {formatTicketKey(ticket, board)}
           </span>
-        ) : null}
-      </div>
-      {ticket.description ? (
-        <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{ticket.description}</p>
-      ) : null}
 
-      {/* Due Date & Attachments Badges */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {ticket.dueDate && (
-          <div className={clsx(
-            "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-medium",
-            dueDateBadgeStyles[dueDateStatus]
-          )}>
-            <Calendar className="h-3 w-3" />
-            <span>{formatDueDate(ticket.dueDate)}</span>
-          </div>
-        )}
-        {ticket.attachments && ticket.attachments.length > 0 && (
-          <div className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-[10px] font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-            <Paperclip className="h-3 w-3" />
-            <span>{ticket.attachments.length}</span>
-          </div>
-        )}
-      </div>
+          {/* Priority Indicator */}
+          <span
+            className={clsx(
+              "h-1.5 w-1.5 shrink-0 rounded-full",
+              priorityAccent[ticket.priority]
+            )}
+            title={`Priority: ${ticket.priority}`}
+          />
 
-      {/* Labels */}
-      {ticketLabels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {ticketLabels.map((label) => (
-            <div
-              key={label.id}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium text-white"
-              style={{ backgroundColor: label.color }}
-            >
-              <span>{label.name}</span>
+          {/* Labels - Max 2 shown */}
+          {ticketLabels.length > 0 && (
+            <div className="flex items-center gap-1 min-w-0">
+              {ticketLabels.slice(0, 2).map((label) => (
+                <span
+                  key={label.id}
+                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: label.color }}
+                  title={label.name}
+                />
+              ))}
+              {ticketLabels.length > 2 && (
+                <span className="text-[10px] text-neutral-400">+{ticketLabels.length - 2}</span>
+              )}
             </div>
-          ))}
+          )}
         </div>
-      )}
 
-      <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-        <span className={clsx("rounded-md px-2 py-1", priorityStyles[ticket.priority])}>{ticket.priority}</span>
-        {sprint ? (
-          <span className="rounded-md border border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-500 dark:border-neutral-700 dark:text-neutral-300">
-            {sprint.name}
+        {/* Right side - Avatar and meta */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Due Date Icon (only if exists and not completed) */}
+          {ticket.dueDate && !isComplete && (
+            <Calendar
+              className={clsx(
+                "h-3 w-3",
+                dueDateStatus === "overdue" && "text-red-500",
+                dueDateStatus === "soon" && "text-amber-500",
+                dueDateStatus === "ok" && "text-neutral-400"
+              )}
+              title={formatDueDate(ticket.dueDate)}
+            />
+          )}
+
+          {/* Attachments Icon */}
+          {ticket.attachments && ticket.attachments.length > 0 && (
+            <div className="flex items-center gap-0.5 text-neutral-400">
+              <Paperclip className="h-3 w-3" />
+              <span className="text-[10px]">{ticket.attachments.length}</span>
+            </div>
+          )}
+
+          {/* Story Points */}
+          {(ticket.storyPoints || ticket.estimate) && (
+            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+              {ticket.storyPoints || ticket.estimate}
+            </span>
+          )}
+
+          {/* Assignee Avatar */}
+          <span
+            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[10px] font-semibold text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200"
+            title={assignee ? assignee.name : "Unassigned"}
+          >
+            {(assignee?.name ?? "?").slice(0, 1).toUpperCase()}
           </span>
-        ) : (
-          <span className="rounded-md border border-dashed border-neutral-200 px-2 py-0.5 text-[10px] font-medium text-neutral-400 dark:border-neutral-700 dark:text-neutral-500">
-            Backlog
-          </span>
-        )}
-      </div>
-      <div className="flex flex-col gap-2 pt-0.5">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-xs font-semibold text-neutral-600 dark:bg-neutral-700 dark:text-white">
-            {(assignee?.name ?? "UN").slice(0, 2).toUpperCase()}
-          </span>
-          <div>
-            <p className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-200">
-              {assignee ? assignee.name : "Unassigned"}
-            </p>
-            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Assignee</p>
-          </div>
         </div>
-        {ticket.tags.length > 0 ? (
-          <div className="flex flex-wrap gap-1 text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
-            {ticket.tags.map((tag) => (
-              <span key={tag} className="rounded-md border border-neutral-200 px-2 py-0.5 dark:border-neutral-700">
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
       </div>
     </div>
   );

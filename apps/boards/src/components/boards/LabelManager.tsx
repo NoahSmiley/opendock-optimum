@@ -125,26 +125,20 @@ export function LabelManager({
               return (
                 <div
                   key={label.id}
-                  className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white px-4 py-3 transition hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+                  className={clsx(
+                    "rounded-lg border bg-white transition dark:bg-neutral-900",
+                    isEditing
+                      ? "border-neutral-300 dark:border-neutral-700"
+                      : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700"
+                  )}
                 >
                   {isEditing ? (
-                    <>
-                      <div className="flex flex-1 gap-3">
-                        <div className="grid grid-cols-6 gap-2">
-                          {LABEL_COLORS.map((colorOption) => (
-                            <button
-                              key={colorOption.value}
-                              type="button"
-                              onClick={() => setEditColor(colorOption.value)}
-                              className={clsx(
-                                "h-8 w-8 rounded-md transition hover:scale-110",
-                                editColor === colorOption.value && "ring-2 ring-neutral-900 ring-offset-2 dark:ring-white dark:ring-offset-neutral-900"
-                              )}
-                              style={{ backgroundColor: colorOption.value }}
-                              title={colorOption.name}
-                            />
-                          ))}
-                        </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-10 w-10 flex-shrink-0 rounded-lg"
+                          style={{ backgroundColor: editColor }}
+                        />
                         <input
                           type="text"
                           value={editName}
@@ -157,33 +151,48 @@ export function LabelManager({
                             }
                           }}
                           disabled={isUpdating}
-                          className="flex-1 rounded-md border border-neutral-900 bg-white px-3 py-2 text-sm font-medium text-neutral-900 outline-none dark:border-white dark:bg-neutral-950 dark:text-white"
+                          className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white dark:focus:border-white dark:focus:ring-white/10"
                           autoFocus
                         />
                       </div>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={handleSaveEdit}
-                          disabled={isUpdating}
-                          className="rounded-md p-2 text-green-600 transition hover:bg-green-50 disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-950/50"
-                          title="Save"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          disabled={isUpdating}
-                          className="rounded-md p-2 text-neutral-400 transition hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-500 dark:hover:bg-neutral-800"
-                          title="Cancel"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap gap-2">
+                          {LABEL_COLORS.map((colorOption) => (
+                            <button
+                              key={colorOption.value}
+                              type="button"
+                              onClick={() => setEditColor(colorOption.value)}
+                              className={clsx(
+                                "h-7 w-7 rounded-md transition hover:scale-110",
+                                editColor === colorOption.value && "ring-2 ring-offset-2 ring-neutral-900 dark:ring-white dark:ring-offset-neutral-900"
+                              )}
+                              style={{ backgroundColor: colorOption.value }}
+                              title={colorOption.name}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            disabled={isUpdating}
+                            className="rounded-md px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            disabled={isUpdating}
+                            className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+                          >
+                            Save
+                          </button>
+                        </div>
                       </div>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-3 px-4 py-3">
                       <div
-                        className="h-6 w-6 rounded"
+                        className="h-8 w-8 flex-shrink-0 rounded-lg"
                         style={{ backgroundColor: label.color }}
                         title={label.color}
                       />
@@ -206,7 +215,7 @@ export function LabelManager({
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               );
@@ -224,23 +233,12 @@ export function LabelManager({
 
         {/* Add Label Form */}
         <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50/50 p-4 dark:border-neutral-700 dark:bg-neutral-900/50">
-          <form onSubmit={handleCreateLabel} className="space-y-3">
-            <div className="grid grid-cols-6 gap-2">
-              {LABEL_COLORS.map((colorOption) => (
-                <button
-                  key={colorOption.value}
-                  type="button"
-                  onClick={() => setNewLabelColor(colorOption.value)}
-                  className={clsx(
-                    "h-8 w-8 rounded-md transition hover:scale-110",
-                    newLabelColor === colorOption.value && "ring-2 ring-neutral-900 ring-offset-2 dark:ring-white dark:ring-offset-neutral-900"
-                  )}
-                  style={{ backgroundColor: colorOption.value }}
-                  title={colorOption.name}
-                />
-              ))}
-            </div>
-            <div className="flex gap-3">
+          <form onSubmit={handleCreateLabel} className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-10 w-10 flex-shrink-0 rounded-lg"
+                style={{ backgroundColor: newLabelColor }}
+              />
               <input
                 type="text"
                 value={newLabelName}
@@ -249,6 +247,23 @@ export function LabelManager({
                 disabled={isCreating}
                 className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-white dark:focus:ring-white/10"
               />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                {LABEL_COLORS.map((colorOption) => (
+                  <button
+                    key={colorOption.value}
+                    type="button"
+                    onClick={() => setNewLabelColor(colorOption.value)}
+                    className={clsx(
+                      "h-7 w-7 rounded-md transition hover:scale-110",
+                      newLabelColor === colorOption.value && "ring-2 ring-offset-2 ring-neutral-900 dark:ring-white dark:ring-offset-neutral-900"
+                    )}
+                    style={{ backgroundColor: colorOption.value }}
+                    title={colorOption.name}
+                  />
+                ))}
+              </div>
               <button
                 type="submit"
                 disabled={!newLabelName.trim() || isCreating}

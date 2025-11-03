@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { useTheme } from "@/theme-provider";
 import { ThemeToggle } from "@/theme-toggle";
-import { TicketDetailPanel } from "@/components/TicketDetailPanel";
-import { CreateTicketPanel } from "@/components/CreateTicketPanel";
+import { TicketDetailModal } from "@/components/TicketDetailModal";
+import { CreateTicketModal } from "@/components/CreateTicketModal";
 import { BoardsSidebar, BoardsSidebarMobile, type BoardTab } from "@/components/boards/BoardsSidebar";
 import { BoardToolbar } from "@/components/boards/BoardToolbar";
 import { BoardSettingsModal } from "@/components/boards/BoardSettingsModal";
@@ -14,14 +14,18 @@ import { BulkAssignModal } from "@/components/boards/BulkAssignModal";
 import { OverviewTab } from "@/components/boards/OverviewTab";
 import { BacklogTab } from "@/components/boards/BacklogTab";
 import { BoardKanbanView } from "@/components/boards/BoardKanbanView";
+import { QuickFilters, applyQuickFilters, type QuickFilter } from "@/components/boards/QuickFilters";
+import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { useBoardsData } from "@/hooks/useBoardsData";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardActions } from "@/hooks/useBoardActions";
+import { useKeyboardShortcuts, type ShortcutHandler } from "@/hooks/useKeyboardShortcuts";
 import { boardsApi } from "@/lib/api";
 
 function BoardsAppInner() {
   const {
     boards,
+    users,
     loading,
     error,
     setError,
@@ -48,42 +52,27 @@ function BoardsAppInner() {
   const [activeTab, setActiveTab] = useState<BoardTab>("kanban");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  const [creatingBacklogTicket, setCreatingBacklogTicket] = useState(false);
-  const [creatingSprint, setCreatingSprint] = useState(false);
   const [showBoardSettings, setShowBoardSettings] = useState(false);
   const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
   const [showBulkMoveModal, setShowBulkMoveModal] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
   const mutationInProgressRef = useRef<string | null>(null);
   const mutationAppliedRef = useRef(false);
 
   const {
     columnTicketMap,
-    backlogColumn,
-    activeSprint,
-    boardStats,
-    teamWorkload,
-    maxWorkloadCount,
-    priorityBreakdown,
-    maxPriorityCount,
     activeComposerColumnId,
     setActiveComposerColumnId,
     setColumnDrafts,
     creatingColumnTicketId,
-    sprintForm,
-    backlogForm,
     getColumnDraft,
     updateColumnDraft,
     handleColumnComposerOpen,
     handleColumnComposerCancel,
     handleColumnTicketSubmit,
-    handleSprintFormChange,
-    handleCreateSprint,
-    handleBacklogFormChange,
-    handleCreateBacklogTicket,
-    handleAssigneeChange,
     handleTicketUpdate,
     handleAddComment,
     handleDeleteComment,
@@ -379,22 +368,150 @@ function BoardsAppInner() {
     setSelectedTicketIds(new Set());
   }, [resetFilters, selectedBoardId, setActiveComposerColumnId, setColumnDrafts]);
 
+  // Keyboard shortcuts
+  const shortcuts: ShortcutHandler[] = [
+    // General
+    {
+      key: "c",
+      description: "Create new ticket",
+      handler: () => setShowCreateTicket(true),
+    },
+    {
+      key: "/",
+      description: "Focus search",
+      handler: () => {
+        const searchInput = document.querySelector('[data-search-input]') as HTMLInputElement;
+        searchInput?.focus();
+      },
+    },
+    {
+      key: "Escape",
+      description: "Close panels/modals",
+      handler: () => {
+        if (selectedTicketId) {
+          setSelectedTicketId(null);
+        } else if (showCreateTicket) {
+          setShowCreateTicket(false);
+        } else if (showBoardSettings) {
+          setShowBoardSettings(false);
+        } else if (selectionMode) {
+          setSelectionMode(false);
+          setSelectedTicketIds(new Set());
+        }
+      },
+    },
+    // Navigation
+    {
+      key: "g",
+      shift: true,
+      description: "Navigate to boards",
+      handler: () => setActiveTab("kanban"),
+    },
+    {
+      key: "b",
+      shift: true,
+      description: "Navigate to backlog",
+      handler: () => setActiveTab("backlog"),
+    },
+    {
+      key: "o",
+      shift: true,
+      description: "Navigate to overview",
+      handler: () => setActiveTab("overview"),
+    },
+    // Board switching
+    {
+      key: "[",
+      description: "Previous board",
+      handler: () => {
+        if (!boards.length) return;
+        const currentIndex = boards.findIndex(b => b.id === selectedBoardId);
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : boards.length - 1;
+        setSelectedBoardId(boards[prevIndex].id);
+      },
+    },
+    {
+      key: "]",
+      description: "Next board",
+      handler: () => {
+        if (!boards.length) return;
+        const currentIndex = boards.findIndex(b => b.id === selectedBoardId);
+        const nextIndex = currentIndex < boards.length - 1 ? currentIndex + 1 : 0;
+        setSelectedBoardId(boards[nextIndex].id);
+      },
+    },
+    // Selection and bulk actions
+    {
+      key: "a",
+      meta: true,
+      description: "Select all tickets",
+      handler: () => {
+        if (selectionMode && selectedBoard) {
+          const allTicketIds = new Set(
+            Object.values(filteredTicketMap).flat().map(t => t.id)
+          );
+          setSelectedTicketIds(allTicketIds);
+        }
+      },
+    },
+    {
+      key: "s",
+      description: "Toggle selection mode",
+      handler: () => {
+        setSelectionMode(!selectionMode);
+        if (!selectionMode) {
+          setSelectedTicketIds(new Set());
+        }
+      },
+    },
+    {
+      key: "d",
+      shift: true,
+      description: "Delete selected tickets",
+      handler: () => {
+        if (selectionMode && selectedTicketIds.size > 0) {
+          handleBulkDelete();
+        }
+      },
+    },
+    // Filters
+    {
+      key: "f",
+      description: "Clear all filters",
+      handler: () => resetFilters(),
+    },
+    {
+      key: "u",
+      description: "Show unassigned only",
+      handler: () => setShowUnassignedOnly(!showUnassignedOnly),
+    },
+    {
+      key: "r",
+      description: "Show recent only",
+      handler: () => setRecentOnly(!recentOnly),
+    },
+  ];
+
+  const { showHelp, setShowHelp } = useKeyboardShortcuts(shortcuts);
+
   return (
     <div className="flex min-h-screen overflow-x-hidden bg-white text-neutral-900 transition-colors dark:bg-dark-bg dark:text-neutral-100">
       <BoardsSidebar
         collapsed={sidebarCollapsed}
         onToggleCollapsed={handleToggleSidebar}
         boards={boards}
+        users={users}
         selectedBoardId={selectedBoardId}
         onSelectBoard={handleSelectBoard}
-        showBoardForm={showBoardForm}
-        onToggleBoardForm={handleToggleBoardForm}
-        boardForm={boardForm}
-        onBoardFormChange={handleBoardFormChange}
-        creatingBoard={creatingBoard}
-        onCreateBoard={handleCreateBoard}
-        projectsLoading={projectsLoading}
-        projectsError={projectsError}
+        onCreateBoard={async (data) => {
+          await boardsApi.createBoard({
+            name: data.name,
+            description: data.description,
+            projectId: data.projectId,
+            members: data.members.map(m => ({ name: m.name })),
+          });
+          await refreshBoards();
+        }}
         projectOptions={projectOptions}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -461,17 +578,21 @@ function BoardsAppInner() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 lg:hidden">
             <BoardsSidebarMobile
               boards={boards}
+              users={users}
               selectedBoardId={selectedBoardId}
               onSelectBoard={handleSelectBoard}
-              showBoardForm={showBoardForm}
-              onToggleBoardForm={handleToggleBoardForm}
-              boardForm={boardForm}
-              onBoardFormChange={handleBoardFormChange}
-              creatingBoard={creatingBoard}
-              onCreateBoard={handleCreateBoard}
-              projectsLoading={projectsLoading}
-              projectsError={projectsError}
+              onCreateBoard={async (data) => {
+                await boardsApi.createBoard({
+                  name: data.name,
+                  description: data.description,
+                  projectId: data.projectId,
+                  members: data.members.map(m => ({ name: m.name })),
+                });
+                await refreshBoards();
+              }}
               projectOptions={projectOptions}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
             />
           </div>
           {loading ? (
@@ -485,23 +606,6 @@ function BoardsAppInner() {
                 board={selectedBoard}
                 searchQuery={searchQuery}
                 onSearchQueryChange={setSearchQuery}
-                selectedAssigneeFilter={selectedAssigneeFilter}
-                onAssigneeFilterChange={setSelectedAssigneeFilter}
-                selectedSprintFilter={selectedSprintFilter}
-                onSprintFilterChange={setSelectedSprintFilter}
-                sprintOptions={sprintOptions}
-                selectedPriorityFilter={selectedPriorityFilter}
-                onPriorityFilterChange={setSelectedPriorityFilter}
-                selectedDueDateFilter={selectedDueDateFilter}
-                onDueDateFilterChange={setSelectedDueDateFilter}
-                selectedLabelFilter={selectedLabelFilter}
-                onLabelFilterChange={setSelectedLabelFilter}
-                showUnassignedOnly={showUnassignedOnly}
-                onToggleUnassignedOnly={handleToggleUnassignedOnly}
-                recentOnly={recentOnly}
-                onToggleRecentOnly={handleToggleRecentOnly}
-                filtersActive={filtersActive}
-                onClearFilters={handleClearFilters}
                 onCreateTicket={() => setShowCreateTicket(true)}
                 selectionMode={selectionMode}
                 onToggleSelectionMode={handleToggleSelectionMode}
@@ -532,48 +636,51 @@ function BoardsAppInner() {
             ) : (
               <div className="mt-8 space-y-8">
                 {activeTab === "timeline" ? (
-                  <OverviewTab
-                    board={selectedBoard}
-                    boardStats={boardStats}
-                    teamWorkload={teamWorkload}
-                    maxWorkloadCount={maxWorkloadCount}
-                    priorityBreakdown={priorityBreakdown}
-                    maxPriorityCount={maxPriorityCount}
-                    activeSprint={activeSprint}
-                    sprintForm={sprintForm}
-                    onSprintFormChange={handleSprintFormChange}
-                    onCreateSprint={handleCreateSprint}
-                    creatingSprint={creatingSprint}
-                  />
+                  <OverviewTab board={selectedBoard} />
                 ) : null}
                 {activeTab === "issues" ? (
-                  <BacklogTab
-                    board={selectedBoard}
-                    backlogColumn={backlogColumn}
-                    backlogForm={backlogForm}
-                    onBacklogFormChange={handleBacklogFormChange}
-                    onCreateBacklogTicket={handleCreateBacklogTicket}
-                    creatingBacklogTicket={creatingBacklogTicket}
-                  />
+                  <BacklogTab board={selectedBoard} />
                 ) : null}
                 {activeTab === "kanban" && selectedBoard ? (
-                  <BoardKanbanView
-                    board={selectedBoard}
-                    columnTicketMap={columnTicketMap}
-                    filteredTicketMap={filteredTicketMap}
-                    activeComposerColumnId={activeComposerColumnId}
-                    creatingColumnTicketId={creatingColumnTicketId}
-                    getColumnDraft={getColumnDraft}
-                    onColumnDraftChange={updateColumnDraft}
-                    onColumnTicketSubmit={handleColumnTicketSubmit}
-                    onColumnComposerOpen={handleColumnComposerOpen}
-                    onColumnComposerCancel={handleColumnComposerCancel}
-                    onTicketClick={setSelectedTicketId}
-                    onReorderTicket={handleReorderTicket}
-                    selectionMode={selectionMode}
-                    selectedTicketIds={selectedTicketIds}
-                    onToggleTicketSelection={handleToggleTicketSelection}
-                  />
+                  <>
+                    <div className="pl-4 sm:pl-6 lg:pl-8 xl:pl-10">
+                      <QuickFilters
+                        board={selectedBoard}
+                        onFiltersChange={setQuickFilters}
+                        className="mb-4"
+                      />
+                    </div>
+                    <BoardKanbanView
+                      board={selectedBoard}
+                      columnTicketMap={columnTicketMap}
+                      filteredTicketMap={(() => {
+                        // Apply quick filters on top of existing filters
+                        const map = new Map<string, KanbanTicket[]>();
+                        filteredTicketMap.forEach((tickets, columnId) => {
+                          const quickFilteredTickets = applyQuickFilters(
+                            tickets,
+                            quickFilters,
+                            selectedBoard,
+                            undefined // TODO: Add current user ID when we have user management
+                          );
+                          map.set(columnId, quickFilteredTickets);
+                        });
+                        return map;
+                      })()}
+                      activeComposerColumnId={activeComposerColumnId}
+                      creatingColumnTicketId={creatingColumnTicketId}
+                      getColumnDraft={getColumnDraft}
+                      onColumnDraftChange={updateColumnDraft}
+                      onColumnTicketSubmit={handleColumnTicketSubmit}
+                      onColumnComposerOpen={handleColumnComposerOpen}
+                      onColumnComposerCancel={handleColumnComposerCancel}
+                      onTicketClick={setSelectedTicketId}
+                      onReorderTicket={handleReorderTicket}
+                      selectionMode={selectionMode}
+                      selectedTicketIds={selectedTicketIds}
+                      onToggleTicketSelection={handleToggleTicketSelection}
+                    />
+                  </>
                 ) : null}
               </div>
             )}
@@ -585,21 +692,21 @@ function BoardsAppInner() {
           )}
         </main>
       </div>
-      {/* Ticket Detail Panel */}
+      {/* Ticket Detail Modal */}
       {selectedTicketId && selectedBoard && (() => {
         const selectedTicket = selectedBoard.tickets.find((t) => t.id === selectedTicketId);
         return selectedTicket ? (
-          <TicketDetailPanel
+          <TicketDetailModal
             ticket={selectedTicket}
+            board={selectedBoard}
             members={selectedBoard.members}
             labels={selectedBoard.labels}
+            isOpen={!!selectedTicketId}
             onClose={() => setSelectedTicketId(null)}
             onUpdate={handleTicketUpdate}
             onDelete={handleDeleteTicket}
             onAddComment={handleAddComment}
             onDeleteComment={handleDeleteComment}
-            onRefresh={refreshBoards}
-            sidebarCollapsed={sidebarCollapsed}
           />
         ) : null;
       })()}
@@ -620,16 +727,16 @@ function BoardsAppInner() {
         />
       )}
 
-      {/* Create Ticket Panel */}
-      {showCreateTicket && selectedBoard && (
-        <CreateTicketPanel
+      {/* Create Ticket Modal */}
+      {selectedBoard && (
+        <CreateTicketModal
           board={selectedBoard}
+          isOpen={showCreateTicket}
           onClose={() => setShowCreateTicket(false)}
           onCreate={async (ticketData) => {
             await boardsApi.createTicket(selectedBoard.id, ticketData);
             await refreshBoards();
           }}
-          sidebarCollapsed={sidebarCollapsed}
         />
       )}
 
@@ -668,6 +775,13 @@ function BoardsAppInner() {
           onConfirm={handleBulkAssignConfirm}
         />
       )}
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        shortcuts={shortcuts}
+      />
     </div>
   );
 }

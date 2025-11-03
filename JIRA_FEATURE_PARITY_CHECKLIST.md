@@ -7,37 +7,57 @@ This document tracks the features needed to achieve functional parity with JIRA 
 
 ### 🎯 High Priority (Quick Wins)
 
-#### Issue Types & Categorization
-- [ ] Add issue type field to KanbanTicket model
-- [ ] Create issue type selector in ticket creation
-- [ ] Add distinct icons for each type:
-  - [ ] 🐛 Bug (red accent)
-  - [ ] ✅ Task (blue accent)
-  - [ ] 📖 Story (green accent)
-  - [ ] 🎯 Epic (purple accent)
-- [ ] Update ticket cards to show issue type icon
+#### Issue Types & Categorization ✅
+- [x] Add issue type field to KanbanTicket model
+- [x] Create issue type selector in ticket creation
+- [x] Add distinct icons for each type:
+  - [x] 🐛 Bug (red accent)
+  - [x] ✅ Task (blue accent)
+  - [x] 📖 Story (green accent)
+  - [x] 🎯 Epic (purple accent)
+- [x] Update ticket cards to show issue type icon
 - [ ] Add issue type filter to board toolbar
 
-#### Ticket Key Display
-- [ ] Make ticket keys more prominent (e.g., "OD-123")
-- [ ] Add project prefix configuration
+#### Ticket Key Display ✅
+- [x] Make ticket keys more prominent (e.g., "OD-123")
+- [x] Add project prefix configuration
 - [ ] Show ticket key in browser title when viewing ticket
-- [ ] Make ticket keys clickable/copyable
+- [x] Make ticket keys clickable/copyable (visually)
 
-#### Quick Filters
-- [ ] Add "My Issues" filter (assigned to current user)
-- [ ] Add "Recently Updated" filter (last 7 days)
-- [ ] Add "Unassigned" filter
-- [ ] Create filter bar with one-click presets
-- [ ] Save custom filters
+#### Quick Filters ✅
+- [ ] Add "My Issues" filter (assigned to current user) - Needs user management
+- [x] Add "Recently Updated" filter (last 7 days)
+- [x] Add "Unassigned" filter
+- [x] Create filter bar with one-click presets
+- [x] Save custom filters (via Advanced Search modal)
+- [x] Quick filter pills for:
+  - [x] Recently Updated
+  - [x] Unassigned
+  - [x] Due Soon
+  - [x] Overdue
+  - [x] High Priority
+  - [x] Has Labels
+  - [x] Issue type filters (Bugs, Stories, Tasks, Epics)
 
-#### Keyboard Shortcuts
-- [ ] 'c' - Create new ticket
-- [ ] '/' - Focus search
+#### Keyboard Shortcuts ✅
+- [x] 'c' - Create new ticket
+- [x] '/' - Focus search
 - [ ] 'a' - Assign ticket
 - [ ] 'e' - Edit ticket
 - [ ] 'j/k' - Navigate tickets
-- [ ] '?' - Show shortcuts help modal
+- [x] '?' - Show shortcuts help modal
+- [x] Additional shortcuts implemented:
+  - [x] 'Esc' - Close panels/modals
+  - [x] 'Shift+G' - Navigate to boards
+  - [x] 'Shift+B' - Navigate to backlog
+  - [x] 'Shift+O' - Navigate to overview
+  - [x] '[' / ']' - Switch between boards
+  - [x] 's' - Toggle selection mode
+  - [x] 'Cmd+A' - Select all tickets
+  - [x] 'Shift+D' - Delete selected tickets
+  - [x] 'f' - Clear filters
+  - [x] 'u' - Show unassigned only
+  - [x] 'r' - Show recent only
 
 ### 📊 Sprint Management
 
@@ -89,15 +109,21 @@ This document tracks the features needed to achieve functional parity with JIRA 
 - [ ] Custom widget support
 - [ ] Export reports to PDF/CSV
 
-### 🔍 Advanced Search
+### 🔍 Advanced Search ✅ (Partial)
 
 #### Search Improvements
-- [ ] Full-text search across all fields
+- [x] Full-text search across all fields
 - [ ] Search history
-- [ ] Saved searches
+- [x] Saved searches (stored in localStorage)
 - [ ] Search suggestions/autocomplete
-- [ ] JQL-like query builder
+- [x] JQL-like query builder (with visual mode)
 - [ ] Search across multiple projects
+- [x] Advanced filter modal with:
+  - [x] Visual filter builder
+  - [x] JQL mode (basic parser)
+  - [x] Save/load searches
+  - [x] Multiple operators (is, contains, >, <, etc.)
+  - [x] AND logic between filters
 
 ### 👥 User Management
 

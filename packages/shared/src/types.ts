@@ -203,6 +203,7 @@ export type IssueType = "bug" | "task" | "story" | "epic";
 
 export interface KanbanTicket {
   id: string;
+  key?: string; // JIRA-style key (e.g., "OD-123")
   boardId: string;
   columnId: string;
   title: string;

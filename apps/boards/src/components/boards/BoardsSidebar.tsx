@@ -1,41 +1,28 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import {
   Plus,
   Settings2,
   Loader2,
 } from "lucide-react";
 import clsx from "clsx";
-import type { KanbanBoard } from "@opendock/shared/types";
+import type { KanbanBoard, KanbanUser } from "@opendock/shared/types";
 import type { BoardFormState } from "./forms/types";
 import { ThemeToggle } from "@/theme-toggle";
+import { CreateBoardModal } from "../CreateBoardModal";
 
 const sidebarSections = [
   {
-    title: "Planning",
+    title: "Views",
     items: [
-      { label: "Timeline", tab: "timeline" as const },
-      { label: "Kanban board", tab: "kanban" as const },
-      { label: "Reports", tab: "reports" as const },
+      { label: "Overview", tab: "timeline" as const },
+      { label: "Board", tab: "kanban" as const },
+      { label: "Backlog", tab: "issues" as const },
     ],
   },
   {
-    title: "Project",
+    title: "Settings",
     items: [
-      { label: "Issues", tab: "issues" as const },
-      { label: "Components", tab: "components" as const },
-    ],
-  },
-  {
-    title: "Development",
-    items: [
-      { label: "Code", tab: "code" as const },
-      { label: "Releases", tab: "releases" as const },
-    ],
-  },
-  {
-    title: "Board",
-    items: [
-      { label: "Settings", tab: "settings" as const },
+      { label: "Board Settings", tab: "settings" as const },
     ],
   },
 ] as const;
@@ -46,105 +33,21 @@ const primaryNavItems = [
   { label: "Backlog", tab: "issues" as const },
 ] as const;
 
-interface BoardFormFieldsProps {
-  boardForm: BoardFormState;
-  onBoardFormChange: (field: keyof BoardFormState, value: string) => void;
-  projectOptions: Array<{ value: string; label: string }>;
-  projectsLoading: boolean;
-  projectsError: string | null;
-  creatingBoard: boolean;
-}
-
-function BoardFormFields({
-  boardForm,
-  onBoardFormChange,
-  projectOptions,
-  projectsLoading,
-  projectsError,
-  creatingBoard,
-}: BoardFormFieldsProps) {
-  const handleChange =
-    (field: keyof BoardFormState) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      onBoardFormChange(field, event.target.value);
-    };
-
-  return (
-    <Fragment>
-      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-        Board name
-        <input
-          required
-          value={boardForm.name}
-          onChange={handleChange("name")}
-          className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15"
-        />
-      </label>
-      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-        Description
-        <textarea
-          value={boardForm.description}
-          onChange={handleChange("description")}
-          rows={3}
-          className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15"
-        />
-      </label>
-      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-        Members
-        <input
-          value={boardForm.members}
-          onChange={handleChange("members")}
-          placeholder="Comma separated names"
-          className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15"
-        />
-      </label>
-      <label className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-        Project
-        <select
-          value={boardForm.projectId}
-          onChange={handleChange("projectId")}
-          disabled={projectsLoading}
-          className="mt-2 w-full rounded-md border border-slate-200/60 bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-inner focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200/60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30 dark:focus:ring-white/15 disabled:opacity-60"
-        >
-          <option value="">No project</option>
-          {projectOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      {projectsError ? (
-        <p className="text-xs text-rose-500 dark:text-rose-300">{projectsError}</p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={creatingBoard}
-        className="flex w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-      >
-        {creatingBoard ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        Create board
-      </button>
-    </Fragment>
-  );
-}
-
-export type BoardTab = "timeline" | "kanban" | "reports" | "issues" | "components" | "code" | "releases" | "settings";
+export type BoardTab = "timeline" | "kanban" | "issues" | "settings";
 
 interface BoardsSidebarProps {
   collapsed: boolean;
   onToggleCollapsed: () => void;
   boards: KanbanBoard[];
+  users?: KanbanUser[];
   selectedBoardId: string | null;
   onSelectBoard: (boardId: string) => void;
-  showBoardForm: boolean;
-  onToggleBoardForm: () => void;
-  boardForm: BoardFormState;
-  onBoardFormChange: (field: keyof BoardFormState, value: string) => void;
-  creatingBoard: boolean;
-  onCreateBoard: (event: React.FormEvent<HTMLFormElement>) => void;
-  projectsLoading: boolean;
-  projectsError: string | null;
+  onCreateBoard: (data: {
+    name: string;
+    description?: string;
+    members: Array<{ id?: string; name: string }>;
+    projectId?: string;
+  }) => Promise<void>;
   projectOptions: Array<{ value: string; label: string }>;
   activeTab: BoardTab;
   onTabChange: (tab: BoardTab) => void;
@@ -154,20 +57,15 @@ export function BoardsSidebar({
   collapsed,
   onToggleCollapsed,
   boards,
+  users = [],
   selectedBoardId,
   onSelectBoard,
-  showBoardForm,
-  onToggleBoardForm,
-  boardForm,
-  onBoardFormChange,
-  creatingBoard,
   onCreateBoard,
-  projectsLoading,
-  projectsError,
   projectOptions,
   activeTab,
   onTabChange,
 }: BoardsSidebarProps) {
+  const [showCreateModal, setShowCreateModal] = useState(false);
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-50 hidden items-center justify-between bg-white/95 px-10 py-6 text-sm text-neutral-500 shadow-sm backdrop-blur dark:bg-neutral-950/80 dark:text-neutral-300 lg:flex xl:px-12">
@@ -259,7 +157,14 @@ export function BoardsSidebar({
           <div className="flex w-full flex-col gap-1">
             <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
               <span>Boards</span>
-              <span>{boards.length}</span>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                title="Create Board"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="flex w-full flex-col gap-0.5">
               {boards.length > 0 ? (
@@ -308,22 +213,33 @@ export function BoardsSidebar({
         </div>
         </div>
       </aside>
+
+      {/* Create Board Modal */}
+      <CreateBoardModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={async (data) => {
+          await onCreateBoard(data);
+          setShowCreateModal(false);
+        }}
+        projects={projectOptions}
+        existingUsers={users}
+      />
     </>
   );
 }
 
 interface BoardsSidebarMobileProps {
   boards: KanbanBoard[];
+  users?: KanbanUser[];
   selectedBoardId: string | null;
   onSelectBoard: (boardId: string) => void;
-  showBoardForm: boolean;
-  onToggleBoardForm: () => void;
-  boardForm: BoardFormState;
-  onBoardFormChange: (field: keyof BoardFormState, value: string) => void;
-  creatingBoard: boolean;
-  onCreateBoard: (event: React.FormEvent<HTMLFormElement>) => void;
-  projectsLoading: boolean;
-  projectsError: string | null;
+  onCreateBoard: (data: {
+    name: string;
+    description?: string;
+    members: Array<{ id?: string; name: string }>;
+    projectId?: string;
+  }) => Promise<void>;
   projectOptions: Array<{ value: string; label: string }>;
   activeTab: BoardTab;
   onTabChange: (tab: BoardTab) => void;
@@ -331,20 +247,15 @@ interface BoardsSidebarMobileProps {
 
 export function BoardsSidebarMobile({
   boards,
+  users = [],
   selectedBoardId,
   onSelectBoard,
-  showBoardForm,
-  onToggleBoardForm,
-  boardForm,
-  onBoardFormChange,
-  creatingBoard,
   onCreateBoard,
-  projectsLoading,
-  projectsError,
   projectOptions,
   activeTab,
   onTabChange,
 }: BoardsSidebarMobileProps) {
+  const [showCreateModal, setShowCreateModal] = useState(false);
   return (
     <>
       <div className="mb-4 flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
@@ -400,25 +311,25 @@ export function BoardsSidebarMobile({
       <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
         <button
           type="button"
-          onClick={onToggleBoardForm}
+          onClick={() => setShowCreateModal(true)}
           className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-200/70 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-neutral-900/60 dark:text-white dark:hover:bg-neutral-900/40"
         >
           <Plus className="h-4 w-4" />
-          New board
+          Create New Board
         </button>
-        {showBoardForm ? (
-          <form className="mt-4 space-y-3" onSubmit={onCreateBoard}>
-            <BoardFormFields
-              boardForm={boardForm}
-              onBoardFormChange={onBoardFormChange}
-              projectOptions={projectOptions}
-              projectsLoading={projectsLoading}
-              projectsError={projectsError}
-              creatingBoard={creatingBoard}
-            />
-          </form>
-        ) : null}
       </div>
+
+      {/* Create Board Modal */}
+      <CreateBoardModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={async (data) => {
+          await onCreateBoard(data);
+          setShowCreateModal(false);
+        }}
+        projects={projectOptions}
+        existingUsers={users}
+      />
     </>
   );
 }
