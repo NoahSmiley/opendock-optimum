@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 type Theme = "light" | "dark";
@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.classList.remove(opposite);
     root.classList.add(theme);
     const backgrounds: Record<Theme, string> = {
-      dark: "#000000",
+      dark: "#0a0a0a",
       light: "#f6f7ff",
     };
     root.style.backgroundColor = backgrounds[theme];

@@ -7,6 +7,7 @@ import {
 import clsx from "clsx";
 import type { KanbanBoard } from "@opendock/shared/types";
 import type { BoardFormState } from "./forms/types";
+import { ThemeToggle } from "@/theme-toggle";
 
 const sidebarSections = [
   {
@@ -37,6 +38,12 @@ const sidebarSections = [
       { label: "Settings", tab: "settings" as const },
     ],
   },
+] as const;
+
+const primaryNavItems = [
+  { label: "Overview", tab: "timeline" as const },
+  { label: "Board", tab: "kanban" as const },
+  { label: "Backlog", tab: "issues" as const },
 ] as const;
 
 interface BoardFormFieldsProps {
@@ -162,106 +169,146 @@ export function BoardsSidebar({
   onTabChange,
 }: BoardsSidebarProps) {
   return (
-    <aside
-      className="fixed left-0 top-0 hidden h-screen w-52 flex-shrink-0 flex-col overflow-y-auto bg-white px-4 pb-6 dark:bg-dark-bg lg:flex"
-    >
-      <div className="mb-4 flex items-center gap-2 pt-4">
-        <span className="whitespace-nowrap text-sm font-semibold text-neutral-700 dark:text-neutral-300">OpenDock</span>
-        <span className="text-neutral-300 dark:text-neutral-700">/</span>
-        <span className="whitespace-nowrap text-sm font-semibold text-neutral-900 dark:text-white">Boards</span>
-      </div>
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div>
-          <p className="whitespace-nowrap text-xs text-neutral-400 dark:text-neutral-500">Projects</p>
-          <p className="mt-1 whitespace-nowrap text-base font-semibold text-neutral-900 dark:text-white">Beyond Gravity</p>
+    <>
+      <header className="fixed left-0 right-0 top-0 z-50 hidden items-center justify-between bg-white/95 px-10 py-6 text-sm text-neutral-500 shadow-sm backdrop-blur dark:bg-neutral-950/80 dark:text-neutral-300 lg:flex xl:px-12">
+        <div className="flex items-center gap-10 -ml-1.5">
+          <div className="flex items-center gap-2 font-semibold text-neutral-700 dark:text-neutral-200">
+            <span>OpenDock</span>
+            <span className="text-neutral-300 dark:text-neutral-600">/</span>
+            <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-xs font-semibold text-white dark:bg-neutral-200 dark:text-neutral-900">Boards</span>
+          </div>
+          <nav className="flex items-center gap-3 text-xs">
+            {primaryNavItems.map((item) => (
+              <button
+                key={item.tab}
+                type="button"
+                onClick={() => onTabChange(item.tab)}
+                className={clsx(
+                  "rounded-md px-2.5 py-1 transition hover:text-neutral-900 dark:hover:text-white",
+                  activeTab === item.tab &&
+                    "bg-neutral-100 text-neutral-900 dark:bg-white/10 dark:text-white"
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
         </div>
-        <button
-          type="button"
-          className="rounded-md p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
-        >
-          <Settings2 className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="mt-3 flex-1 space-y-4 overflow-y-auto">
-        {sidebarSections.map((section) => (
-          <div key={section.title}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              {section.title}
-            </p>
-            <ul className="mt-1.5 space-y-0.5">
-              {section.items.map((item) => (
-                <li key={item.label}>
-                  <button
-                    type="button"
-                    onClick={() => onTabChange(item.tab)}
-                    className={clsx(
-                      "flex w-full items-center rounded-md border px-2 py-1 text-sm font-medium transition",
-                      activeTab === item.tab
-                        ? "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                        : "border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
-                    )}
-                  >
-                    <span className="overflow-hidden whitespace-nowrap">
-                      {item.label}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-        <div>
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-            <span className="whitespace-nowrap">Boards</span>
-            <span>{boards.length}</span>
-          </div>
-          <div className="mt-1.5 space-y-0.5">
-            {boards.length > 0 ? (
-              boards.map((board) => (
-                <button
-                  key={board.id}
-                  type="button"
-                  onClick={() => onSelectBoard(board.id)}
-                  className={clsx(
-                    "flex w-full items-center justify-between rounded-md border px-2 py-1 text-sm font-medium transition",
-                    selectedBoardId === board.id
-                      ? "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                      : "border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
-                  )}
-                >
-                  <span className="truncate">{board.name}</span>
-                  <span className="text-xs text-neutral-400 dark:text-neutral-500">{board.tickets.length}</span>
-                </button>
-              ))
-            ) : (
-              <p className="text-sm text-neutral-500 dark:text-neutral-500">No boards yet.</p>
-            )}
+        <ThemeToggle />
+      </header>
+      <aside
+        className="fixed left-0 top-0 hidden h-screen w-[240px] flex-shrink-0 flex-col bg-white dark:bg-neutral-950 lg:flex"
+      >
+        <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto overflow-x-hidden px-10 pb-8 pt-28 no-scrollbar">
+          {/* Projects Section */}
+          <div className="flex w-full flex-col gap-1.5">
+            <div className="text-xs font-semibold tracking-wide text-neutral-400/90 dark:text-neutral-400/70">
+              Projects
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-neutral-900 dark:text-white">Beyond Gravity</span>
+            <button
+              type="button"
+              className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
-      </div>
-      <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-        <button
-          type="button"
-          onClick={onToggleBoardForm}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
-        >
-          <Plus className="h-4 w-4" />
-          New board
-        </button>
-        {showBoardForm ? (
-          <form className="mt-4 space-y-3" onSubmit={onCreateBoard}>
-            <BoardFormFields
-              boardForm={boardForm}
-              onBoardFormChange={onBoardFormChange}
-              projectOptions={projectOptions}
-              projectsLoading={projectsLoading}
-              projectsError={projectsError}
-              creatingBoard={creatingBoard}
-            />
-          </form>
-        ) : null}
-      </div>
-    </aside>
+
+        {/* Navigation Sections */}
+            <div className="mt-6 flex min-h-0 flex-1 flex-col gap-7">
+          {sidebarSections.map((section) => (
+            <div key={section.title} className="flex w-full flex-col gap-1">
+              <span className="flex h-8 shrink-0 items-center text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
+                {section.title}
+              </span>
+              <ul className="flex w-full flex-col gap-0.5">
+                {section.items.map((item) => {
+                  const isActive = activeTab === item.tab;
+                  return (
+                    <li key={item.label}>
+                      <button
+                        type="button"
+                        onClick={() => onTabChange(item.tab)}
+                        className={clsx(
+                          "group relative flex h-[30px] w-full items-center justify-start overflow-visible rounded-md border border-transparent px-0 text-left text-[0.8rem] font-medium text-neutral-600 transition-colors outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-200 dark:text-neutral-300 dark:focus-visible:ring-neutral-700",
+                          isActive ? "text-neutral-900 dark:text-neutral-100" : "hover:text-neutral-900 dark:hover:text-white"
+                        )}
+                      >
+                        <span className="relative -ml-2 inline-flex min-w-0 max-w-full items-center overflow-hidden px-2 py-1">
+                          <span
+                            className={clsx(
+                              "pointer-events-none absolute inset-0 rounded-full transition-colors",
+                              isActive
+                                ? "bg-neutral-100 dark:bg-neutral-800"
+                                : "bg-transparent group-hover:bg-neutral-100 dark:group-hover:bg-neutral-800/70"
+                            )}
+                          />
+                          <span className="relative z-10 truncate">{item.label}</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+
+          {/* Boards Section */}
+          <div className="flex w-full flex-col gap-1">
+            <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
+              <span>Boards</span>
+              <span>{boards.length}</span>
+            </div>
+            <div className="flex w-full flex-col gap-0.5">
+              {boards.length > 0 ? (
+                boards.map((board) => {
+                  const isSelected = selectedBoardId === board.id;
+                  return (
+                    <li key={board.id} className="group flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => onSelectBoard(board.id)}
+                        className={clsx(
+                          "group relative flex h-8 max-w-[80%] flex-1 items-center justify-start overflow-visible rounded-md border border-transparent px-0 text-left text-[0.8rem] font-medium text-neutral-600 transition-colors outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-200 dark:text-neutral-300 dark:focus-visible:ring-neutral-700",
+                          isSelected ? "text-neutral-900 dark:text-neutral-100" : "hover:text-neutral-900 dark:hover:text-white"
+                        )}
+                      >
+                        <span className="relative -ml-2 inline-flex min-w-0 max-w-full items-center overflow-hidden px-2 py-1">
+                          <span
+                            className={clsx(
+                              "pointer-events-none absolute inset-0 rounded-full transition-colors",
+                              isSelected
+                                ? "bg-neutral-100 dark:bg-neutral-800"
+                                : "bg-transparent group-hover:bg-neutral-100 dark:group-hover:bg-neutral-800/70"
+                            )}
+                          />
+                          <span className="relative z-10 truncate">{board.name}</span>
+                        </span>
+                      </button>
+                      <span
+                        className={clsx(
+                          "text-xs font-medium text-neutral-400 transition-colors dark:text-neutral-500",
+                          isSelected
+                            ? "text-neutral-500 dark:text-neutral-400"
+                            : "group-hover:text-neutral-500 dark:group-hover:text-neutral-300"
+                        )}
+                      >
+                        {board.tickets.length}
+                      </span>
+                    </li>
+                  );
+                })
+              ) : (
+                <p className="text-[0.8rem] font-medium text-neutral-500 dark:text-white/70">No boards yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -278,6 +325,8 @@ interface BoardsSidebarMobileProps {
   projectsLoading: boolean;
   projectsError: string | null;
   projectOptions: Array<{ value: string; label: string }>;
+  activeTab: BoardTab;
+  onTabChange: (tab: BoardTab) => void;
 }
 
 export function BoardsSidebarMobile({
@@ -293,9 +342,34 @@ export function BoardsSidebarMobile({
   projectsLoading,
   projectsError,
   projectOptions,
+  activeTab,
+  onTabChange,
 }: BoardsSidebarMobileProps) {
   return (
     <>
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
+        <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+          <span>OpenDock</span>
+          <span className="text-neutral-300 dark:text-neutral-600">/</span>
+          <span className="text-neutral-900 dark:text-white">Boards</span>
+        </div>
+        <nav className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+          {primaryNavItems.map((item) => (
+            <button
+              key={item.tab}
+              type="button"
+              onClick={() => onTabChange(item.tab)}
+              className={clsx(
+                "rounded-md px-2 py-1 transition hover:text-neutral-900 dark:hover:text-white",
+                activeTab === item.tab &&
+                  "bg-neutral-100 text-neutral-900 dark:bg-white/10 dark:text-white"
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </div>
       <div className="rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-neutral-900/70">
         <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
           <span>Boards</span>
