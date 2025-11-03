@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
 import clsx from "clsx";
-import type { KanbanBoard, KanbanUser, KanbanTicket } from "@opendock/shared/types";
+import type { KanbanBoard, KanbanUser, KanbanTicket, IssueType } from "@opendock/shared/types";
+import { IssueTypeSelector } from "./IssueTypeSelector";
 
 interface CreateTicketPanelProps {
   board: KanbanBoard;
@@ -9,10 +10,12 @@ interface CreateTicketPanelProps {
   onCreate: (ticketData: {
     title: string;
     description: string;
+    issueType: IssueType;
     columnId: string;
     assigneeIds: string[];
     priority: KanbanTicket["priority"];
     tags: string[];
+    storyPoints?: number;
   }) => Promise<void>;
   sidebarCollapsed?: boolean;
 }
@@ -25,9 +28,11 @@ export function CreateTicketPanel({
 }: CreateTicketPanelProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [issueType, setIssueType] = useState<IssueType>("task");
   const [columnId, setColumnId] = useState(board.columns[0]?.id || "");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [priority, setPriority] = useState<KanbanTicket["priority"]>("medium");
+  const [storyPoints, setStoryPoints] = useState<number | undefined>();
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -86,9 +91,11 @@ export function CreateTicketPanel({
       await onCreate({
         title: title.trim(),
         description: description.trim(),
+        issueType,
         columnId,
         assigneeIds,
         priority,
+        storyPoints,
         tags,
       });
       handleClose();
@@ -161,6 +168,11 @@ export function CreateTicketPanel({
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="space-y-5">
+          {/* Issue Type */}
+          <div>
+            <IssueTypeSelector value={issueType} onChange={setIssueType} showLabel={true} />
+          </div>
+
           {/* Title */}
           <div>
             <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
@@ -190,8 +202,8 @@ export function CreateTicketPanel({
             />
           </div>
 
-          {/* Column & Priority Grid */}
-          <div className="grid gap-5 sm:grid-cols-2">
+          {/* Column, Priority & Story Points Grid */}
+          <div className="grid gap-5 sm:grid-cols-3">
             {/* Column */}
             <div>
               <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
@@ -236,6 +248,22 @@ export function CreateTicketPanel({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Story Points */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                Story Points
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={storyPoints || ""}
+                onChange={(e) => setStoryPoints(e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="Points"
+                className="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder-neutral-500 dark:focus:border-white dark:focus:ring-white/10"
+              />
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { Check, Calendar, Paperclip } from "lucide-react";
 import type { KanbanBoard, KanbanTicket, KanbanUser, KanbanLabel } from "@opendock/shared/types";
 import { formatTicketKey, priorityAccent, priorityStyles, getDueDateStatus, dueDateBadgeStyles, formatDueDate } from "@/lib/ticketStyles";
+import { IssueTypeIcon } from "../IssueTypeSelector";
 
 export interface TicketCardProps {
   ticket: KanbanTicket;
@@ -82,15 +83,18 @@ export function TicketCard({
         />
       )}
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-0.5">
-          <p className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-            {formatTicketKey(ticket)}
-          </p>
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">{ticket.title}</p>
+        <div className="flex items-start gap-2">
+          <IssueTypeIcon type={ticket.issueType || "task"} size="sm" className="mt-0.5 p-1" />
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+              {formatTicketKey(ticket)}
+            </p>
+            <p className="text-sm font-medium text-neutral-900 dark:text-white">{ticket.title}</p>
+          </div>
         </div>
-        {ticket.estimate ? (
+        {ticket.storyPoints || ticket.estimate ? (
           <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-white/10 dark:text-neutral-300">
-            {ticket.estimate} pts
+            {ticket.storyPoints || ticket.estimate} pts
           </span>
         ) : null}
       </div>

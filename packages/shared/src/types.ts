@@ -111,6 +111,21 @@ export interface KanbanSprint {
   startDate: string;
   endDate: string;
   status: "planned" | "active" | "completed";
+  velocity?: number; // Average story points per sprint
+}
+
+export interface KanbanEpic {
+  id: string;
+  boardId: string;
+  key: string; // e.g., "EPIC-1"
+  title: string;
+  description?: string;
+  color: string;
+  startDate?: string;
+  endDate?: string;
+  status: "open" | "in_progress" | "done";
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface KanbanComment {
@@ -184,20 +199,29 @@ export interface KanbanLabel {
   createdAt: string;
 }
 
+export type IssueType = "bug" | "task" | "story" | "epic";
+
 export interface KanbanTicket {
   id: string;
   boardId: string;
   columnId: string;
   title: string;
   description?: string;
+  issueType?: IssueType; // New field for issue type
+  epicId?: string; // Reference to parent epic
   assigneeIds: string[];
   tags: string[];
   labelIds: string[];
   estimate?: number;
+  storyPoints?: number; // Story points for estimation
   timeSpent?: number; // in seconds, calculated from time logs
+  timeOriginalEstimate?: number; // Original time estimate in seconds
+  timeRemaining?: number; // Time remaining in seconds
   priority: "low" | "medium" | "high";
   sprintId?: string;
   dueDate?: string;
+  components?: string[]; // Component tags
+  fixVersion?: string; // Target release version
   createdAt: string;
   updatedAt: string;
   order: number;
@@ -211,14 +235,17 @@ export interface KanbanBoard {
   name: string;
   description?: string;
   projectId?: string;
+  projectKey?: string; // e.g., "OD" for OpenDock
   createdAt: string;
   memberIds: string[];
   activeSprintId?: string;
   columns: KanbanColumn[];
   tickets: KanbanTicket[];
   sprints: KanbanSprint[];
+  epics: KanbanEpic[];
   members: KanbanUser[];
   labels: KanbanLabel[];
+  components?: string[]; // Available components for this board
 }
 
 export interface KanbanBoardSnapshot {
