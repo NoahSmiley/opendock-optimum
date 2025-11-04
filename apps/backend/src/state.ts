@@ -22,6 +22,10 @@ import type {
   KanbanLabel,
   KanbanAttachment,
   Project,
+  Note,
+  Folder,
+  Collection,
+  CollectionNote,
 } from "@opendock/shared/types";
 
 export interface AppState {
@@ -39,6 +43,10 @@ export interface AppState {
   kanbanActivities: KanbanActivity[];
   kanbanLabels: KanbanLabel[];
   kanbanAttachments: KanbanAttachment[];
+  notes: Note[];
+  folders: Folder[];
+  collections: Collection[];
+  collectionNotes: CollectionNote[];
 }
 
 const DEFAULT_STATE: AppState = {
@@ -56,6 +64,10 @@ const DEFAULT_STATE: AppState = {
   kanbanActivities: [],
   kanbanLabels: [],
   kanbanAttachments: [],
+  notes: [],
+  folders: [],
+  collections: [],
+  collectionNotes: [],
 };
 
 export class StateStore {
@@ -93,6 +105,10 @@ export class StateStore {
         kanbanActivities: parsed.kanbanActivities ?? [],
         kanbanLabels: parsed.kanbanLabels ?? [],
         kanbanAttachments: parsed.kanbanAttachments ?? [],
+        notes: parsed.notes ?? [],
+        folders: parsed.folders ?? [],
+        collections: parsed.collections ?? [],
+        collectionNotes: parsed.collectionNotes ?? [],
       };
     } catch (error) {
       console.error("[state] failed to parse state file", error);
@@ -123,6 +139,11 @@ export class StateStore {
       kanbanComments: overrides.kanbanComments ? [...overrides.kanbanComments] : [],
       kanbanActivities: overrides.kanbanActivities ? [...overrides.kanbanActivities] : [],
       kanbanLabels: overrides.kanbanLabels ? [...overrides.kanbanLabels] : [],
+      kanbanAttachments: overrides.kanbanAttachments ? [...overrides.kanbanAttachments] : [],
+      notes: overrides.notes ? [...overrides.notes] : [],
+      folders: overrides.folders ? [...overrides.folders] : [],
+      collections: overrides.collections ? [...overrides.collections] : [],
+      collectionNotes: overrides.collectionNotes ? [...overrides.collectionNotes] : [],
     };
     this.persist();
   }

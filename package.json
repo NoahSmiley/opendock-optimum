@@ -9,8 +9,9 @@
     "build": "bun run --filter '*' build",
     "dev:opendock": "bun run --filter 'opendock' dev",
     "dev:boards": "bun run --filter 'boards' dev",
+    "dev:notes": "bun run --filter 'notes' dev",
     "dev:backend": "bun run --filter 'backend' dev",
-    "dev:all": "concurrently -n backend,boards,opendock -c blue,magenta,cyan \"bun run dev:backend\" \"bun run dev:boards\" \"bun run dev:opendock\""
+    "dev:all": "concurrently -n backend,boards,notes,opendock -c blue,magenta,yellow,cyan \"bun run dev:backend\" \"bun run dev:boards\" \"bun run dev:notes\" \"bun run dev:opendock\""
   },
   "workspaces": [
     "apps/*",

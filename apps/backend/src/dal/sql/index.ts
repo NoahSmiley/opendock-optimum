@@ -8,6 +8,7 @@ import type {
 } from "../index";
 import { StateProjectsRepository } from "../stateProjectsRepository";
 import { StateKanbanRepository } from "../stateKanbanRepository";
+import { PrismaNotesRepository } from "./prismaNotesRepository";
 import { prisma } from "./client";
 
 function mapUser(user: { id: string; email: string; displayName: string | null; role: string; createdAt: Date; updatedAt: Date }): AuthUser {
@@ -112,5 +113,6 @@ export function createSqlDal(): DataAccessLayer {
     auth: new PrismaAuthRepository(),
     projects: new StateProjectsRepository(),
     kanban: new StateKanbanRepository(),
+    notes: new PrismaNotesRepository(),
   };
 }

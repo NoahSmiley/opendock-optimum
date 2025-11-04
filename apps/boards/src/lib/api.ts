@@ -53,6 +53,7 @@ export const boardsApi = {
     estimate?: number;
     priority?: "low" | "medium" | "high";
     sprintId?: string;
+    issueType?: "bug" | "task" | "story" | "epic";
   }) => {
     const headers = await resolveCsrfHeaders();
     return request<{ ticket: KanbanTicket }>({

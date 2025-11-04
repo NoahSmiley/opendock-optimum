@@ -8,6 +8,7 @@ import type {
 } from "../index";
 import { StateProjectsRepository } from "../stateProjectsRepository";
 import { StateKanbanRepository } from "../stateKanbanRepository";
+import { StateNotesRepository } from "../stateNotesRepository";
 
 class UnsupportedAuthRepo implements AuthRepository {
   private error<T>(): Promise<T> {
@@ -51,5 +52,6 @@ export function createJsonDal(): DataAccessLayer {
     auth: new UnsupportedAuthRepo(),
     projects: new StateProjectsRepository(),
     kanban: new StateKanbanRepository(),
+    notes: new StateNotesRepository(),
   };
 }

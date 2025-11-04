@@ -10,6 +10,7 @@ interface SortableTicketCardProps {
   labels: KanbanLabel[];
   sprints?: KanbanSprint[];
   onClick?: () => void;
+  onTitleUpdate?: (ticketId: string, newTitle: string) => Promise<void>;
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (ticketId: string) => void;
@@ -23,6 +24,7 @@ export function SortableTicketCard({
   labels,
   sprints,
   onClick,
+  onTitleUpdate,
   selectionMode,
   isSelected,
   onToggleSelect,
@@ -43,6 +45,7 @@ export function SortableTicketCard({
             labels={labels}
             sprints={sprints}
             onClick={onClick}
+            onTitleUpdate={onTitleUpdate}
             selectionMode={selectionMode}
             isSelected={isSelected}
             onToggleSelect={onToggleSelect}

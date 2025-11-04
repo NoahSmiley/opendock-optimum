@@ -1,12 +1,11 @@
 import clsx from "clsx";
-import { Search, Plus, CheckSquare } from "lucide-react";
+import { Search, CheckSquare } from "lucide-react";
 import type { KanbanBoard } from "@opendock/shared/types";
 
 interface BoardToolbarProps {
   board: KanbanBoard;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
-  onCreateTicket?: () => void;
   selectionMode?: boolean;
   onToggleSelectionMode?: () => void;
 }
@@ -15,12 +14,11 @@ export function BoardToolbar({
   board,
   searchQuery,
   onSearchQueryChange,
-  onCreateTicket,
   selectionMode,
   onToggleSelectionMode,
 }: BoardToolbarProps) {
   return (
-    <header className="flex w-full flex-shrink-0 border-b border-neutral-200 bg-white/95 py-3 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/80">
+    <header className="flex w-full flex-shrink-0 flex-col bg-white/95 py-3 shadow-sm backdrop-blur dark:bg-neutral-950/80">
       <div className="flex w-full flex-col gap-3 px-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between lg:px-8 xl:px-10">
         <div className="space-y-1 lg:min-w-[280px]">
           <div className="flex flex-wrap items-center gap-3">
@@ -58,18 +56,9 @@ export function BoardToolbar({
               <CheckSquare className="h-4 w-4" />
             </button>
           )}
-          {onCreateTicket && (
-            <button
-              onClick={onCreateTicket}
-              className="flex items-center gap-1.5 rounded-md border border-blue-600 bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 dark:border-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
-              title="Create new ticket"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create</span>
-            </button>
-          )}
         </div>
       </div>
+      <div className="ml-2 mr-4 mt-5 h-px rounded bg-neutral-200/70 sm:ml-4 sm:mr-6 lg:ml-8 lg:mr-12 xl:ml-10 xl:mr-16 dark:bg-white/15" />
     </header>
   );
 }

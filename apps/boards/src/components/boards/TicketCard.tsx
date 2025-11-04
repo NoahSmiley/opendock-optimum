@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import clsx from "clsx";
 import { Check, Calendar, Paperclip } from "lucide-react";
 import type { KanbanBoard, KanbanTicket, KanbanUser, KanbanLabel } from "@opendock/shared/types";
@@ -13,6 +14,7 @@ export interface TicketCardProps {
   labels: KanbanLabel[];
   sprints: KanbanBoard["sprints"];
   onClick?: () => void;
+  onTitleUpdate?: (ticketId: string, newTitle: string) => Promise<void>;
   highlight?: boolean;
   className?: string;
   selectionMode?: boolean;
@@ -28,12 +30,18 @@ export function TicketCard({
   labels = [],
   sprints,
   onClick,
+  onTitleUpdate,
   highlight = false,
   className,
   selectionMode = false,
   isSelected = false,
   onToggleSelect,
 }: TicketCardProps) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(ticket.title);
+  const [isSaving, setIsSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const assignee = members.find((member) => ticket.assigneeIds.includes(member.id));
   const sprint = sprints.find((item) => item.id === ticket.sprintId);
   const isComplete =
@@ -41,11 +49,69 @@ export function TicketCard({
   const dueDateStatus = getDueDateStatus(ticket.dueDate);
   const ticketLabels = labels.filter((label) => ticket.labelIds?.includes(label.id));
 
+  useEffect(() => {
+    if (isEditingTitle && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
   const handleClick = () => {
+    // If in edit mode, save and close edit mode
+    if (isEditingTitle) {
+      handleTitleSave();
+      return;
+    }
+
+    // Check if user has text selected
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      return;
+    }
+
     if (selectionMode && onToggleSelect) {
       onToggleSelect(ticket.id);
     } else if (onClick) {
       onClick();
+    }
+  };
+
+  const handleTitleClick = (e: React.MouseEvent) => {
+    if (!selectionMode && onTitleUpdate) {
+      e.stopPropagation();
+      setIsEditingTitle(true);
+    }
+  };
+
+  const handleTitleSave = async () => {
+    if (!editedTitle.trim() || editedTitle === ticket.title || !onTitleUpdate) {
+      setIsEditingTitle(false);
+      setEditedTitle(ticket.title);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onTitleUpdate(ticket.id, editedTitle.trim());
+      setIsEditingTitle(false);
+    } catch (error) {
+      console.error("Failed to update ticket title:", error);
+      setEditedTitle(ticket.title);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTitleCancel = () => {
+    setIsEditingTitle(false);
+    setEditedTitle(ticket.title);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleTitleSave();
+    } else if (e.key === "Escape") {
+      handleTitleCancel();
     }
   };
 
@@ -82,9 +148,28 @@ export function TicketCard({
       <div className="mb-2 flex items-start gap-2">
         <IssueTypeIcon type={ticket.issueType || "task"} size="sm" className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-neutral-900 dark:text-white">
-            {ticket.title}
-          </p>
+          {isEditingTitle ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleKeyDown}
+              disabled={isSaving}
+              className="w-full cursor-pointer truncate rounded border border-blue-500 bg-white px-1.5 py-0.5 text-sm font-medium text-neutral-900 outline-none ring-2 ring-blue-500/20 dark:border-blue-400 dark:bg-neutral-950 dark:text-white dark:ring-blue-400/20"
+            />
+          ) : (
+            <p
+              onClick={handleTitleClick}
+              className={clsx(
+                "truncate text-sm font-medium text-neutral-900 dark:text-white",
+                onTitleUpdate && !selectionMode && "cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+              )}
+            >
+              {ticket.title}
+            </p>
+          )}
         </div>
       </div>
 

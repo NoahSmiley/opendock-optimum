@@ -1,4 +1,6 @@
 
+import type { ProjectType } from "./projectTypes";
+
 export type BuildStatus = "queued" | "running" | "success" | "failed";
 export type HealthStatus = "unknown" | "up" | "down";
 
@@ -237,6 +239,7 @@ export interface KanbanBoard {
   description?: string;
   projectId?: string;
   projectKey?: string; // e.g., "OD" for OpenDock
+  projectType?: ProjectType; // Project type for adaptive UI
   createdAt: string;
   memberIds: string[];
   activeSprintId?: string;
@@ -261,5 +264,153 @@ export interface KanbanBoardSnapshot {
 export interface KanbanBoardsResponse {
   boards: KanbanBoard[];
   users: KanbanUser[];
+}
+
+// =============================================================================
+// Notes Types
+// =============================================================================
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  contentType?: 'markdown' | 'richtext';
+  folderId?: string | null;
+  tags: string[];
+  isPinned: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+  parentId?: string | null;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  children?: Folder[];
+  notes?: Note[];
+}
+
+export interface BoardNote {
+  id: string;
+  boardId: string;
+  noteId: string;
+  createdAt: string;
+}
+
+export interface CardNote {
+  id: string;
+  cardId: string;
+  noteId: string;
+  createdAt: string;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  noteCount?: number;
+}
+
+export interface CollectionNote {
+  id: string;
+  collectionId: string;
+  noteId: string;
+  createdAt: string;
+}
+
+export interface NotesResponse {
+  notes: Note[];
+  folders: Folder[];
+  collections?: Collection[];
+}
+
+// Input types for creating/updating notes
+export interface CreateNoteInput {
+  title: string;
+  content?: string;
+  contentType?: 'markdown' | 'richtext';
+  folderId?: string;
+  tags?: string[];
+  isPinned?: boolean;
+}
+
+export interface UpdateNoteInput {
+  title?: string;
+  content?: string;
+  contentType?: 'markdown' | 'richtext';
+  folderId?: string | null;
+  tags?: string[];
+  isPinned?: boolean;
+  isArchived?: boolean;
+}
+
+// Input types for folders
+export interface CreateFolderInput {
+  name: string;
+  color?: string;
+  icon?: string;
+  parentId?: string;
+}
+
+export interface UpdateFolderInput {
+  name?: string;
+  color?: string | null;
+  icon?: string | null;
+  parentId?: string | null;
+}
+
+// Input types for collections
+export interface CreateCollectionInput {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface UpdateCollectionInput {
+  name?: string;
+  description?: string | null;
+  color?: string | null;
+  icon?: string | null;
+}
+
+// Search and filter types
+export interface NoteSearchParams {
+  query?: string;
+  tags?: string[];
+  folderId?: string;
+  isPinned?: boolean;
+  isArchived?: boolean;
+  boardId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface NoteSearchResult {
+  notes: Note[];
+  total: number;
+}
+
+// Board linking types
+export interface LinkNoteToBoardInput {
+  noteId: string;
+  boardId: string;
+}
+
+export interface LinkNoteToCardInput {
+  noteId: string;
+  cardId: string;
 }
 

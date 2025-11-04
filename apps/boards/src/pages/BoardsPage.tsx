@@ -3,7 +3,6 @@ import clsx from "clsx";
 import { useTheme } from "@/theme-provider";
 import { ThemeToggle } from "@/theme-toggle";
 import { TicketDetailModal } from "@/components/TicketDetailModal";
-import { CreateTicketModal } from "@/components/CreateTicketModal";
 import { BoardsSidebar, BoardsSidebarMobile, type BoardTab } from "@/components/boards/BoardsSidebar";
 import { BoardToolbar } from "@/components/boards/BoardToolbar";
 import { BoardSettingsModal } from "@/components/boards/BoardSettingsModal";
@@ -53,7 +52,6 @@ function BoardsAppInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showBoardSettings, setShowBoardSettings] = useState(false);
-  const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
   const [showBulkMoveModal, setShowBulkMoveModal] = useState(false);
@@ -372,11 +370,6 @@ function BoardsAppInner() {
   const shortcuts: ShortcutHandler[] = [
     // General
     {
-      key: "c",
-      description: "Create new ticket",
-      handler: () => setShowCreateTicket(true),
-    },
-    {
       key: "/",
       description: "Focus search",
       handler: () => {
@@ -390,8 +383,6 @@ function BoardsAppInner() {
       handler: () => {
         if (selectedTicketId) {
           setSelectedTicketId(null);
-        } else if (showCreateTicket) {
-          setShowCreateTicket(false);
         } else if (showBoardSettings) {
           setShowBoardSettings(false);
         } else if (selectionMode) {
@@ -518,7 +509,7 @@ function BoardsAppInner() {
       />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-52">
         <header className="fixed right-0 top-0 z-50 bg-white dark:bg-dark-bg left-0 lg:left-52">
-          <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8 xl:px-10">
+          <div className="flex items-center justify-between gap-4 px-4 py-10 sm:px-6 lg:px-8 xl:px-10">
             <div className="flex items-center gap-6 h-full">
               <div className="flex items-center gap-2 lg:hidden">
                 <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -529,7 +520,7 @@ function BoardsAppInner() {
                   Boards
                 </span>
               </div>
-              <nav className="hidden items-center gap-6 text-sm text-neutral-500 dark:text-neutral-300 sm:flex h-full">
+              <nav className="hidden h-full items-center gap-6 self-start text-sm text-neutral-500 dark:text-neutral-300 sm:flex">
                 <button
                   type="button"
                   onClick={() => setActiveTab("timeline")}
@@ -567,14 +558,14 @@ function BoardsAppInner() {
             </div>
           </div>
         </header>
-        <main className="mt-[57px] flex h-[calc(100vh-57px)] min-w-0 flex-col overflow-x-hidden bg-white dark:bg-dark-bg">
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-10">
+        <main className="mt-[160px] flex h-[calc(100vh-160px)] min-w-0 flex-col overflow-x-hidden bg-white dark:bg-dark-bg">
           {error ? (
-            <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-500 dark:border-rose-400/30 dark:text-rose-200">
-              {error}
+            <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-10">
+              <div className="inline-flex items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-500 dark:border-rose-400/30 dark:text-rose-200">
+                {error}
+              </div>
             </div>
           ) : null}
-          </div>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 lg:hidden">
             <BoardsSidebarMobile
               boards={boards}
@@ -606,7 +597,6 @@ function BoardsAppInner() {
                 board={selectedBoard}
                 searchQuery={searchQuery}
                 onSearchQueryChange={setSearchQuery}
-                onCreateTicket={() => setShowCreateTicket(true)}
                 selectionMode={selectionMode}
                 onToggleSelectionMode={handleToggleSelectionMode}
               />
@@ -634,7 +624,7 @@ function BoardsAppInner() {
                 }}
               />
             ) : (
-              <div className="mt-8 space-y-8">
+          <div className="mt-6 space-y-8">
                 {activeTab === "timeline" ? (
                   <OverviewTab board={selectedBoard} />
                 ) : null}
@@ -675,6 +665,24 @@ function BoardsAppInner() {
                       onColumnComposerOpen={handleColumnComposerOpen}
                       onColumnComposerCancel={handleColumnComposerCancel}
                       onTicketClick={setSelectedTicketId}
+                      onTicketTitleUpdate={async (ticketId, newTitle) => {
+                        await handleTicketUpdate(ticketId, { title: newTitle });
+                      }}
+                      onQuickCreateTicket={async (columnId, title, issueType) => {
+                        const result = await boardsApi.createTicket(selectedBoard.id, {
+                          title,
+                          columnId,
+                          priority: "medium",
+                          assigneeIds: [],
+                        });
+                        // Update with issueType after creation if it's not "task"
+                        if (issueType && issueType !== "task") {
+                          await boardsApi.updateTicket(result.ticket.id, {
+                            issueType,
+                          });
+                        }
+                        await refreshBoards();
+                      }}
                       onReorderTicket={handleReorderTicket}
                       selectionMode={selectionMode}
                       selectedTicketIds={selectedTicketIds}
@@ -724,19 +732,6 @@ function BoardsAppInner() {
           onRenameColumn={handleRenameColumn}
           onUpdateColumnWipLimit={handleUpdateColumnWipLimit}
           onDeleteColumn={handleDeleteColumn}
-        />
-      )}
-
-      {/* Create Ticket Modal */}
-      {selectedBoard && (
-        <CreateTicketModal
-          board={selectedBoard}
-          isOpen={showCreateTicket}
-          onClose={() => setShowCreateTicket(false)}
-          onCreate={async (ticketData) => {
-            await boardsApi.createTicket(selectedBoard.id, ticketData);
-            await refreshBoards();
-          }}
         />
       )}
 

@@ -1,11 +1,12 @@
 import type { FormEvent } from "react";
 import { useCallback } from "react";
-import type { KanbanBoard, KanbanTicket } from "@opendock/shared/types";
+import type { KanbanBoard, KanbanTicket, IssueType } from "@opendock/shared/types";
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./KanbanColumn";
 import { SortableTicketCard } from "./SortableTicketCard";
 import { ColumnTicketComposer } from "./forms/ColumnTicketComposer";
 import type { ColumnDraftState } from "./forms/types";
+import { QuickCreateTicket } from "./QuickCreateTicket";
 
 interface BoardKanbanViewProps {
   board: KanbanBoard;
@@ -19,6 +20,8 @@ interface BoardKanbanViewProps {
   onColumnComposerOpen: (columnId: string) => void;
   onColumnComposerCancel: () => void;
   onTicketClick: (ticketId: string) => void;
+  onTicketTitleUpdate?: (ticketId: string, newTitle: string) => Promise<void>;
+  onQuickCreateTicket?: (columnId: string, title: string, issueType: IssueType) => Promise<void>;
   onReorderTicket: (ticketId: string, toColumnId: string, toIndex: number) => void;
   selectionMode?: boolean;
   selectedTicketIds?: Set<string>;
@@ -37,6 +40,8 @@ export function BoardKanbanView({
   onColumnComposerOpen,
   onColumnComposerCancel,
   onTicketClick,
+  onTicketTitleUpdate,
+  onQuickCreateTicket,
   onReorderTicket,
   selectionMode = false,
   selectedTicketIds = new Set(),
@@ -77,6 +82,16 @@ export function BoardKanbanView({
                     totalCount={rawTickets.length}
                     droppableProvided={provided}
                     isDraggingOver={snapshot.isDraggingOver}
+                    footer={
+                      onQuickCreateTicket && (
+                        <QuickCreateTicket
+                          columnId={column.id}
+                          onCreateTicket={async (title, issueType) => {
+                            await onQuickCreateTicket(column.id, title, issueType);
+                          }}
+                        />
+                      )
+                    }
                   >
                     {tickets.map((ticket, index) => (
                       <SortableTicketCard
@@ -88,6 +103,7 @@ export function BoardKanbanView({
                         labels={board.labels || []}
                         sprints={board.sprints}
                         onClick={() => onTicketClick(ticket.id)}
+                        onTitleUpdate={onTicketTitleUpdate}
                         selectionMode={selectionMode}
                         isSelected={selectedTicketIds.has(ticket.id)}
                         onToggleSelect={onToggleTicketSelection}

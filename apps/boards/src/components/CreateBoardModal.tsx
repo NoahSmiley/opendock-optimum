@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Users, Folder, Hash } from "lucide-react";
 import clsx from "clsx";
-import type { KanbanUser } from "@opendock/shared/types";
+import type { KanbanUser, ProjectType } from "@opendock/shared/types";
+import { ProjectTypeSelector } from "./ProjectTypeSelector";
+import { getProjectTypeConfig } from "@opendock/shared";
 
 interface CreateBoardModalProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface CreateBoardModalProps {
     description?: string;
     members: Array<{ id?: string; name: string }>;
     projectId?: string;
+    projectType?: ProjectType;
   }) => Promise<void>;
   projects?: Array<{ value: string; label: string }>;
   existingUsers?: KanbanUser[];
@@ -26,16 +29,32 @@ export function CreateBoardModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [projectType, setProjectType] = useState<ProjectType>("general");
   const [selectedMembers, setSelectedMembers] = useState<Array<{ id?: string; name: string }>>([]);
   const [newMemberName, setNewMemberName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [showMemberInput, setShowMemberInput] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // 1: Type, 2: Details
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && currentStep === 2) {
       setTimeout(() => nameInputRef.current?.focus(), 100);
+    }
+  }, [isOpen, currentStep]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset form when modal closes
+      setCurrentStep(1);
+      setName("");
+      setDescription("");
+      setProjectId("");
+      setProjectType("general");
+      setSelectedMembers([]);
+      setNewMemberName("");
+      setShowMemberInput(false);
     }
   }, [isOpen]);
 
@@ -51,6 +70,7 @@ export function CreateBoardModal({
         description: description.trim() || undefined,
         members: selectedMembers,
         projectId: projectId || undefined,
+        projectType,
       });
       // Reset form
       setName("");
@@ -90,8 +110,9 @@ export function CreateBoardModal({
     ));
   };
 
-  // Generate default columns for new boards
-  const defaultColumns = ["To Do", "In Progress", "Review", "Done"];
+  // Generate default columns based on project type
+  const projectConfig = getProjectTypeConfig(projectType);
+  const defaultColumns = projectConfig.defaultColumns;
 
   return (
     <>
@@ -107,9 +128,13 @@ export function CreateBoardModal({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 dark:border-neutral-800">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Create New Board</h2>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                {currentStep === 1 ? "Select Project Type" : "Create New Board"}
+              </h2>
               <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-                Set up a new kanban board for your team
+                {currentStep === 1
+                  ? "Choose the type of project to customize your board"
+                  : `Setting up a ${getProjectTypeConfig(projectType).label.toLowerCase()} board`}
               </p>
             </div>
             <button
@@ -123,8 +148,14 @@ export function CreateBoardModal({
 
           {/* Content */}
           <div className="max-h-[calc(90vh-140px)] overflow-y-auto px-6 py-6">
-            <div className="space-y-5">
-              {/* Board Name */}
+            {currentStep === 1 ? (
+              <ProjectTypeSelector
+                value={projectType}
+                onChange={setProjectType}
+              />
+            ) : (
+              <div className="space-y-5">
+                {/* Board Name */}
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                   <Hash className="h-3.5 w-3.5" />
@@ -321,14 +352,27 @@ export function CreateBoardModal({
                   You can customize columns after creating the board
                 </p>
               </div>
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-neutral-200 px-6 py-4 dark:border-neutral-800">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Press <kbd className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs dark:bg-neutral-800">⌘</kbd> + <kbd className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs dark:bg-neutral-800">Enter</kbd> to create
-            </p>
+            <div>
+              {currentStep === 2 && (
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                >
+                  ← Back to project type
+                </button>
+              )}
+              {currentStep === 1 && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Step 1 of 2
+                </p>
+              )}
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={onClose}
@@ -337,13 +381,22 @@ export function CreateBoardModal({
               >
                 Cancel
               </button>
-              <button
-                onClick={handleCreate}
-                disabled={!name.trim() || isCreating}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-              >
-                {isCreating ? "Creating..." : "Create Board"}
-              </button>
+              {currentStep === 1 ? (
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  Next: Board Details
+                </button>
+              ) : (
+                <button
+                  onClick={handleCreate}
+                  disabled={!name.trim() || isCreating}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  {isCreating ? "Creating..." : "Create Board"}
+                </button>
+              )}
             </div>
           </div>
         </div>
