@@ -68,7 +68,7 @@ export function BoardsSidebar({
   const [showCreateModal, setShowCreateModal] = useState(false);
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 hidden items-center justify-between bg-white/95 px-10 py-6 text-sm text-neutral-500 shadow-sm backdrop-blur dark:bg-neutral-950/80 dark:text-neutral-300 lg:flex xl:px-12">
+      <header className="fixed left-0 right-0 top-0 z-50 hidden items-center justify-between bg-white/95 px-10 py-5 text-sm text-neutral-500 shadow-sm backdrop-blur dark:bg-neutral-950/80 dark:text-neutral-300 lg:flex xl:px-12">
         <div className="flex items-center gap-10 -ml-1.5">
           <div className="flex items-center gap-2 font-semibold text-neutral-700 dark:text-neutral-200">
             <span>OpenDock</span>
@@ -82,7 +82,7 @@ export function BoardsSidebar({
                 type="button"
                 onClick={() => onTabChange(item.tab)}
                 className={clsx(
-                  "rounded-md px-2.5 py-1 transition hover:text-neutral-900 dark:hover:text-white",
+                  "rounded-md px-2.5 py-1.5 transition hover:text-neutral-900 dark:hover:text-white",
                   activeTab === item.tab &&
                     "bg-neutral-100 text-neutral-900 dark:bg-white/10 dark:text-white"
                 )}
@@ -97,7 +97,7 @@ export function BoardsSidebar({
       <aside
         className="fixed left-0 top-0 hidden h-screen w-[240px] flex-shrink-0 flex-col bg-white dark:bg-neutral-950 lg:flex"
       >
-        <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto overflow-x-hidden px-10 pb-8 pt-28 no-scrollbar">
+        <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto overflow-x-hidden px-10 pb-8 pt-24 no-scrollbar">
           {/* Projects Section */}
           <div className="flex w-full flex-col gap-1.5">
             <div className="text-xs font-semibold tracking-wide text-neutral-400/90 dark:text-neutral-400/70">

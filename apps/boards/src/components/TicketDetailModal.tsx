@@ -71,6 +71,7 @@ export function TicketDetailModal({
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLabelSelector, setShowLabelSelector] = useState(false);
+  const [showAssignMenu, setShowAssignMenu] = useState(false);
 
   // Refs for auto-focus
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -418,10 +419,58 @@ export function TicketDetailModal({
             <div className="w-80 border-l border-neutral-200 bg-neutral-50 px-6 py-6 dark:border-neutral-800 dark:bg-neutral-900">
               {/* Quick Actions */}
               <div className="mb-6 flex gap-2">
-                <button className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                  <Users className="mr-1.5 inline h-4 w-4" />
-                  Assign
-                </button>
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => setShowAssignMenu(!showAssignMenu)}
+                    className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                  >
+                    <Users className="mr-1.5 inline h-4 w-4" />
+                    Assign
+                  </button>
+
+                  {/* Assign Menu Dropdown */}
+                  {showAssignMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowAssignMenu(false)}
+                      />
+                      <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-auto rounded-md border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+                        {members.map((member) => {
+                          const isAssigned = ticket.assigneeIds.includes(member.id);
+                          return (
+                            <button
+                              key={member.id}
+                              onClick={() => {
+                                const newAssigneeIds = isAssigned
+                                  ? ticket.assigneeIds.filter(id => id !== member.id)
+                                  : [...ticket.assigneeIds, member.id];
+                                onUpdate(ticket.id, { assigneeIds: newAssigneeIds });
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                            >
+                              <div className="flex h-4 w-4 items-center justify-center rounded border border-neutral-300 dark:border-neutral-600">
+                                {isAssigned && <Check className="h-3 w-3 text-blue-600" />}
+                              </div>
+                              <div
+                                className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white"
+                                style={{ backgroundColor: member.avatarColor || "#666" }}
+                              >
+                                {member.name.slice(0, 2).toUpperCase()}
+                              </div>
+                              <span className="text-neutral-900 dark:text-white">{member.name}</span>
+                            </button>
+                          );
+                        })}
+                        {members.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-neutral-500">
+                            No members available
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-neutral-800 dark:text-red-400 dark:hover:bg-red-950"

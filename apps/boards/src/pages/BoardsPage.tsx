@@ -518,8 +518,8 @@ function BoardsAppInner() {
       />
       <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-52">
         <header className="fixed right-0 top-0 z-50 bg-white dark:bg-dark-bg left-0 lg:left-52">
-          <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
-            <div className="flex items-center gap-6">
+          <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8 xl:px-10">
+            <div className="flex items-center gap-6 h-full">
               <div className="flex items-center gap-2 lg:hidden">
                 <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                   OpenDock
@@ -529,12 +529,12 @@ function BoardsAppInner() {
                   Boards
                 </span>
               </div>
-              <nav className="hidden items-center gap-6 text-sm text-neutral-500 dark:text-neutral-300 sm:flex">
+              <nav className="hidden items-center gap-6 text-sm text-neutral-500 dark:text-neutral-300 sm:flex h-full">
                 <button
                   type="button"
                   onClick={() => setActiveTab("timeline")}
                   className={clsx(
-                    "transition hover:text-neutral-900 dark:hover:text-white",
+                    "py-1 transition hover:text-neutral-900 dark:hover:text-white",
                     activeTab === "timeline" && "text-neutral-900 dark:text-white"
                   )}
                 >
@@ -544,7 +544,7 @@ function BoardsAppInner() {
                   type="button"
                   onClick={() => setActiveTab("kanban")}
                   className={clsx(
-                    "transition hover:text-neutral-900 dark:hover:text-white",
+                    "py-1 transition hover:text-neutral-900 dark:hover:text-white",
                     activeTab === "kanban" && "text-neutral-900 dark:text-white"
                   )}
                 >
@@ -554,7 +554,7 @@ function BoardsAppInner() {
                   type="button"
                   onClick={() => setActiveTab("issues")}
                   className={clsx(
-                    "transition hover:text-neutral-900 dark:hover:text-white",
+                    "py-1 transition hover:text-neutral-900 dark:hover:text-white",
                     activeTab === "issues" && "text-neutral-900 dark:text-white"
                   )}
                 >
