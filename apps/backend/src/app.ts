@@ -23,7 +23,7 @@ export interface CreateAppOptions {
 export function createApp(options: CreateAppOptions = {}) {
   const allowedOrigins = process.env.OPENDOCK_WEB_ORIGIN
     ? process.env.OPENDOCK_WEB_ORIGIN.split(",").map((value) => value.trim()).filter(Boolean)
-    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5180"];
+    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://localhost:5180"];
 
   const app = express();
   app.use(express.json({ limit: "5mb" }));

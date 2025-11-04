@@ -124,6 +124,11 @@ export class StateStore {
     return JSON.parse(JSON.stringify(this.state));
   }
 
+  update(state: AppState): void {
+    this.state = state;
+    this.persist();
+  }
+
   reset(overrides: Partial<AppState> = {}): void {
     this.state = {
       projects: overrides.projects ? [...overrides.projects] : [],

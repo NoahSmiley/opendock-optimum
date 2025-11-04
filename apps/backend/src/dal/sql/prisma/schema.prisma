@@ -30,3 +30,62 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  color     String?
+  icon      String?
+  parentId  String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Folder[] @relation("FolderHierarchy")
+  notes    Note[]
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @default("")
+  contentType String   @default("markdown")
+  folderId    String?
+  tags        String   @default("[]")
+  isPinned    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  folder       Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  collections  CollectionNote[]
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  icon        String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  notes CollectionNote[]
+}
+
+model CollectionNote {
+  id           String   @id @default(cuid())
+  collectionId String
+  noteId       String
+  createdAt    DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  note       Note       @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, noteId])
+  @@index([collectionId])
+  @@index([noteId])
+}
