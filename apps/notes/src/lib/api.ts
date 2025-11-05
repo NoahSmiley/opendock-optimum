@@ -83,15 +83,15 @@ export const notesApi = {
 
   // Folders CRUD
   listFolders: () =>
-    request<{ folders: Folder[] }>({ path: "/api/folders" }),
+    request<{ folders: Folder[] }>({ path: "/api/notes/folders" }),
 
   getFolder: (folderId: string) =>
-    request<{ folder: Folder }>({ path: `/api/folders/${folderId}` }),
+    request<{ folder: Folder }>({ path: `/api/notes/folders/${folderId}` }),
 
   createFolder: async (payload: CreateFolderInput) => {
     const headers = await resolveCsrfHeaders();
     return request<{ folder: Folder }>({
-      path: "/api/folders",
+      path: "/api/notes/folders",
       method: "POST",
       body: JSON.stringify(payload),
       headers,
@@ -101,7 +101,7 @@ export const notesApi = {
   updateFolder: async (folderId: string, payload: UpdateFolderInput) => {
     const headers = await resolveCsrfHeaders();
     return request<{ folder: Folder }>({
-      path: `/api/folders/${folderId}`,
+      path: `/api/notes/folders/${folderId}`,
       method: "PATCH",
       body: JSON.stringify(payload),
       headers,
@@ -111,7 +111,7 @@ export const notesApi = {
   deleteFolder: async (folderId: string) => {
     const headers = await resolveCsrfHeaders();
     return request<{ success: boolean }>({
-      path: `/api/folders/${folderId}`,
+      path: `/api/notes/folders/${folderId}`,
       method: "DELETE",
       headers,
     });

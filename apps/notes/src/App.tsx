@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ThemeProvider } from './theme-provider';
-import { useNotesData, useCollections } from './hooks';
+import { useNotesData, useCollections, useFolders } from './hooks';
 import { NotesLayout, NotesSidebar, EmptyState, NoteEditor, QuickNoteModal, QuickNoteButton } from './components';
 import { CollectionDialog } from './components/collections';
+import { FolderDialog } from './components/folders';
 import { Dashboard } from './components/dashboard';
 import { collectionsApi } from './lib/api';
-import type { Collection, CreateCollectionInput, UpdateCollectionInput } from '@opendock/shared/types';
+import type { Collection, CreateCollectionInput, UpdateCollectionInput, Folder, CreateFolderInput, UpdateFolderInput } from '@opendock/shared/types';
 
 function NotesApp() {
   const [isDashboardView, setIsDashboardView] = useState(true);
@@ -15,6 +16,10 @@ function NotesApp() {
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [collectionNotes, setCollectionNotes] = useState<typeof notes>([]);
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [folderDialogMode, setFolderDialogMode] = useState<'create' | 'edit'>('create');
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   const {
     notes,
@@ -34,6 +39,14 @@ function NotesApp() {
     deleteCollection,
     getCollectionNotes,
   } = useCollections();
+
+  const {
+    folders,
+    folderTree,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+  } = useFolders();
 
   // Global keyboard shortcut for quick note
   useEffect(() => {
@@ -145,6 +158,48 @@ function NotesApp() {
     }
   };
 
+  // Folder handlers
+  const handleCreateFolder = () => {
+    setFolderDialogMode('create');
+    setEditingFolder(null);
+    setIsFolderDialogOpen(true);
+  };
+
+  const handleSelectFolder = (folder: Folder) => {
+    setSelectedFolderId(folder.id);
+    setIsDashboardView(false);
+  };
+
+  const handleClearFolderFilter = () => {
+    setSelectedFolderId(null);
+  };
+
+  const handleFolderDialogSubmit = async (data: CreateFolderInput | UpdateFolderInput) => {
+    if (folderDialogMode === 'create') {
+      await createFolder(data as CreateFolderInput);
+    } else if (editingFolder) {
+      await updateFolder(editingFolder.id, data as UpdateFolderInput);
+    }
+  };
+
+  const handleEditFolder = (folder: Folder) => {
+    setFolderDialogMode('edit');
+    setEditingFolder(folder);
+    setIsFolderDialogOpen(true);
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await deleteFolder(folderId);
+      // If we're currently viewing this folder, clear the filter
+      if (selectedFolderId === folderId) {
+        handleClearFolderFilter();
+      }
+    } catch (error) {
+      console.error('Failed to delete folder:', error);
+    }
+  };
+
   if (error) {
     return (
       <div className="flex h-screen items-center justify-center bg-white dark:bg-neutral-950">
@@ -179,6 +234,13 @@ function NotesApp() {
             onEditCollection={handleEditCollection}
             onDeleteCollection={handleDeleteCollection}
             onClearCollectionFilter={handleClearCollectionFilter}
+            folders={folderTree}
+            selectedFolderId={selectedFolderId}
+            onSelectFolder={handleSelectFolder}
+            onCreateFolder={handleCreateFolder}
+            onEditFolder={handleEditFolder}
+            onDeleteFolder={handleDeleteFolder}
+            onClearFolderFilter={handleClearFolderFilter}
             isDashboardView={isDashboardView}
             onDashboardClick={() => setIsDashboardView(true)}
           />
@@ -219,6 +281,17 @@ function NotesApp() {
         onDelete={handleDeleteCollection}
         collection={editingCollection}
         mode={collectionDialogMode}
+      />
+
+      {/* Folder Dialog */}
+      <FolderDialog
+        isOpen={isFolderDialogOpen}
+        onClose={() => setIsFolderDialogOpen(false)}
+        onSubmit={handleFolderDialogSubmit}
+        onDelete={handleDeleteFolder}
+        folder={editingFolder}
+        mode={folderDialogMode}
+        folders={folders}
       />
     </>
   );

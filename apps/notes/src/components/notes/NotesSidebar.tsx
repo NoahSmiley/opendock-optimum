@@ -1,7 +1,8 @@
 import { Plus, Pin, Settings2, ChevronRight, LayoutDashboard } from 'lucide-react';
 import clsx from 'clsx';
-import type { Note, Collection } from '@opendock/shared/types';
+import type { Note, Collection, Folder } from '@opendock/shared/types';
 import { CollectionsSection } from '../collections';
+import { FoldersSection } from '../folders';
 import { Breadcrumbs } from './Breadcrumbs';
 import { NoteContextMenu } from './NoteContextMenu';
 import { CollectionContextMenu } from '../collections/CollectionContextMenu';
@@ -19,6 +20,13 @@ interface NotesSidebarProps {
   onEditCollection?: (collection: Collection) => void;
   onDeleteCollection?: (collectionId: string) => void;
   onClearCollectionFilter?: () => void;
+  folders?: Folder[];
+  selectedFolderId?: string | null;
+  onSelectFolder?: (folder: Folder) => void;
+  onCreateFolder?: () => void;
+  onEditFolder?: (folder: Folder) => void;
+  onDeleteFolder?: (folderId: string) => void;
+  onClearFolderFilter?: () => void;
   isDashboardView?: boolean;
   onDashboardClick?: () => void;
 }
@@ -36,6 +44,13 @@ export function NotesSidebar({
   onEditCollection,
   onDeleteCollection,
   onClearCollectionFilter,
+  folders = [],
+  selectedFolderId = null,
+  onSelectFolder,
+  onCreateFolder,
+  onEditFolder,
+  onDeleteFolder,
+  onClearFolderFilter,
   isDashboardView = false,
   onDashboardClick,
 }: NotesSidebarProps) {
@@ -145,6 +160,19 @@ export function NotesSidebar({
                 )}
               </div>
             </div>
+
+            {/* Folders */}
+            {onSelectFolder && onCreateFolder && onEditFolder && onDeleteFolder && onClearFolderFilter && (
+              <FoldersSection
+                folders={folders}
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={onSelectFolder}
+                onCreateFolder={onCreateFolder}
+                onEditFolder={onEditFolder}
+                onDeleteFolder={onDeleteFolder}
+                onClearFolderFilter={onClearFolderFilter}
+              />
+            )}
 
             {/* All Notes */}
             <div className="flex w-full flex-col gap-1">
