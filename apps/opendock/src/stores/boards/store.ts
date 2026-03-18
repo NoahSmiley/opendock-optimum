@@ -44,5 +44,11 @@ export const useBoardsStore = create<BoardsState>((set) => ({
 
   selectTicket: (ticket) => set({ selectedTicket: ticket }),
   clearError: () => set({ error: null }),
-  setActiveBoard: (snapshot) => set({ activeBoard: snapshot }),
+  setActiveBoard: (snapshot) => set((state) => {
+    const selected = state.selectedTicket;
+    const updatedTicket = selected && snapshot
+      ? snapshot.tickets.find((t) => t.id === selected.id) ?? null
+      : null;
+    return { activeBoard: snapshot, selectedTicket: updatedTicket };
+  }),
 }));

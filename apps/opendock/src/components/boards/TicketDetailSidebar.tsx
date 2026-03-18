@@ -49,7 +49,7 @@ export function TicketDetailSidebar({ ticket, board, members, labels, onUpdate, 
             className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-300 hover:bg-neutral-700">
             <Users className="mr-1.5 inline h-4 w-4" />Assign
           </button>
-          {showAssignMenu && <AssignMenu members={members} assigneeIds={ticket.assigneeIds} onToggle={toggleAssignee} onClose={() => setShowAssignMenu(false)} />}
+          {showAssignMenu && <AssignMenu members={members} assigneeIds={ticket.assigneeIds ?? []} onToggle={toggleAssignee} onClose={() => setShowAssignMenu(false)} />}
         </div>
         <button onClick={onRequestDelete} className="rounded-md border border-red-800 bg-neutral-800 px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-950">
           <Trash2 className="h-4 w-4" />
@@ -78,7 +78,7 @@ export function TicketDetailSidebar({ ticket, board, members, labels, onUpdate, 
               )) : <span className="text-neutral-500">Select labels...</span>}
             </div>
           </button>
-          {showLabelMenu && <LabelMenu labels={labels} selectedIds={ticket.labelIds} onToggle={toggleLabel} onClose={() => setShowLabelMenu(false)} />}
+          {showLabelMenu && <LabelMenu labels={labels} selectedIds={ticket.labelIds ?? []} onToggle={toggleLabel} onClose={() => setShowLabelMenu(false)} />}
         </div>
       </Field>
 

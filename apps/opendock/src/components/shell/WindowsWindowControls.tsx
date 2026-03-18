@@ -2,6 +2,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
 
 export function WindowsWindowControls() {
+  if (!("__TAURI_INTERNALS__" in window)) return null;
+
   const appWindow = getCurrentWindow();
 
   return (

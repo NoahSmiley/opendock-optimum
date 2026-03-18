@@ -22,15 +22,18 @@ export async function fetchNotes(params?: { folderId?: string; tags?: string[]; 
 }
 
 export async function fetchNote(noteId: string): Promise<Note> {
-  return request<Note>(`/api/notes/${noteId}`);
+  const res = await request<{ note: Note }>(`/api/notes/${noteId}`);
+  return res.note;
 }
 
 export async function createNote(input: CreateNoteInput): Promise<Note> {
-  return request<Note>("/api/notes", { method: "POST", body: input });
+  const res = await request<{ note: Note }>("/api/notes", { method: "POST", body: input });
+  return res.note;
 }
 
 export async function updateNote(noteId: string, input: UpdateNoteInput): Promise<Note> {
-  return request<Note>(`/api/notes/${noteId}`, { method: "PATCH", body: input });
+  const res = await request<{ note: Note }>(`/api/notes/${noteId}`, { method: "PATCH", body: input });
+  return res.note;
 }
 
 export async function deleteNote(noteId: string): Promise<void> {
@@ -38,11 +41,13 @@ export async function deleteNote(noteId: string): Promise<void> {
 }
 
 export async function duplicateNote(noteId: string): Promise<Note> {
-  return request<Note>(`/api/notes/${noteId}/duplicate`, { method: "POST" });
+  const res = await request<{ note: Note }>(`/api/notes/${noteId}/duplicate`, { method: "POST" });
+  return res.note;
 }
 
 export async function searchNotes(query: string): Promise<Note[]> {
-  return request<Note[]>(`/api/notes/search?q=${encodeURIComponent(query)}`);
+  const res = await request<{ notes: Note[] }>(`/api/notes/search?q=${encodeURIComponent(query)}`);
+  return res.notes;
 }
 
 // --- Folders ---
@@ -53,7 +58,8 @@ export async function fetchFolders(): Promise<Folder[]> {
 }
 
 export async function createFolder(name: string, parentId?: string): Promise<Folder> {
-  return request<Folder>("/api/notes/folders", { method: "POST", body: { name, parentId } });
+  const res = await request<{ folder: Folder }>("/api/notes/folders", { method: "POST", body: { name, parentId } });
+  return res.folder;
 }
 
 export async function deleteFolder(folderId: string): Promise<void> {
@@ -68,15 +74,18 @@ export async function fetchCollections(): Promise<Collection[]> {
 }
 
 export async function fetchCollection(collectionId: string): Promise<Collection> {
-  return request<Collection>(`/api/notes/collections/${collectionId}`);
+  const res = await request<{ collection: Collection }>(`/api/notes/collections/${collectionId}`);
+  return res.collection;
 }
 
 export async function createCollection(input: CreateCollectionInput): Promise<Collection> {
-  return request<Collection>("/api/notes/collections", { method: "POST", body: input });
+  const res = await request<{ collection: Collection }>("/api/notes/collections", { method: "POST", body: input });
+  return res.collection;
 }
 
 export async function updateCollection(collectionId: string, input: UpdateCollectionInput): Promise<Collection> {
-  return request<Collection>(`/api/notes/collections/${collectionId}`, { method: "PATCH", body: input });
+  const res = await request<{ collection: Collection }>(`/api/notes/collections/${collectionId}`, { method: "PATCH", body: input });
+  return res.collection;
 }
 
 export async function deleteCollection(collectionId: string): Promise<void> {

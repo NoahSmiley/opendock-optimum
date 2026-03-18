@@ -119,6 +119,16 @@ pub async fn create_kanban_user(
     .await
 }
 
+pub async fn find_kanban_user_by_email(
+    pool: &SqlitePool,
+    email: &str,
+) -> Result<Option<KanbanUser>, sqlx::Error> {
+    sqlx::query_as::<_, KanbanUser>("SELECT * FROM kanban_users WHERE email = ?")
+        .bind(email)
+        .fetch_optional(pool)
+        .await
+}
+
 pub async fn list_epics_by_board(
     pool: &SqlitePool,
     board_id: &str,

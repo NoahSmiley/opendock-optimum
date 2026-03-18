@@ -49,8 +49,9 @@ pub async fn update_ticket(
     let li = body.label_ids.as_ref().map(|v| serde_json::to_string(v).unwrap());
     let row = crate::db::tickets::update_ticket(
         &state.db, &ticket_id, body.title.as_deref(), body.description.as_deref(),
+        body.column_id.as_deref(),
         ai.as_deref(), tg.as_deref(), li.as_deref(),
-        body.estimate, body.priority.as_deref(),
+        body.estimate, body.story_points, body.priority.as_deref(),
         body.sprint_id.as_ref().map(|o| o.as_deref()),
         body.due_date.as_ref().map(|o| o.as_deref()),
     )

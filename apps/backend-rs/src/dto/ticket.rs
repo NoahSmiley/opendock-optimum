@@ -25,10 +25,12 @@ pub struct UpdateTicketReq {
     pub title: Option<String>,
     #[validate(length(max = 5000))]
     pub description: Option<String>,
+    pub column_id: Option<String>,
     pub assignee_ids: Option<Vec<String>>,
     pub tags: Option<Vec<String>>,
     pub label_ids: Option<Vec<String>>,
     pub estimate: Option<Option<f64>>,
+    pub story_points: Option<Option<f64>>,
     pub priority: Option<String>,
     pub sprint_id: Option<Option<String>>,
     pub due_date: Option<Option<String>>,

@@ -65,10 +65,12 @@ pub async fn update_ticket(
     id: &str,
     title: Option<&str>,
     description: Option<&str>,
+    column_id: Option<&str>,
     assignee_ids: Option<&str>,
     tags: Option<&str>,
     label_ids: Option<&str>,
     estimate: Option<Option<f64>>,
+    story_points: Option<Option<f64>>,
     priority: Option<&str>,
     sprint_id: Option<Option<&str>>,
     due_date: Option<Option<&str>>,
@@ -81,12 +83,17 @@ pub async fn update_ticket(
     let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
     let t = title.unwrap_or(&e.title);
     let d = description.or(e.description.as_deref());
+    let ci = column_id.unwrap_or(&e.column_id);
     let ai = assignee_ids.unwrap_or(&e.assignee_ids);
     let tg = tags.unwrap_or(&e.tags);
     let li = label_ids.unwrap_or(&e.label_ids);
     let est = match estimate {
         Some(v) => v,
         None => e.estimate,
+    };
+    let sp = match story_points {
+        Some(v) => v,
+        None => e.story_points,
     };
     let pri = priority.unwrap_or(&e.priority);
     let si = match sprint_id {
@@ -98,12 +105,12 @@ pub async fn update_ticket(
         None => e.due_date.as_deref(),
     };
     sqlx::query_as::<_, TicketRow>(
-        "UPDATE kanban_tickets SET title=?, description=?, assignee_ids=?, tags=?,
-         label_ids=?, estimate=?, priority=?, sprint_id=?, due_date=?, updated_at=?
+        "UPDATE kanban_tickets SET title=?, description=?, column_id=?, assignee_ids=?, tags=?,
+         label_ids=?, estimate=?, story_points=?, priority=?, sprint_id=?, due_date=?, updated_at=?
          WHERE id=? RETURNING *",
     )
-    .bind(t).bind(d).bind(ai).bind(tg).bind(li)
-    .bind(est).bind(pri).bind(si).bind(dd).bind(&now).bind(id)
+    .bind(t).bind(d).bind(ci).bind(ai).bind(tg).bind(li)
+    .bind(est).bind(sp).bind(pri).bind(si).bind(dd).bind(&now).bind(id)
     .fetch_optional(pool)
     .await
 }

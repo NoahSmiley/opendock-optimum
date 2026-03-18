@@ -26,13 +26,23 @@ pub async fn list_boards(
 
 pub async fn create_board(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     ValidatedJson(body): ValidatedJson<CreateBoardReq>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
     let board_id = ulid::Ulid::new().to_string().to_lowercase();
     let mut member_ids: Vec<String> = Vec::new();
+    // Auto-add the creating user as a board member
+    let kanban_user = match crate::db::boards::find_kanban_user_by_email(&state.db, &auth.0.email).await? {
+        Some(u) => u,
+        None => {
+            let uid = ulid::Ulid::new().to_string().to_lowercase();
+            let name = auth.0.display_name.as_deref().unwrap_or(&auth.0.email);
+            crate::db::boards::create_kanban_user(&state.db, &uid, name, Some(&auth.0.email), "#4f46e5").await?
+        }
+    };
+    member_ids.push(kanban_user.id);
     if let Some(members) = &body.members {
-        let colors = ["#4f46e5","#dc2626","#059669","#d97706","#7c3aed","#db2777"];
+        let colors = ["#dc2626","#059669","#d97706","#7c3aed","#db2777","#4f46e5"];
         for (i, m) in members.iter().enumerate() {
             let uid = ulid::Ulid::new().to_string().to_lowercase();
             let color = colors[i % colors.len()];
