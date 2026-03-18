@@ -1,4 +1,3 @@
-import clsx from "clsx";
 import type { KanbanBoard } from "@opendock/shared/types";
 import { CheckCircle2, Circle, AlertCircle, Users } from "lucide-react";
 

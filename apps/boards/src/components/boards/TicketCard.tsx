@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import clsx from "clsx";
 import { Check, Calendar, Paperclip } from "lucide-react";
 import type { KanbanBoard, KanbanTicket, KanbanUser, KanbanLabel } from "@opendock/shared/types";
-import { priorityAccent, priorityStyles, getDueDateStatus, dueDateBadgeStyles, formatDueDate } from "@/lib/ticketStyles";
+import { priorityAccent, getDueDateStatus } from "@/lib/ticketStyles";
 import { formatTicketKey } from "@/lib/ticketUtils";
 import { IssueTypeIcon } from "../IssueTypeSelector";
 
@@ -12,7 +12,7 @@ export interface TicketCardProps {
   column?: KanbanBoard["columns"][number];
   members: KanbanUser[];
   labels: KanbanLabel[];
-  sprints: KanbanBoard["sprints"];
+  sprints?: KanbanBoard["sprints"];
   onClick?: () => void;
   onTitleUpdate?: (ticketId: string, newTitle: string) => Promise<void>;
   highlight?: boolean;
@@ -28,7 +28,7 @@ export function TicketCard({
   column,
   members,
   labels = [],
-  sprints,
+  sprints: _sprints,
   onClick,
   onTitleUpdate,
   highlight = false,
@@ -43,7 +43,6 @@ export function TicketCard({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const assignee = members.find((member) => ticket.assigneeIds.includes(member.id));
-  const sprint = sprints.find((item) => item.id === ticket.sprintId);
   const isComplete =
     column?.title.toLowerCase().includes("done") || column?.title.toLowerCase().includes("complete");
   const dueDateStatus = getDueDateStatus(ticket.dueDate);
@@ -216,10 +215,9 @@ export function TicketCard({
               className={clsx(
                 "h-3 w-3",
                 dueDateStatus === "overdue" && "text-red-500",
-                dueDateStatus === "soon" && "text-amber-500",
-                dueDateStatus === "ok" && "text-neutral-400"
+                dueDateStatus === "due-soon" && "text-amber-500",
+                dueDateStatus === "upcoming" && "text-neutral-400"
               )}
-              title={formatDueDate(ticket.dueDate)}
             />
           )}
 

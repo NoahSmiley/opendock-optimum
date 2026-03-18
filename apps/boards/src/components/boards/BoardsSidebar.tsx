@@ -1,12 +1,10 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import {
   Plus,
   Settings2,
-  Loader2,
 } from "lucide-react";
 import clsx from "clsx";
 import type { KanbanBoard, KanbanUser } from "@opendock/shared/types";
-import type { BoardFormState } from "./forms/types";
 import { ThemeToggle } from "@/theme-toggle";
 import { CreateBoardModal } from "../CreateBoardModal";
 
@@ -54,8 +52,8 @@ interface BoardsSidebarProps {
 }
 
 export function BoardsSidebar({
-  collapsed,
-  onToggleCollapsed,
+  collapsed: _collapsed,
+  onToggleCollapsed: _onToggleCollapsed,
   boards,
   users = [],
   selectedBoardId,

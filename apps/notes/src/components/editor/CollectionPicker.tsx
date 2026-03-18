@@ -2,7 +2,7 @@ import { FolderOpen } from 'lucide-react';
 import type { Collection } from '@opendock/shared/types';
 
 interface CollectionPickerProps {
-  noteId: string;
+  noteId?: string;
   noteCollections: Collection[];
   allCollections: Collection[];
   onAdd: (collectionId: string) => Promise<void>;
@@ -10,7 +10,6 @@ interface CollectionPickerProps {
 }
 
 export function CollectionPicker({
-  noteId,
   noteCollections,
   allCollections,
   onAdd,
@@ -35,16 +34,17 @@ export function CollectionPicker({
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor="collection-select" className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-        Collection
+        Notebook <span className="text-red-500">*</span>
       </label>
       <div className="relative">
         <select
           id="collection-select"
           value={currentCollection?.id || ''}
           onChange={handleChange}
+          required
           className="w-full appearance-none rounded-md border border-neutral-300 bg-white px-3 py-2 pr-10 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
         >
-          <option value="">No collection</option>
+          <option value="" disabled>Select a notebook...</option>
           {allCollections.map((collection) => (
             <option key={collection.id} value={collection.id}>
               {collection.name}

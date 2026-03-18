@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KanbanBoard, KanbanBoardSnapshot, KanbanUser, ProjectsResponse } from "@opendock/shared/types";
-import { boardsApi, projectsApi } from "@/lib/api";
+import type { KanbanBoard, KanbanBoardSnapshot, KanbanUser } from "@opendock/shared/types";
+import { boardsApi } from "@/lib/api";
 import { fetchCsrfToken } from "@/lib/auth-client";
 import { upsertBoard } from "@/lib/board-state";
 import type { BoardFormState } from "@/components/boards/forms/types";
@@ -25,9 +25,6 @@ interface UseBoardsDataResult {
   setShowBoardForm: (updater: boolean | ((previous: boolean) => boolean)) => void;
   creatingBoard: boolean;
   handleCreateBoard: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
-  projects: ProjectsResponse["projects"];
-  projectsLoading: boolean;
-  projectsError: string | null;
   selectedBoard: KanbanBoard | null;
   projectOptions: Array<{ value: string; label: string }>;
   mutateBoards: (updater: (boards: KanbanBoard[]) => KanbanBoard[]) => void;
@@ -40,10 +37,6 @@ export function useBoardsData(): UseBoardsDataResult {
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
   const streamRef = useRef<EventSource | null>(null);
   const [streamRetry, setStreamRetry] = useState(0);
-
-  const [projects, setProjects] = useState<ProjectsResponse["projects"]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(false);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
 
   const [boardForm, setBoardFormState] = useState<BoardFormState>({
     name: "",
@@ -80,30 +73,6 @@ export function useBoardsData(): UseBoardsDataResult {
     void fetchCsrfToken();
     void refreshBoards();
   }, [refreshBoards]);
-
-  useEffect(() => {
-    let active = true;
-    const loadProjects = async () => {
-      try {
-        setProjectsLoading(true);
-        const response = await projectsApi.listProjects();
-        if (!active) return;
-        setProjects(response.projects);
-        setProjectsError(null);
-      } catch (err) {
-        if (!active) return;
-        setProjectsError(err instanceof Error ? err.message : "Unable to load projects.");
-      } finally {
-        if (active) {
-          setProjectsLoading(false);
-        }
-      }
-    };
-    void loadProjects();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const applySnapshot = useCallback((snapshot: KanbanBoardSnapshot) => {
     setState((prev) => ({
@@ -238,13 +207,7 @@ export function useBoardsData(): UseBoardsDataResult {
     return state.boards.find((board) => board.id === selectedBoardId) ?? null;
   }, [state.boards, selectedBoardId]);
 
-  const projectOptions = useMemo(
-    () =>
-      projects
-        .map((project) => ({ value: project.id, label: project.name }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [projects],
-  );
+  const projectOptions: Array<{ value: string; label: string }> = [];
 
   return {
     boards: state.boards,
@@ -264,9 +227,6 @@ export function useBoardsData(): UseBoardsDataResult {
       setShowBoardFormState((prev) => (typeof updater === "function" ? (updater as (prev: boolean) => boolean)(prev) : updater)),
     creatingBoard,
     handleCreateBoard,
-    projects,
-    projectsLoading,
-    projectsError,
     selectedBoard,
     projectOptions,
     mutateBoards,

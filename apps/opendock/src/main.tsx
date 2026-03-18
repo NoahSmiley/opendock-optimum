@@ -1,24 +1,17 @@
-﻿import { StrictMode } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import "./index.css";
-import App from "./App";
-import { ThemeProvider } from "./components/theme-provider";
-import { AuthProvider } from "./components/auth";
+import { App } from "@/App";
 
-const rootElement = document.getElementById("root");
-if (!rootElement) {
-  throw new Error("Root element not found");
-}
+import "@/styles/base.css";
+import "@/styles/layout.css";
+import "@/styles/shell.css";
+import "@/styles/auth.css";
+import "@/styles/boards.css";
+import "@/styles/tickets.css";
+import "@/styles/notes.css";
 
-createRoot(rootElement).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <App />
   </StrictMode>,
 );

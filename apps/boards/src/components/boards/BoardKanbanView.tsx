@@ -4,7 +4,6 @@ import type { KanbanBoard, KanbanTicket, IssueType } from "@opendock/shared/type
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./KanbanColumn";
 import { SortableTicketCard } from "./SortableTicketCard";
-import { ColumnTicketComposer } from "./forms/ColumnTicketComposer";
 import type { ColumnDraftState } from "./forms/types";
 import { QuickCreateTicket } from "./QuickCreateTicket";
 
@@ -13,12 +12,12 @@ interface BoardKanbanViewProps {
   columnTicketMap: Map<string, KanbanTicket[]>;
   filteredTicketMap: Map<string, KanbanTicket[]>;
   activeComposerColumnId: string | null;
-  creatingColumnTicketId: string | null;
+  creatingColumnTicketId?: string | null;
   getColumnDraft: (columnId: string) => ColumnDraftState;
-  onColumnDraftChange: (columnId: string, patch: Partial<ColumnDraftState>) => void;
-  onColumnTicketSubmit: (event: FormEvent, columnId: string) => void;
-  onColumnComposerOpen: (columnId: string) => void;
-  onColumnComposerCancel: () => void;
+  onColumnDraftChange?: (columnId: string, patch: Partial<ColumnDraftState>) => void;
+  onColumnTicketSubmit?: (event: FormEvent, columnId: string) => void;
+  onColumnComposerOpen?: (columnId: string) => void;
+  onColumnComposerCancel?: () => void;
   onTicketClick: (ticketId: string) => void;
   onTicketTitleUpdate?: (ticketId: string, newTitle: string) => Promise<void>;
   onQuickCreateTicket?: (columnId: string, title: string, issueType: IssueType) => Promise<void>;
@@ -32,13 +31,8 @@ export function BoardKanbanView({
   board,
   columnTicketMap,
   filteredTicketMap,
-  activeComposerColumnId,
-  creatingColumnTicketId,
-  getColumnDraft,
-  onColumnDraftChange,
-  onColumnTicketSubmit,
-  onColumnComposerOpen,
-  onColumnComposerCancel,
+  activeComposerColumnId: _activeComposerColumnId,
+  getColumnDraft: _getColumnDraft,
   onTicketClick,
   onTicketTitleUpdate,
   onQuickCreateTicket,
@@ -67,11 +61,9 @@ export function BoardKanbanView({
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="flex h-full gap-4 overflow-x-auto pb-4 scroll-smooth select-none pl-4 sm:pl-6 lg:pl-8 xl:pl-10">
         <div className="flex gap-4">
-          {board.columns.map((column, columnIndex) => {
+          {board.columns.map((column) => {
             const tickets = filteredTicketMap.get(column.id) ?? [];
             const rawTickets = columnTicketMap.get(column.id) ?? [];
-            const draft = getColumnDraft(column.id);
-            const composerOpen = activeComposerColumnId === column.id;
 
             return (
               <Droppable key={column.id} droppableId={column.id}>

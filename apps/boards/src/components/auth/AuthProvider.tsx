@@ -1,11 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { fetchSession, login as loginRequest, logout as logoutRequest, register as registerRequest } from "@/lib/auth-client";
+import { fetchSession, login as loginRequest, logout as logoutRequest, register as registerRequest, type AuthUser as AuthClientUser } from "@/lib/auth-client";
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  displayName?: string | null;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RegisterInput {
@@ -17,6 +21,13 @@ export interface RegisterInput {
 export interface LoginInput {
   email: string;
   password: string;
+}
+
+function toAuthUser(user: AuthClientUser): AuthUser {
+  return {
+    ...user,
+    name: user.displayName || user.email,
+  };
 }
 
 type AuthStatus = "unauthenticated" | "loading" | "authenticated" | "error";
@@ -51,7 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setStatus("loading");
       const session = await fetchSession();
-      setUser(session.user);
+      setUser(session.user ? toAuthUser(session.user) : null);
       setStatus(session.user ? "authenticated" : "unauthenticated");
       setError(null);
     } catch (err) {
@@ -67,7 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setStatus("loading");
         const authenticated = await loginRequest(input);
-        setUser(authenticated);
+        setUser(toAuthUser(authenticated));
         setStatus("authenticated");
         setError(null);
       } catch (err) {
@@ -85,7 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setStatus("loading");
         const newUser = await registerRequest(input);
-        setUser(newUser);
+        setUser(toAuthUser(newUser));
         setStatus("authenticated");
         setError(null);
       } catch (err) {

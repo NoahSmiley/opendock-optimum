@@ -13,7 +13,7 @@ import {
   Filter,
   X
 } from "lucide-react";
-import type { KanbanBoard, KanbanTicket, IssueType } from "@opendock/shared/types";
+import type { KanbanBoard, KanbanTicket } from "@opendock/shared/types";
 
 export interface QuickFilter {
   id: string;
@@ -32,8 +32,8 @@ interface QuickFiltersProps {
 }
 
 export function QuickFilters({
-  board,
-  currentUserId,
+  board: _board,
+  currentUserId: _currentUserId,
   onFiltersChange,
   className,
 }: QuickFiltersProps) {

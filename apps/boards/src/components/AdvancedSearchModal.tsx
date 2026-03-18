@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, Search, Plus, Trash2, Save, Clock } from "lucide-react";
-import clsx from "clsx";
-import type { KanbanBoard, KanbanTicket, IssueType } from "@opendock/shared/types";
+import { X, Search, Plus, Trash2, Save } from "lucide-react";
+import type { KanbanBoard, KanbanTicket } from "@opendock/shared/types";
 
 type FilterOperator = "is" | "is not" | "contains" | "does not contain" | ">" | "<" | ">=" | "<=" | "in" | "not in";
 
@@ -433,7 +432,7 @@ export function AdvancedSearchModal({
 export function applyAdvancedFilters(
   tickets: KanbanTicket[],
   filters: SearchFilter[],
-  board: KanbanBoard
+  _board: KanbanBoard
 ): KanbanTicket[] {
   if (filters.length === 0) return tickets;
 

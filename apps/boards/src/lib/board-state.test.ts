@@ -13,6 +13,8 @@ const makeBoard = (id: string, name: string): KanbanBoard => ({
   columns: [],
   tickets: [],
   sprints: [],
+  epics: [],
+  labels: [],
 });
 
 describe("board-state helpers", () => {

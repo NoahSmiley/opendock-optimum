@@ -1,6 +1,23 @@
-import { Plus, FolderOpen, MoreHorizontal } from 'lucide-react';
+import { Plus, FolderOpen, MoreHorizontal, Briefcase, BookOpen, Star, Heart, Zap, Target, TrendingUp, Lightbulb, Coffee, Rocket, Palette, Code, Music } from 'lucide-react';
 import clsx from 'clsx';
 import type { Collection } from '@opendock/shared/types';
+
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  FolderOpen,
+  Briefcase,
+  BookOpen,
+  Star,
+  Heart,
+  Zap,
+  Target,
+  TrendingUp,
+  Lightbulb,
+  Coffee,
+  Rocket,
+  Palette,
+  Code,
+  Music,
+};
 
 interface CollectionsSectionProps {
   collections: Collection[];
@@ -24,12 +41,12 @@ export function CollectionsSection({
   return (
     <div className="flex w-full flex-col gap-1">
       <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
-        <span>Collections ({collections.length})</span>
+        <span>Notebooks ({collections.length})</span>
         <button
           type="button"
           onClick={onCreateCollection}
           className="rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-          title="Create Collection"
+          title="Create Notebook"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
@@ -38,6 +55,7 @@ export function CollectionsSection({
         {sortedCollections.length > 0 ? (
           sortedCollections.map((collection) => {
             const isSelected = selectedCollectionId === collection.id;
+            const IconComponent = ICON_MAP[collection.icon || 'FolderOpen'] || FolderOpen;
             return (
               <div key={collection.id} className="group flex items-center justify-between gap-2">
                 <button
@@ -59,7 +77,7 @@ export function CollectionsSection({
                           : 'bg-transparent group-hover:bg-neutral-100 dark:group-hover:bg-neutral-800/70'
                       )}
                     />
-                    <FolderOpen
+                    <IconComponent
                       className="relative z-10 mr-2 h-3.5 w-3.5 flex-shrink-0"
                       style={{ color: collection.color || undefined }}
                     />
@@ -90,7 +108,7 @@ export function CollectionsSection({
           })
         ) : (
           <div className="px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500">
-            No collections yet
+            No notebooks yet
           </div>
         )}
       </div>

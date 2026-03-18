@@ -12,3 +12,17 @@ export type BoardFormState = {
   members: string;
   projectId: string;
 };
+
+export type SprintFormState = {
+  name: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type BacklogFormState = {
+  title: string;
+  description: string;
+  assigneeId: string;
+  tags: string;
+};

@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { KanbanBoard, ProjectsResponse, KanbanUser } from "@opendock/shared/types";
-import { boardsApi, projectsApi } from "@/lib/api";
+import type { KanbanBoard, KanbanUser } from "@opendock/shared/types";
+import { boardsApi } from "@/lib/api";
 import {
   Loader2,
   Plus,
-  Users,
-  FileText,
-  Calendar,
   Settings,
   ChevronRight,
-  Folder,
   Hash,
   Layers
 } from "lucide-react";
@@ -25,24 +21,19 @@ interface LinkState {
 export function ProjectsPage() {
   const [boards, setBoards] = useState<KanbanBoard[]>([]);
   const [users, setUsers] = useState<KanbanUser[]>([]);
-  const [projects, setProjects] = useState<ProjectsResponse["projects"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [linkState, setLinkState] = useState<LinkState>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creatingBoard, setCreatingBoard] = useState(false);
+  const [, setCreatingBoard] = useState(false);
 
   const refresh = async () => {
     try {
       setError(null);
       setLoading(true);
-      const [kanbanResponse, projectsResponse] = await Promise.all([
-        boardsApi.listBoards(),
-        projectsApi.listProjects(),
-      ]);
+      const kanbanResponse = await boardsApi.listBoards();
       setBoards(kanbanResponse.boards);
       setUsers(kanbanResponse.users || []);
-      setProjects(projectsResponse.projects);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load workspace data.");
     } finally {
@@ -54,16 +45,9 @@ export function ProjectsPage() {
     void refresh();
   }, []);
 
-  const projectOptions = useMemo(
-    () =>
-      projects
-        .map((project) => ({ value: project.id, label: project.name }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [projects],
-  );
+  const projectOptions: Array<{ value: string; label: string }> = [];
 
   const boardsWithStats = useMemo(() => {
-    const projectMap = new Map(projects.map((project) => [project.id, project]));
     return boards
       .map((board) => {
         const ticketCount = board.tickets?.length || 0;
@@ -73,7 +57,6 @@ export function ProjectsPage() {
 
         return {
           board,
-          project: board.projectId ? projectMap.get(board.projectId) ?? null : null,
           stats: {
             tickets: ticketCount,
             members: memberCount,
@@ -88,7 +71,7 @@ export function ProjectsPage() {
         if (diff !== 0) return diff;
         return a.board.name.localeCompare(b.board.name);
       });
-  }, [boards, projects]);
+  }, [boards]);
 
   const handleCreateBoard = async (data: {
     name: string;
@@ -124,9 +107,9 @@ export function ProjectsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Boards & Projects</h1>
+              <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Boards</h1>
               <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                Manage your kanban boards and link them to deployment projects
+                Manage your kanban boards
               </p>
             </div>
             <button
@@ -201,7 +184,7 @@ export function ProjectsPage() {
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {boardsWithStats.map(({ board, project, stats }) => (
+                  {boardsWithStats.map(({ board, stats }) => (
                     <div
                       key={board.id}
                       className="group relative overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
@@ -218,12 +201,6 @@ export function ProjectsPage() {
                               <p className="mt-1 line-clamp-2 text-xs text-neutral-500 dark:text-neutral-400">
                                 {board.description}
                               </p>
-                            )}
-                            {project && (
-                              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                <Folder className="h-3 w-3" />
-                                {project.name}
-                              </div>
                             )}
                           </div>
                           <Link
@@ -298,50 +275,8 @@ export function ProjectsPage() {
                     <span className="text-sm text-neutral-600 dark:text-neutral-400">Team Members</span>
                     <span className="text-sm font-semibold text-neutral-900 dark:text-white">{users.length}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">Projects</span>
-                    <span className="text-sm font-semibold text-neutral-900 dark:text-white">{projects.length}</span>
-                  </div>
                 </div>
               </div>
-
-              {/* Projects List */}
-              {projects.length > 0 && (
-                <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-                  <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                    Deployment Projects
-                  </h3>
-                  <div className="space-y-3">
-                    {projects.slice(0, 5).map((project) => (
-                      <div
-                        key={project.id}
-                        className="rounded-lg border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-800/50"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Folder className="mt-0.5 h-4 w-4 text-neutral-400" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-neutral-900 dark:text-white">{project.name}</p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                              {project.branch}
-                            </p>
-                            {project.latestBuild && (
-                              <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
-                                <Calendar className="mr-1 inline h-3 w-3" />
-                                {new Date(project.latestBuild.createdAt).toLocaleDateString()}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {projects.length > 5 && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        And {projects.length - 5} more projects...
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Team Members */}
               {users.length > 0 && (

@@ -200,7 +200,7 @@ export function useBoardActions({ selectedBoard, refreshBoards, setError, mutate
 
   // Sprint handlers
   const handleSprintFormChange = useCallback((field: keyof SprintFormState, value: string) => {
-    setSprintForm((prev) => ({ ...prev, [field]: value }));
+    setSprintForm((prev: SprintFormState) => ({ ...prev, [field]: value }));
   }, []);
 
   const handleCreateSprint = useCallback(
@@ -220,7 +220,7 @@ export function useBoardActions({ selectedBoard, refreshBoards, setError, mutate
 
   // Backlog handlers
   const handleBacklogFormChange = useCallback((field: keyof BacklogFormState, value: string) => {
-    setBacklogForm((prev) => ({ ...prev, [field]: value }));
+    setBacklogForm((prev: BacklogFormState) => ({ ...prev, [field]: value }));
   }, []);
 
   const handleCreateBacklogTicket = useCallback(
@@ -230,7 +230,7 @@ export function useBoardActions({ selectedBoard, refreshBoards, setError, mutate
       try {
         const tags = backlogForm.tags
           .split(",")
-          .map((tag) => tag.trim())
+          .map((tag: string) => tag.trim())
           .filter(Boolean);
         await boardsApi.createTicket(boardId, {
           title: backlogForm.title,

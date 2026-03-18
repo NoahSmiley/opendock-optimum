@@ -7,7 +7,7 @@ interface QuickCreateTicketProps {
   onCreateTicket: (title: string, issueType: IssueType) => Promise<void>;
 }
 
-export function QuickCreateTicket({ columnId, onCreateTicket }: QuickCreateTicketProps) {
+export function QuickCreateTicket({ columnId: _columnId, onCreateTicket }: QuickCreateTicketProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);

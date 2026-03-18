@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { KanbanTicket } from "@opendock/shared/types";
 import clsx from "clsx";
 import { useTheme } from "@/theme-provider";
 import { ThemeToggle } from "@/theme-toggle";
@@ -31,14 +32,6 @@ function BoardsAppInner() {
     selectedBoardId,
     setSelectedBoardId,
     refreshBoards,
-    boardForm,
-    setBoardForm,
-    showBoardForm,
-    setShowBoardForm,
-    creatingBoard,
-    handleCreateBoard,
-    projectsLoading,
-    projectsError,
     selectedBoard,
     projectOptions,
     mutateBoards,
@@ -83,23 +76,11 @@ function BoardsAppInner() {
   const {
     searchQuery,
     setSearchQuery,
-    selectedAssigneeFilter,
-    setSelectedAssigneeFilter,
-    selectedPriorityFilter,
-    setSelectedPriorityFilter,
-    selectedSprintFilter,
-    setSelectedSprintFilter,
-    selectedDueDateFilter,
-    setSelectedDueDateFilter,
-    selectedLabelFilter,
-    setSelectedLabelFilter,
     showUnassignedOnly,
     setShowUnassignedOnly,
     recentOnly,
     setRecentOnly,
-    filtersActive,
     filteredTicketMap,
-    sprintOptions,
     resetFilters,
   } = useBoardFilters({ selectedBoard, columnTicketMap });
 
@@ -215,26 +196,6 @@ function BoardsAppInner() {
   const handleSelectBoard = useCallback((boardId: string) => {
     setSelectedBoardId(boardId);
   }, [setSelectedBoardId]);
-
-  const handleToggleBoardForm = useCallback(() => {
-    setShowBoardForm((prev) => !prev);
-  }, [setShowBoardForm]);
-
-  const handleBoardFormChange = useCallback((field: string, value: string) => {
-    setBoardForm((prev) => ({ ...prev, [field]: value }));
-  }, [setBoardForm]);
-
-  const handleToggleUnassignedOnly = useCallback(() => {
-    setShowUnassignedOnly((prev) => !prev);
-  }, [setShowUnassignedOnly]);
-
-  const handleToggleRecentOnly = useCallback(() => {
-    setRecentOnly((prev) => !prev);
-  }, [setRecentOnly]);
-
-  const handleClearFilters = useCallback(() => {
-    resetFilters();
-  }, [resetFilters]);
 
   // Bulk selection handlers
   const handleToggleSelectionMode = useCallback(() => {
@@ -402,13 +363,13 @@ function BoardsAppInner() {
       key: "b",
       shift: true,
       description: "Navigate to backlog",
-      handler: () => setActiveTab("backlog"),
+      handler: () => setActiveTab("issues"),
     },
     {
       key: "o",
       shift: true,
       description: "Navigate to overview",
-      handler: () => setActiveTab("overview"),
+      handler: () => setActiveTab("timeline"),
     },
     // Board switching
     {

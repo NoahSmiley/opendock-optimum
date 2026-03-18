@@ -2,6 +2,8 @@ import clsx from "clsx";
 import { Search, CheckSquare } from "lucide-react";
 import type { KanbanBoard } from "@opendock/shared/types";
 
+export type DueDateFilter = "all" | "overdue" | "due-this-week" | "due-this-month" | "no-due-date";
+
 interface BoardToolbarProps {
   board: KanbanBoard;
   searchQuery: string;

@@ -1,6 +1,23 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, FolderOpen, Briefcase, BookOpen, Star, Heart, Zap, Target, TrendingUp, Lightbulb, Coffee, Rocket, Palette, Code, Music } from 'lucide-react';
 import type { Collection, CreateCollectionInput, UpdateCollectionInput } from '@opendock/shared/types';
+
+const ICON_OPTIONS = [
+  { name: 'FolderOpen', icon: FolderOpen },
+  { name: 'Briefcase', icon: Briefcase },
+  { name: 'BookOpen', icon: BookOpen },
+  { name: 'Star', icon: Star },
+  { name: 'Heart', icon: Heart },
+  { name: 'Zap', icon: Zap },
+  { name: 'Target', icon: Target },
+  { name: 'TrendingUp', icon: TrendingUp },
+  { name: 'Lightbulb', icon: Lightbulb },
+  { name: 'Coffee', icon: Coffee },
+  { name: 'Rocket', icon: Rocket },
+  { name: 'Palette', icon: Palette },
+  { name: 'Code', icon: Code },
+  { name: 'Music', icon: Music },
+];
 
 interface CollectionDialogProps {
   isOpen: boolean;
@@ -12,28 +29,38 @@ interface CollectionDialogProps {
 }
 
 const PRESET_COLORS = [
-  '#ef4444', // red
-  '#f97316', // orange
-  '#f59e0b', // amber
-  '#eab308', // yellow
-  '#84cc16', // lime
-  '#22c55e', // green
-  '#10b981', // emerald
-  '#14b8a6', // teal
-  '#06b6d4', // cyan
-  '#0ea5e9', // sky
-  '#3b82f6', // blue
-  '#6366f1', // indigo
-  '#8b5cf6', // violet
-  '#a855f7', // purple
-  '#d946ef', // fuchsia
-  '#ec4899', // pink
+  '#2c2c2c', // Black
+  '#3d3d3d', // Charcoal
+  '#5a5a5a', // Dark Gray
+  '#8b7355', // Brown/Tan
+  '#a0826d', // Light Brown
+  '#c9b8a8', // Beige
+  '#4a5568', // Slate Gray
+  '#5f7a8a', // Blue Gray
+  '#6b8e9e', // Steel Blue
+  '#7d9ab8', // Light Blue
+  '#1e3a5f', // Navy Blue
+  '#2d4a3e', // Forest Green
+  '#8b4513', // Saddle Brown
+  '#6b4423', // Dark Brown
+  '#9c8b7a', // Taupe
+  '#556b2f', // Olive
 ];
+
+const COVER_PATTERNS = [
+  { name: 'solid', label: 'Solid' },
+  { name: 'grid', label: 'Grid' },
+  { name: 'dots', label: 'Dots' },
+  { name: 'lines', label: 'Lines' },
+  { name: 'leather', label: 'Leather' },
+] as const;
 
 export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collection, mode }: CollectionDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#3b82f6');
+  const [color, setColor] = useState('#2c2c2c');
+  const [icon, setIcon] = useState('FolderOpen');
+  const [coverPattern, setCoverPattern] = useState<'solid' | 'grid' | 'dots' | 'lines' | 'leather'>('solid');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -41,10 +68,14 @@ export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collecti
       setName(collection.name);
       setDescription(collection.description || '');
       setColor(collection.color || '#3b82f6');
+      setIcon(collection.icon || 'FolderOpen');
+      setCoverPattern((collection as any).coverPattern || 'solid');
     } else if (isOpen && mode === 'create') {
       setName('');
       setDescription('');
       setColor('#3b82f6');
+      setIcon('FolderOpen');
+      setCoverPattern('solid');
     }
   }, [isOpen, collection, mode]);
 
@@ -58,7 +89,9 @@ export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collecti
         name: name.trim(),
         description: description.trim() || undefined,
         color,
-      });
+        icon,
+        coverPattern,
+      } as any);
       onClose();
     } catch (error) {
       console.error('Failed to save collection:', error);
@@ -90,7 +123,7 @@ export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collecti
         </button>
 
         <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">
-          {mode === 'create' ? 'Create Collection' : 'Edit Collection'}
+          {mode === 'create' ? 'Create Notebook' : 'Edit Notebook'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,7 +136,7 @@ export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collecti
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Collection"
+              placeholder="My Notebook"
               className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
               autoFocus
               required
@@ -126,6 +159,35 @@ export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collecti
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Icon
+            </label>
+            <div className="grid grid-cols-7 gap-2">
+              {ICON_OPTIONS.map((iconOption) => {
+                const IconComponent = iconOption.icon;
+                return (
+                  <button
+                    key={iconOption.name}
+                    type="button"
+                    onClick={() => setIcon(iconOption.name)}
+                    className="flex h-10 w-10 items-center justify-center rounded-md border-2 transition-all hover:scale-105 focus:outline-none"
+                    style={{
+                      borderColor: icon === iconOption.name ? color : 'transparent',
+                      backgroundColor: icon === iconOption.name ? `${color}20` : 'transparent',
+                    }}
+                    title={iconOption.name}
+                  >
+                    <IconComponent
+                      className="h-5 w-5"
+                      style={{ color: icon === iconOption.name ? color : 'currentColor' }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               Color
             </label>
             <div className="grid grid-cols-8 gap-2">
@@ -142,6 +204,29 @@ export function CollectionDialog({ isOpen, onClose, onSubmit, onDelete, collecti
                   }}
                   title={presetColor}
                 />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Cover Pattern
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {COVER_PATTERNS.map((pattern) => (
+                <button
+                  key={pattern.name}
+                  type="button"
+                  onClick={() => setCoverPattern(pattern.name)}
+                  className="flex h-12 items-center justify-center rounded-md border-2 text-xs font-medium transition-all hover:scale-105"
+                  style={{
+                    borderColor: coverPattern === pattern.name ? color : '#e5e7eb',
+                    backgroundColor: coverPattern === pattern.name ? `${color}20` : '#f9fafb',
+                    color: coverPattern === pattern.name ? color : '#6b7280',
+                  }}
+                >
+                  {pattern.label}
+                </button>
               ))}
             </div>
           </div>

@@ -221,12 +221,12 @@ export function FileAttachments({ ticketId, attachments = [], onAttachmentsUpdat
       {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={deleteId !== null}
-        onClose={() => setDeleteId(null)}
+        onCancel={() => setDeleteId(null)}
         onConfirm={() => deleteId && handleDelete(deleteId)}
         title="Delete Attachment"
         message="Are you sure you want to delete this attachment? This action cannot be undone."
-        confirmText="Delete"
-        confirmVariant="danger"
+        confirmLabel="Delete"
+        variant="danger"
       />
     </div>
   );

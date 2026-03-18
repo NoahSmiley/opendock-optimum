@@ -1,11 +1,11 @@
 import { Plus, Pin, Settings2, ChevronRight, LayoutDashboard } from 'lucide-react';
 import clsx from 'clsx';
-import type { Note, Collection, Folder } from '@opendock/shared/types';
-import { CollectionsSection } from '../collections';
-import { FoldersSection } from '../folders';
+import type { Note, Collection } from '@opendock/shared/types';
 import { Breadcrumbs } from './Breadcrumbs';
 import { NoteContextMenu } from './NoteContextMenu';
 import { CollectionContextMenu } from '../collections/CollectionContextMenu';
+import { TagsCloud } from '../tags';
+import { SimpleSearchBar } from '../search';
 
 interface NotesSidebarProps {
   notes: Note[];
@@ -20,13 +20,14 @@ interface NotesSidebarProps {
   onEditCollection?: (collection: Collection) => void;
   onDeleteCollection?: (collectionId: string) => void;
   onClearCollectionFilter?: () => void;
-  folders?: Folder[];
-  selectedFolderId?: string | null;
-  onSelectFolder?: (folder: Folder) => void;
-  onCreateFolder?: () => void;
-  onEditFolder?: (folder: Folder) => void;
-  onDeleteFolder?: (folderId: string) => void;
-  onClearFolderFilter?: () => void;
+  allTags?: string[];
+  tagCounts?: Map<string, number>;
+  selectedTag?: string | null;
+  onSelectTag?: (tag: string) => void;
+  onClearTagFilter?: () => void;
+  onSearchResults?: (results: Note[]) => void;
+  onClearSearch?: () => void;
+  isSearching?: boolean;
   isDashboardView?: boolean;
   onDashboardClick?: () => void;
 }
@@ -44,13 +45,13 @@ export function NotesSidebar({
   onEditCollection,
   onDeleteCollection,
   onClearCollectionFilter,
-  folders = [],
-  selectedFolderId = null,
-  onSelectFolder,
-  onCreateFolder,
-  onEditFolder,
-  onDeleteFolder,
-  onClearFolderFilter,
+  allTags = [],
+  tagCounts = new Map(),
+  selectedTag = null,
+  onSelectTag,
+  onClearTagFilter,
+  onSearchResults,
+  onClearSearch,
   isDashboardView = false,
   onDashboardClick,
 }: NotesSidebarProps) {
@@ -81,6 +82,17 @@ export function NotesSidebar({
         </div>
       </div>
 
+      {/* Search Bar */}
+      {onSearchResults && onClearSearch && (
+        <div className="mt-6">
+          <SimpleSearchBar
+            notes={notes}
+            onSearchResults={onSearchResults}
+            onClearSearch={onClearSearch}
+          />
+        </div>
+      )}
+
       {/* Dashboard Item */}
       <div className="mt-6 flex w-full flex-col gap-1">
         <button
@@ -94,7 +106,7 @@ export function NotesSidebar({
           )}
         >
           <LayoutDashboard className="h-4 w-4" />
-          <span>Dashboard</span>
+          <span>Notebooks</span>
         </button>
       </div>
 
@@ -113,13 +125,13 @@ export function NotesSidebar({
           <>
             <div className="flex w-full flex-col gap-1">
               <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
-                <span>Collections ({collections.length})</span>
+                <span>Notebooks ({collections.length})</span>
                 {onCreateCollection && (
                   <button
                     type="button"
                     onClick={onCreateCollection}
                     className="rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                    title="Create Collection"
+                    title="Create Notebook"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -155,96 +167,38 @@ export function NotesSidebar({
                   ))
                 ) : (
                   <div className="px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500">
-                    No collections yet
+                    No notebooks yet
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Folders */}
-            {onSelectFolder && onCreateFolder && onEditFolder && onDeleteFolder && onClearFolderFilter && (
-              <FoldersSection
-                folders={folders}
-                selectedFolderId={selectedFolderId}
-                onSelectFolder={onSelectFolder}
-                onCreateFolder={onCreateFolder}
-                onEditFolder={onEditFolder}
-                onDeleteFolder={onDeleteFolder}
-                onClearFolderFilter={onClearFolderFilter}
-              />
+            {/* Tags */}
+            {allTags.length > 0 && onSelectTag && onClearTagFilter && (
+              <div className="flex w-full flex-col gap-1">
+                <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
+                  <span>Tags ({allTags.length})</span>
+                </div>
+                <TagsCloud
+                  tags={allTags}
+                  tagCounts={tagCounts}
+                  selectedTag={selectedTag}
+                  onSelectTag={onSelectTag}
+                  onClearTag={onClearTagFilter}
+                />
+              </div>
             )}
-
-            {/* All Notes */}
-            <div className="flex w-full flex-col gap-1">
-              <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
-                <span>All Notes ({notes.length})</span>
-                <button
-                  type="button"
-                  onClick={onCreateNote}
-                  className="rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                  title="Create Note"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <div className="flex w-full flex-col gap-0.5">
-                {sortedNotes.length > 0 ? (
-                  sortedNotes.map((note) => {
-                    const isSelected = selectedNote?.id === note.id;
-                    return (
-                      <NoteContextMenu
-                        key={note.id}
-                        note={note}
-                        onDelete={onDeleteNote || (() => {})}
-                      >
-                        <div className="group flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => onSelectNote(note)}
-                            className={clsx(
-                              'group relative flex h-8 max-w-[80%] flex-1 items-center justify-start overflow-visible rounded-md border border-transparent px-0 text-left text-[0.8rem] font-medium text-neutral-600 transition-colors outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-200 dark:text-neutral-300 dark:focus-visible:ring-neutral-700',
-                              isSelected
-                                ? 'text-neutral-900 dark:text-neutral-100'
-                                : 'hover:text-neutral-900 dark:hover:text-white'
-                            )}
-                          >
-                            <span className="relative -ml-2 inline-flex min-w-0 max-w-full items-center overflow-hidden px-2 py-1">
-                              <span
-                                className={clsx(
-                                  'pointer-events-none absolute inset-0 rounded-full transition-colors',
-                                  isSelected
-                                    ? 'bg-neutral-100 dark:bg-neutral-800'
-                                    : 'bg-transparent group-hover:bg-neutral-100 dark:group-hover:bg-neutral-800/70'
-                                )}
-                              />
-                              <span className="relative z-10 truncate">{note.title}</span>
-                            </span>
-                          </button>
-                          {note.isPinned && (
-                            <Pin className="h-3 w-3 text-neutral-400 dark:text-neutral-500" />
-                          )}
-                        </div>
-                      </NoteContextMenu>
-                    );
-                  })
-                ) : (
-                  <div className="px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500">
-                    No notes yet
-                  </div>
-                )}
-              </div>
-            </div>
           </>
         ) : (
-          /* Show Notes in Collection */
+          /* Show Pages in Notebook */
           <div className="flex w-full flex-col gap-1">
             <div className="flex h-8 items-center justify-between text-xs font-semibold text-neutral-400/90 dark:text-neutral-400/70">
-              <span>Notes ({notes.length})</span>
+              <span>Pages ({notes.length})</span>
               <button
                 type="button"
                 onClick={onCreateNote}
                 className="rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                title="Create Note"
+                title="Create Page"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -291,7 +245,7 @@ export function NotesSidebar({
                 })
               ) : (
                 <div className="px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500">
-                  No notes in this collection
+                  No pages in this notebook
                 </div>
               )}
             </div>

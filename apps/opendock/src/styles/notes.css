@@ -1,0 +1,49 @@
+/* Notes Layout */
+.notes-page {
+  display: flex;
+  height: 100%;
+}
+
+.notes-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(42, 42, 46, 0.6);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 10, 11, 0.5);
+}
+
+.notes-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Hide scrollbar in sidebar */
+.notes-sidebar-content::-webkit-scrollbar { width: 0; }
+
+.notes-main {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Editor content area */
+.notes-main [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Lexical editor overrides */
+.notes-main .editor-input {
+  min-height: 100%;
+  outline: none;
+}

@@ -64,6 +64,35 @@ export const notesApi = {
     });
   },
 
+  duplicateNote: async (noteId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ note: Note }>({
+      path: `/api/notes/${noteId}/duplicate`,
+      method: "POST",
+      headers,
+    });
+  },
+
+  archiveNote: async (noteId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ note: Note }>({
+      path: `/api/notes/${noteId}`,
+      method: "PATCH",
+      body: JSON.stringify({ isArchived: true }),
+      headers,
+    });
+  },
+
+  unarchiveNote: async (noteId: string) => {
+    const headers = await resolveCsrfHeaders();
+    return request<{ note: Note }>({
+      path: `/api/notes/${noteId}`,
+      method: "PATCH",
+      body: JSON.stringify({ isArchived: false }),
+      headers,
+    });
+  },
+
   // Search
   searchNotes: (params: NoteSearchParams) => {
     const searchParams = new URLSearchParams();

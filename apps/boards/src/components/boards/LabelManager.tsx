@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Tag, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import clsx from "clsx";
 import type { KanbanLabel } from "@opendock/shared/types";
 import { ConfirmDialog } from "@/components/ConfirmDialog";

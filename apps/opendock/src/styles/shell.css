@@ -1,0 +1,57 @@
+/* macOS Window Controls */
+.mac-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.mac-control {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.mac-control.close {
+  background: #ff5f57;
+}
+
+.mac-control.minimize {
+  background: #febc2e;
+}
+
+.mac-control.maximize {
+  background: #28c840;
+}
+
+/* Windows Window Controls */
+.windows-controls {
+  display: flex;
+  align-items: center;
+  height: var(--titlebar-height);
+}
+
+.windows-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  color: var(--color-text-secondary);
+  transition: background var(--transition-fast);
+  border: none;
+  cursor: pointer;
+}
+
+.windows-control:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.windows-control.close:hover {
+  background: #e81123;
+  color: white;
+}

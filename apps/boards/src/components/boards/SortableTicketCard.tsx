@@ -1,12 +1,12 @@
 import { Draggable } from "@hello-pangea/dnd";
-import type { KanbanTicket, KanbanColumn, BoardMember, KanbanSprint, KanbanLabel } from "@opendock/shared/types";
+import type { KanbanTicket, KanbanColumn, KanbanUser, KanbanSprint, KanbanLabel } from "@opendock/shared/types";
 import { TicketCard } from "./TicketCard";
 
 interface SortableTicketCardProps {
   ticket: KanbanTicket;
   index: number;
   column: KanbanColumn;
-  members: BoardMember[];
+  members: KanbanUser[];
   labels: KanbanLabel[];
   sprints?: KanbanSprint[];
   onClick?: () => void;
@@ -31,7 +31,7 @@ export function SortableTicketCard({
 }: SortableTicketCardProps) {
   return (
     <Draggable draggableId={ticket.id} index={index} isDragDisabled={selectionMode}>
-      {(provided, snapshot) => (
+      {(provided, _snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
@@ -43,7 +43,7 @@ export function SortableTicketCard({
             column={column}
             members={members}
             labels={labels}
-            sprints={sprints}
+            sprints={sprints ?? []}
             onClick={onClick}
             onTitleUpdate={onTitleUpdate}
             selectionMode={selectionMode}

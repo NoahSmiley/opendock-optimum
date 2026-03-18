@@ -4,28 +4,17 @@ import {
   MoreHorizontal,
   Link,
   Paperclip,
-  Clock,
-  Calendar,
-  Flag,
-  Tag,
-  User,
-  MessageSquare,
   Trash2,
-  ChevronUp,
-  ChevronDown,
   Edit2,
   Check,
   AlertCircle,
   Share2,
-  Copy,
-  Archive,
   Eye,
   Users
 } from "lucide-react";
-import clsx from "clsx";
-import type { KanbanTicket, KanbanBoard, KanbanUser, KanbanLabel, KanbanComment } from "@opendock/shared/types";
+import type { KanbanTicket, KanbanBoard, KanbanUser, KanbanLabel } from "@opendock/shared/types";
 import { formatTicketKey } from "@/lib/ticketUtils";
-import { IssueTypeIcon, IssueTypeSelector } from "./IssueTypeSelector";
+import { IssueTypeIcon } from "./IssueTypeSelector";
 import { formatDistanceToNow } from "date-fns";
 import {
   Select,
@@ -58,7 +47,7 @@ export function TicketDetailModal({
   onUpdate,
   onDelete,
   onAddComment,
-  onDeleteComment,
+  onDeleteComment: _onDeleteComment,
 }: TicketDetailModalProps) {
   // Editing states
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -135,10 +124,7 @@ export function TicketDetailModal({
     onClose();
   };
 
-  const assignee = members.find(m => ticket.assigneeIds.includes(m.id));
   const ticketLabels = labels.filter(l => ticket.labelIds?.includes(l.id));
-  const column = board.columns.find(c => c.id === ticket.columnId);
-  const sprint = board.sprints.find(s => s.id === ticket.sprintId);
 
   return (
     <>

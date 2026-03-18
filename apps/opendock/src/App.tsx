@@ -1,40 +1,58 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import { AppLayout } from "./components/AppLayout";
-import { PublicLayout } from "./components/PublicLayout";
-import { RequireAuth } from "./components/auth";
-import DashboardPage from "./pages/Dashboard";
-import BoardsLanding from "./pages/BoardsLanding";
-import AboutPage from "./pages/About";
-import RoadmapPage from "./pages/Roadmap";
-import AuthPage from "./pages/Auth";
-import ProjectDetailPage from "./pages/ProjectDetail";
-import LandingPage from "./pages/Landing";
-import PricingPage from "./pages/Pricing";
-import FeaturesPage from "./pages/Features";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/auth/store";
+import { Titlebar } from "@/components/shell/Titlebar";
+import { ZoomControls } from "@/components/shell/ZoomControls";
+import { AppLayout } from "@/components/shell/AppLayout";
+import { AuthPage } from "@/pages/AuthPage";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { BoardsPage } from "@/pages/BoardsPage";
+import { NotesPage } from "@/pages/NotesPage";
+import { CalendarPage } from "@/pages/CalendarPage";
+import { FilesPage } from "@/pages/FilesPage";
 
-export default function App() {
+export function App() {
+  const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
+  const checkSession = useAuthStore((s) => s.checkSession);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  if (loading) {
+    return (
+      <div className="app-shell">
+        <Titlebar />
+        <div className="auth-layout">
+          <p style={{ color: "var(--color-text-tertiary)" }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Routes>
-      {/* Public routes with PublicLayout */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/features" element={<FeaturesPage />} />
-      </Route>
-      
-      {/* Auth page without layout */}
-      <Route path="/auth" element={<AuthPage />} />
-      
-      {/* Private routes - require authentication */}
-      <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-        <Route path="/boards" element={<BoardsLanding />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/roadmap" element={<RoadmapPage />} />
-      </Route>
-      
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <BrowserRouter>
+      <ZoomControls />
+      <div className="app-shell">
+        <Titlebar />
+        {user ? (
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/boards" element={<BoardsPage />} />
+              <Route path="/notes" element={<NotesPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/files" element={<FilesPage />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
+          </Routes>
+        ) : (
+          <Routes>
+            <Route path="*" element={<AuthPage />} />
+          </Routes>
+        )}
+      </div>
+    </BrowserRouter>
   );
 }

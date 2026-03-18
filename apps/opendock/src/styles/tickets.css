@@ -1,0 +1,19 @@
+/* Detail Panel */
+.ticket-detail-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: flex-end; z-index: 100; }
+.ticket-detail {
+  width: 560px; max-width: 90vw; background: var(--color-bg-secondary);
+  border-left: 1px solid var(--color-border); display: flex; flex-direction: column; overflow-y: auto; padding: var(--space-xl);
+}
+.ticket-detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-xl); }
+.ticket-detail-title { font-size: var(--font-size-xl); font-weight: 600; }
+.ticket-detail-section { margin-bottom: var(--space-xl); }
+.ticket-detail-section h3 { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-sm); }
+
+/* Form */
+.ticket-form { display: flex; flex-direction: column; gap: var(--space-md); padding: var(--space-lg); }
+.ticket-form-field { display: flex; flex-direction: column; gap: var(--space-xs); }
+.ticket-form-field label { font-size: var(--font-size-sm); font-weight: 500; color: var(--color-text-secondary); }
+
+/* Filter Bar */
+.filter-bar { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-xl); flex-shrink: 0; }
+.filter-bar select { font-size: var(--font-size-sm); padding: var(--space-xs) var(--space-sm); }

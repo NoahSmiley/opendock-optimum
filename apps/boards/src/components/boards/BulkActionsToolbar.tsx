@@ -1,5 +1,4 @@
 import { X, Trash2, Move, Users, CheckSquare } from "lucide-react";
-import clsx from "clsx";
 import type { KanbanBoard } from "@opendock/shared/types";
 
 interface BulkActionsToolbarProps {
@@ -21,7 +20,7 @@ export function BulkActionsToolbar({
   onBulkDelete,
   onBulkMove,
   onBulkAssign,
-  board,
+  board: _board,
 }: BulkActionsToolbarProps) {
   const allSelected = selectedCount === totalCount && totalCount > 0;
 

@@ -1,0 +1,1 @@
+export { BoardLinker } from './BoardLinker';

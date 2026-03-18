@@ -139,7 +139,7 @@ export function TimeTracker({
             </div>
             {progress >= 100 && (
               <div className="text-xs font-medium text-red-600 dark:text-red-400">
-                Over estimate by {formatDuration(ticket.timeSpent - (ticket.estimate * 3600))}
+                Over estimate by {formatDuration(ticket.timeSpent - ((ticket.estimate ?? 0) * 3600))}
               </div>
             )}
           </div>

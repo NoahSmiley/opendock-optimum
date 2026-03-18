@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Check } from 'lucide-react';
 import clsx from 'clsx';
-import type { CreateNoteInput } from '@opendock/shared/types';
+import type { CreateNoteInput, Collection } from '@opendock/shared/types';
 
 interface QuickNoteProps {
   onCreateNote: (input: CreateNoteInput) => Promise<void>;
+  collections: Collection[];
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function QuickNoteModal({ onCreateNote, isOpen, onClose }: QuickNoteProps) {
+export function QuickNoteModal({ onCreateNote, collections, isOpen, onClose }: QuickNoteProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [notebookId, setNotebookId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +46,10 @@ export function QuickNoteModal({ onCreateNote, isOpen, onClose }: QuickNoteProps
       return;
     }
 
+    if (!notebookId) {
+      return;
+    }
+
     setIsSaving(true);
     try {
       await onCreateNote({
@@ -56,6 +62,7 @@ export function QuickNoteModal({ onCreateNote, isOpen, onClose }: QuickNoteProps
       // Reset form
       setTitle('');
       setContent('');
+      setNotebookId('');
       onClose();
     } catch (error) {
       console.error('Failed to create quick note:', error);
@@ -100,6 +107,35 @@ export function QuickNoteModal({ onCreateNote, isOpen, onClose }: QuickNoteProps
               placeholder="Note title..."
               className="mb-3 w-full border-none bg-transparent text-lg font-semibold text-neutral-900 outline-none focus:ring-0 dark:text-white"
             />
+
+            {/* Notebook Selector */}
+            <div className="mb-3">
+              <label htmlFor="notebook-select" className="mb-2 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                Notebook <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  id="notebook-select"
+                  value={notebookId}
+                  onChange={(e) => setNotebookId(e.target.value)}
+                  required
+                  className="w-full appearance-none rounded-md border border-neutral-200 bg-white px-3 py-2 pr-10 text-sm text-neutral-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                >
+                  <option value="">Select a notebook...</option>
+                  {collections.map((collection) => (
+                    <option key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="h-4 w-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -126,10 +162,10 @@ export function QuickNoteModal({ onCreateNote, isOpen, onClose }: QuickNoteProps
               </button>
               <button
                 onClick={handleSave}
-                disabled={isSaving || !title.trim()}
+                disabled={isSaving || !title.trim() || !notebookId}
                 className={clsx(
                   'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-white transition-colors',
-                  isSaving || !title.trim()
+                  isSaving || !title.trim() || !notebookId
                     ? 'cursor-not-allowed bg-neutral-400 dark:bg-neutral-700'
                     : 'bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200'
                 )}

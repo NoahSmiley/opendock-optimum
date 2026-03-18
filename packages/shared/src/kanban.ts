@@ -3,6 +3,7 @@ import type {
   KanbanBoard,
   KanbanBoardSnapshot,
   KanbanColumn,
+  KanbanEpic,
   KanbanSprint,
   KanbanTicket,
   KanbanTimeLog,
@@ -62,6 +63,23 @@ export const KanbanSprintSchema = z
   })
   .strict();
 type _KanbanSprintSchemaCheck = z.infer<typeof KanbanSprintSchema> extends KanbanSprint ? true : never;
+
+export const KanbanEpicSchema = z
+  .object({
+    id: KanbanIdSchema,
+    boardId: KanbanIdSchema,
+    key: nonEmptyTrimmed("Epic key", 40),
+    title: nonEmptyTrimmed("Epic title", 160),
+    description: z.string().trim().max(5000).optional(),
+    color: nonEmptyTrimmed("Epic color", 40),
+    startDate: z.string().trim().max(40).optional(),
+    endDate: z.string().trim().max(40).optional(),
+    status: z.enum(["open", "in_progress", "done"]),
+    createdAt: nonEmptyTrimmed("Created timestamp", 40),
+    updatedAt: nonEmptyTrimmed("Updated timestamp", 40),
+  })
+  .strict();
+type _KanbanEpicSchemaCheck = z.infer<typeof KanbanEpicSchema> extends KanbanEpic ? true : never;
 
 export const KanbanTimeLogSchema = z
   .object({
@@ -171,6 +189,7 @@ export const KanbanBoardSchema = z
     columns: z.array(KanbanColumnSchema),
     tickets: z.array(KanbanTicketSchema),
     sprints: z.array(KanbanSprintSchema),
+    epics: z.array(KanbanEpicSchema),
     members: z.array(KanbanUserSchema),
     labels: z.array(KanbanLabelSchema),
   })

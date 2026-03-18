@@ -1,0 +1,27 @@
+/* Board Layout */
+.boards-page {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.boards-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* Kanban surface — user-select control for DnD */
+.kanban-board-surface {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.kanban-board-surface input,
+.kanban-board-surface textarea,
+.kanban-board-surface select,
+.kanban-board-surface [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}

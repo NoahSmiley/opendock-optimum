@@ -8,7 +8,6 @@ import type {
   KanbanActivity,
   KanbanLabel,
   KanbanAttachment,
-  ProjectsResponse,
 } from "@opendock/shared/types";
 import { request, getApiBaseUrl } from "@opendock/shared/api";
 import { resolveCsrfHeaders } from "./auth-client";
@@ -249,6 +248,3 @@ export const boardsApi = {
   },
 };
 
-export const projectsApi = {
-  listProjects: () => request<ProjectsResponse>({ path: "/api/projects" }),
-};
