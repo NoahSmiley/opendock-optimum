@@ -83,7 +83,7 @@ export async function createTicket(
 
 export async function updateTicket(
   ticketId: string,
-  data: Partial<Pick<Ticket, "title" | "description" | "priority" | "assigneeIds" | "labelIds" | "dueDate" | "sprintId" | "columnId" | "storyPoints">>,
+  data: Partial<Pick<Ticket, "title" | "description" | "priority" | "assigneeIds" | "labelIds" | "dueDate" | "sprintId" | "columnId">> & { storyPoints?: number | null },
 ): Promise<{ ticket: Ticket }> {
   return request(`/api/kanban/tickets/${ticketId}`, {
     method: "PATCH",

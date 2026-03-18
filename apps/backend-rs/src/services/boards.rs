@@ -7,6 +7,7 @@ use crate::models::column::Column;
 use crate::models::epic::Epic;
 use crate::models::label::Label;
 use crate::models::sprint::Sprint;
+use crate::models::comment::Comment;
 use crate::models::ticket::Ticket;
 
 pub async fn board_snapshot(
@@ -23,9 +24,19 @@ pub async fn board_snapshot(
         .map(Into::into)
         .collect();
     let ticket_rows = db::tickets::list_by_board(pool, board_id).await?;
+    let comment_rows = db::comments::list_by_board(pool, board_id).await?;
+    let mut comments_by_ticket: std::collections::HashMap<String, Vec<Comment>> =
+        std::collections::HashMap::new();
+    for cr in comment_rows {
+        let tid = cr.ticket_id.clone();
+        comments_by_ticket.entry(tid).or_default().push(cr.into());
+    }
     let tickets: Vec<Ticket> = ticket_rows
         .into_iter()
-        .map(|r| crate::services::tickets::row_to_ticket(r, None, None, None))
+        .map(|r| {
+            let comments = comments_by_ticket.remove(&r.id);
+            crate::services::tickets::row_to_ticket(r, comments, None, None)
+        })
         .collect();
     let sprints: Vec<Sprint> = db::sprints::list_by_board(pool, board_id)
         .await?
@@ -43,7 +54,7 @@ pub async fn board_snapshot(
         .map(Into::into)
         .collect();
     let member_ids: Vec<String> = serde_json::from_str(&row.member_ids).unwrap_or_default();
-    let members = db::boards::get_kanban_users_by_ids(pool, &member_ids).await?;
+    let members = db::kanban_users::get_by_ids(pool, &member_ids).await?;
     let components: Vec<String> = row
         .components
         .as_deref()

@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
+import { OpenDockLogo } from "@/components/shared/OpenDockLogo";
+import { useUiStore } from "@/stores/ui/store";
 
 export function Titlebar() {
   const [Controls, setControls] = useState<React.ComponentType | null>(null);
   const [isMac, setIsMac] = useState(false);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
 
   useEffect(() => {
     const mac = navigator.platform.toUpperCase().includes("MAC");
@@ -33,6 +36,8 @@ export function Titlebar() {
     }
   }, []);
 
+  const sidebarW = collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
+
   return (
     <div className="titlebar" onMouseDown={handleMouseDown}>
       {isMac && Controls && (
@@ -40,7 +45,10 @@ export function Titlebar() {
           <Controls />
         </div>
       )}
-      <span className="titlebar-title">OpenDock</span>
+      <div className="absolute top-1/2"
+        style={{ left: `calc(50% + ${sidebarW} / 2)`, transform: "translate(-50%, -50%)", transition: "left 180ms ease" }}>
+        <OpenDockLogo size={24} />
+      </div>
       {!isMac && Controls && (
         <div className="titlebar-controls" data-no-drag>
           <Controls />

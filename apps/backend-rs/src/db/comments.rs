@@ -1,10 +1,18 @@
 use sqlx::SqlitePool;
 use crate::models::comment::CommentRow;
 
-#[allow(dead_code)]
 pub async fn list_by_ticket(pool: &SqlitePool, ticket_id: &str) -> Result<Vec<CommentRow>, sqlx::Error> {
     sqlx::query_as::<_, CommentRow>("SELECT * FROM kanban_comments WHERE ticket_id = ? ORDER BY created_at ASC")
         .bind(ticket_id).fetch_all(pool).await
+}
+
+pub async fn list_by_board(pool: &SqlitePool, board_id: &str) -> Result<Vec<CommentRow>, sqlx::Error> {
+    sqlx::query_as::<_, CommentRow>(
+        "SELECT c.* FROM kanban_comments c JOIN kanban_tickets t ON c.ticket_id = t.id WHERE t.board_id = ? ORDER BY c.created_at ASC",
+    )
+    .bind(board_id)
+    .fetch_all(pool)
+    .await
 }
 
 pub async fn add_comment(pool: &SqlitePool, ticket_id: &str, user_id: &str, content: &str) -> Result<CommentRow, sqlx::Error> {

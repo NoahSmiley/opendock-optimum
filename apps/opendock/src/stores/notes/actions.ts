@@ -29,12 +29,6 @@ export async function deleteNote(noteId: string) {
   }));
 }
 
-export async function duplicateNote(noteId: string) {
-  const note = await notesApi.duplicateNote(noteId);
-  setState((s) => ({ notes: [note, ...s.notes] }));
-  return note;
-}
-
 export async function createCollection(input: CreateCollectionInput) {
   const collection = await notesApi.createCollection(input);
   setState((s) => ({ collections: [...s.collections, collection] }));

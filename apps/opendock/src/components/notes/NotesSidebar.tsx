@@ -1,127 +1,76 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import clsx from "clsx";
-import { FileText, Plus, Hash } from "lucide-react";
-import { SidebarNotesList } from "./SidebarNotesList";
-import type { Note, Collection } from "@/stores/notes/types";
+import { Plus, Pin } from "lucide-react";
+import type { Note } from "@/stores/notes/types";
 
 interface NotesSidebarProps {
   notes: Note[];
   selectedNote: Note | null;
   onSelectNote: (note: Note) => void;
   onCreateNote: () => void;
-  collections: Collection[];
-  activeCollection: Collection | null;
-  onSelectCollection: (collection: Collection | null) => void;
-  onCreateCollection: () => void;
-  selectedTag: string | null;
-  onSelectTag: (tag: string | null) => void;
 }
 
-export function NotesSidebar({
-  notes, selectedNote, onSelectNote, onCreateNote,
-  collections, activeCollection, onSelectCollection, onCreateCollection,
-  selectedTag, onSelectTag,
-}: NotesSidebarProps) {
+export function NotesSidebar({ notes, selectedNote, onSelectNote, onCreateNote }: NotesSidebarProps) {
   const [search, setSearch] = useState("");
-  const filtered = search
-    ? notes.filter((n) => n.title.toLowerCase().includes(search.toLowerCase()))
-    : notes;
-  const sorted = [...filtered].sort((a, b) => {
-    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  });
-  const allTags = extractTags(notes);
+
+  const sorted = useMemo(() => {
+    const filtered = search
+      ? notes.filter((n) => n.title.toLowerCase().includes(search.toLowerCase()))
+      : notes;
+    return [...filtered].sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }, [notes, search]);
 
   return (
     <aside className="notes-sidebar">
       <div className="notes-sidebar-content">
-        <SidebarHeader onCreateNote={onCreateNote} search={search} onSearchChange={setSearch} />
-        <CollectionsSection
-          collections={collections} activeCollection={activeCollection}
-          onSelect={onSelectCollection} onCreate={onCreateCollection}
-        />
-        {allTags.length > 0 && (
-          <TagsSection tags={allTags} selectedTag={selectedTag} onSelect={onSelectTag} />
-        )}
-        <SidebarNotesList notes={sorted} selectedNote={selectedNote} onSelect={onSelectNote} />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">Notes</span>
+            <button onClick={onCreateNote}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-300">
+              <Plus className="h-3 w-3" /> New
+            </button>
+          </div>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..."
+            className="w-full rounded-md border border-white/[0.06] bg-transparent px-2.5 py-1.5 text-[12px] text-white placeholder:text-neutral-600 focus:border-white/[0.12] focus:outline-none" />
+        </div>
+        <div className="flex flex-col gap-px">
+          {sorted.map((n) => (
+            <NoteItem key={n.id} note={n} isSelected={selectedNote?.id === n.id} onSelect={onSelectNote} />
+          ))}
+          {sorted.length === 0 && <p className="px-2 py-4 text-[11px] text-neutral-600">No notes yet.</p>}
+        </div>
       </div>
     </aside>
   );
 }
 
-function SidebarHeader({ onCreateNote, search, onSearchChange }: {
-  onCreateNote: () => void; search: string; onSearchChange: (v: string) => void;
-}) {
+function NoteItem({ note, isSelected, onSelect }: { note: Note; isSelected: boolean; onSelect: (n: Note) => void }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Notes</span>
-        <button onClick={onCreateNote}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white">
-          <Plus className="h-3.5 w-3.5" /> New
-        </button>
+    <button onClick={() => onSelect(note)}
+      className={clsx("flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
+        isSelected ? "bg-white/[0.05] text-neutral-200" : "text-neutral-500 hover:bg-white/[0.03] hover:text-neutral-300")}>
+      {note.isPinned && <Pin className="h-2.5 w-2.5 shrink-0 text-amber-400/60" />}
+      <div className="min-w-0 flex-1">
+        <span className="block truncate font-medium">{note.title || "Untitled"}</span>
+        <span className="block truncate text-[10px] text-neutral-600">{formatRelative(note.updatedAt)}</span>
       </div>
-      <input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search notes..."
-        className="w-full rounded-lg border border-neutral-800/60 bg-neutral-900/50 px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-neutral-700 focus:outline-none" />
-    </div>
+    </button>
   );
 }
 
-function CollectionsSection({ collections, activeCollection, onSelect, onCreate }: {
-  collections: Collection[]; activeCollection: Collection | null;
-  onSelect: (c: Collection | null) => void; onCreate: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-600">Notebooks</span>
-        <button onClick={onCreate} className="rounded p-0.5 text-neutral-600 transition-colors hover:text-neutral-300">
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <button onClick={() => onSelect(null)}
-        className={clsx("flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-xs font-medium transition-colors",
-          !activeCollection ? "bg-neutral-800/80 text-white" : "text-neutral-400 hover:bg-neutral-800/40 hover:text-neutral-200")}>
-        <FileText className="h-3.5 w-3.5 shrink-0 text-neutral-500" /> All Notes
-      </button>
-      {collections.map((c) => (
-        <button key={c.id} onClick={() => onSelect(c)}
-          className={clsx("flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-xs font-medium transition-colors",
-            activeCollection?.id === c.id ? "bg-neutral-800/80 text-white" : "text-neutral-400 hover:bg-neutral-800/40 hover:text-neutral-200")}>
-          <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ backgroundColor: c.color ?? "#6366f1" }} />
-          <span className="truncate">{c.name}</span>
-          {c.noteCount !== undefined && (
-            <span className="ml-auto shrink-0 text-[11px] text-neutral-600">{c.noteCount}</span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function TagsSection({ tags, selectedTag, onSelect }: {
-  tags: string[]; selectedTag: string | null; onSelect: (t: string | null) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-600">Tags</span>
-      <div className="flex flex-wrap gap-1.5">
-        {tags.slice(0, 12).map((t) => (
-          <button key={t} onClick={() => onSelect(selectedTag === t ? null : t)}
-            className={clsx("flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors",
-              selectedTag === t
-                ? "border-neutral-600 bg-neutral-800 text-white"
-                : "border-neutral-800/60 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300")}>
-            <Hash className="h-2.5 w-2.5" />{t}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function extractTags(notes: Note[]): string[] {
-  const counts = new Map<string, number>();
-  for (const n of notes) for (const t of n.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+function formatRelative(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const mins = Math.floor((now.getTime() - d.getTime()) / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

@@ -3,6 +3,7 @@ pub mod attachments;
 pub mod auth;
 pub mod boards;
 pub mod calendar_events;
+pub mod kanban_users;
 pub mod collections;
 pub mod columns;
 pub mod comments;

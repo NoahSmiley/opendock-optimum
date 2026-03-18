@@ -31,3 +31,14 @@ bun.lockb.bak
 *.tsx.broken
 *.ts.broken
 **/*.pre-placeholder-backup
+
+# Playwright
+test-results/
+playwright-report/
+
+# Tauri build
+apps/opendock/src-tauri/target/
+
+# Backend data & uploads
+apps/backend-rs/data/
+apps/backend-rs/uploads/

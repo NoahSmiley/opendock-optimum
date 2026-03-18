@@ -9,6 +9,8 @@ import "@/styles/auth.css";
 import "@/styles/boards.css";
 import "@/styles/tickets.css";
 import "@/styles/notes.css";
+import "@/styles/claude.css";
+import "@/styles/claude-md.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

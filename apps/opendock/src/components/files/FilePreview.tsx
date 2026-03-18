@@ -41,7 +41,7 @@ export function FilePreview({ file, onClose }: FilePreviewProps) {
             <div className="text-center">
               <p className="text-sm text-neutral-400">Preview not available for this file type.</p>
               <a href={file.url} download={file.name}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
                 <Download className="h-4 w-4" /> Download
               </a>
             </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createLabel } from "@/stores/boards/actions";
 import type { Board } from "@/stores/boards/types";
 
@@ -39,9 +39,6 @@ export function LabelSettings({ board }: LabelSettingsProps) {
             <div key={l.id} className="flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-800/50 px-3 py-2.5">
               <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: l.color }} />
               <span className="flex-1 text-sm text-white">{l.name}</span>
-              <button className="text-neutral-500 hover:text-red-400 transition-colors">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
             </div>
           ))}
         </div>

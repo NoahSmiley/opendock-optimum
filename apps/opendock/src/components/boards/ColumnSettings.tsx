@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { createColumn, deleteColumn } from "@/stores/boards/actions";
 import type { Board } from "@/stores/boards/types";
 
@@ -35,11 +35,10 @@ export function ColumnSettings({ board }: ColumnSettingsProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-neutral-400">Manage columns for this board. Drag to reorder.</p>
+      <p className="text-xs text-neutral-400">Manage columns for this board.</p>
       <div className="space-y-2">
         {sortedColumns.map((col) => (
           <div key={col.id} className="flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-800/50 px-3 py-2.5">
-            <GripVertical className="h-4 w-4 shrink-0 text-neutral-600 cursor-grab" />
             <span className="flex-1 text-sm text-white">{col.title}</span>
             {col.wipLimit && (
               <span className="text-xs text-neutral-500">WIP: {col.wipLimit}</span>

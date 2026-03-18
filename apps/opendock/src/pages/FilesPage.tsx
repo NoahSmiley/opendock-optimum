@@ -93,7 +93,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <p className="text-sm text-neutral-400">No files yet.</p>
       <button onClick={onUpload}
-        className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-500">
+        className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-500">
         Upload your first file
       </button>
     </div>

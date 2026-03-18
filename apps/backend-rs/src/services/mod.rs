@@ -1,5 +1,6 @@
 pub mod attachments;
 pub mod auth;
+pub mod board_repair;
 pub mod boards;
 pub mod calendar_events;
 pub mod collections;

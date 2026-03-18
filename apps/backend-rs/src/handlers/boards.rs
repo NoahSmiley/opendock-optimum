@@ -9,12 +9,13 @@ use crate::error::AppError;
 use crate::extractors::validated_json::ValidatedJson;
 use crate::middleware::auth::AuthUser;
 use crate::services;
+use crate::services::board_repair::{ensure_kanban_user, project_key_from_name, repair_board};
 
 pub async fn list_boards(
     State(state): State<AppState>,
 ) -> Result<Json<Value>, AppError> {
     let board_rows = crate::db::boards::list_boards(&state.db).await?;
-    let users = crate::db::boards::list_kanban_users(&state.db).await?;
+    let users = crate::db::kanban_users::list_all(&state.db).await?;
     let mut boards = Vec::new();
     for row in board_rows {
         if let Some(snap) = services::boards::board_snapshot(&state.db, &row.id).await? {
@@ -30,36 +31,32 @@ pub async fn create_board(
     ValidatedJson(body): ValidatedJson<CreateBoardReq>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
     let board_id = ulid::Ulid::new().to_string().to_lowercase();
-    let mut member_ids: Vec<String> = Vec::new();
-    // Auto-add the creating user as a board member
-    let kanban_user = match crate::db::boards::find_kanban_user_by_email(&state.db, &auth.0.email).await? {
-        Some(u) => u,
-        None => {
-            let uid = ulid::Ulid::new().to_string().to_lowercase();
-            let name = auth.0.display_name.as_deref().unwrap_or(&auth.0.email);
-            crate::db::boards::create_kanban_user(&state.db, &uid, name, Some(&auth.0.email), "#4f46e5").await?
-        }
-    };
-    member_ids.push(kanban_user.id);
+    let kanban_user = ensure_kanban_user(&state.db, &auth.0).await?;
+    let mut member_ids = vec![kanban_user.id];
     if let Some(members) = &body.members {
         let colors = ["#dc2626","#059669","#d97706","#7c3aed","#db2777","#4f46e5"];
         for (i, m) in members.iter().enumerate() {
             let uid = ulid::Ulid::new().to_string().to_lowercase();
-            let color = colors[i % colors.len()];
-            crate::db::boards::create_kanban_user(
-                &state.db, &uid, &m.name, m.email.as_deref(), color,
+            crate::db::kanban_users::create(
+                &state.db, &uid, &m.name, m.email.as_deref(), colors[i % colors.len()],
             ).await?;
             member_ids.push(uid);
         }
     }
     let ids_json = serde_json::to_string(&member_ids).unwrap_or_else(|_| "[]".into());
+    let project_key = project_key_from_name(&body.name);
     crate::db::boards::create_board(
         &state.db, &board_id, &body.name, body.description.as_deref(),
-        body.project_id.as_deref(), &ids_json,
+        body.project_id.as_deref(), &project_key, &ids_json,
     ).await?;
-    // Create default columns
     for (i, title) in ["To Do", "In Progress", "Done"].iter().enumerate() {
         crate::db::columns::create_column(&state.db, &board_id, title, i as i64).await?;
+    }
+    for (name, color) in &[
+        ("Bug", "#ef4444"), ("Feature", "#3b82f6"), ("Enhancement", "#8b5cf6"),
+        ("Documentation", "#06b6d4"), ("High Priority", "#f97316"),
+    ] {
+        crate::db::labels::create_label(&state.db, &board_id, name, color).await?;
     }
     let snap = services::boards::board_snapshot(&state.db, &board_id)
         .await?
@@ -70,8 +67,12 @@ pub async fn create_board(
 pub async fn get_board(
     State(state): State<AppState>,
     Path(board_id): Path<String>,
-    _auth: AuthUser,
+    auth: AuthUser,
 ) -> Result<Json<Value>, AppError> {
+    let board_row = crate::db::boards::get_board(&state.db, &board_id).await?
+        .ok_or_else(|| AppError::not_found("BOARD_NOT_FOUND", "Board not found."))?;
+    let kanban_user = ensure_kanban_user(&state.db, &auth.0).await?;
+    repair_board(&state.db, &board_row, &kanban_user).await?;
     let snap = services::boards::board_snapshot(&state.db, &board_id)
         .await?
         .ok_or_else(|| AppError::not_found("BOARD_NOT_FOUND", "Board not found."))?;
@@ -97,9 +98,7 @@ pub async fn update_board(
     ValidatedJson(body): ValidatedJson<UpdateBoardReq>,
 ) -> Result<Json<Value>, AppError> {
     let _row = crate::db::boards::update_board(
-        &state.db,
-        &board_id,
-        body.name.as_deref(),
+        &state.db, &board_id, body.name.as_deref(),
         body.description.as_ref().map(|o| o.as_deref()),
         body.project_id.as_ref().map(|o| o.as_deref()),
     )

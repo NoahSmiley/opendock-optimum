@@ -63,28 +63,28 @@ pre, code,
 
 /* Design Tokens */
 :root {
-  --color-bg-primary: #0a0a0b;
+  --color-bg-primary: #0c0c0d;
   --color-bg-secondary: #111113;
-  --color-bg-tertiary: #1a1a1d;
-  --color-bg-elevated: #222225;
-  --color-bg-hover: #2a2a2e;
-  --color-bg-active: #333338;
-  --color-text-primary: #ececee;
-  --color-text-secondary: #a0a0a8;
-  --color-text-tertiary: #6e6e78;
-  --color-text-inverse: #0a0a0b;
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-accent-muted: rgba(99, 102, 241, 0.15);
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
-  --color-border: #2a2a2e;
-  --color-border-subtle: #1e1e22;
+  --color-bg-tertiary: #18181b;
+  --color-bg-elevated: #1e1e21;
+  --color-bg-hover: rgba(255, 255, 255, 0.04);
+  --color-bg-active: rgba(255, 255, 255, 0.07);
+  --color-text-primary: #e4e4e7;
+  --color-text-secondary: #8b8b96;
+  --color-text-tertiary: #5a5a65;
+  --color-text-inverse: #0c0c0d;
+  --color-accent: #64cfe9;
+  --color-accent-hover: #8adcef;
+  --color-accent-muted: rgba(100, 207, 233, 0.1);
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
   --titlebar-height: 38px;
-  --sidebar-width: 220px;
-  --sidebar-collapsed-width: 56px;
+  --sidebar-width: 200px;
+  --sidebar-collapsed-width: 52px;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -97,19 +97,19 @@ pre, code,
   --space-2xl: 32px;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --transition-fast: 120ms ease;
-  --transition-base: 200ms ease;
+  --font-size-base: 13.5px;
+  --font-size-lg: 15px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --transition-fast: 100ms ease;
+  --transition-base: 180ms ease;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* Scrollbar — nearly invisible until hovered */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-bg-active); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* Focus */
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }

@@ -1,0 +1,75 @@
+.claude-md-bullet {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-left: 2px;
+}
+
+.claude-md-dot::before {
+  content: "\2022";
+  color: var(--color-text-tertiary);
+}
+
+.claude-md-numbered {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-left: 2px;
+}
+
+.claude-md-num {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  min-width: 16px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.claude-md-break {
+  height: 6px;
+}
+
+.claude-md-code {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.claude-md-table-wrap {
+  overflow-x: auto;
+  margin: 4px 0;
+}
+
+.claude-md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.claude-md-table th {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.claude-md-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--color-text-primary);
+}
+
+.claude-md-table tr:last-child td {
+  border-bottom: none;
+}
+
+.claude-md-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}

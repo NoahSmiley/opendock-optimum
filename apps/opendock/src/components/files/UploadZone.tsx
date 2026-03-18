@@ -33,9 +33,9 @@ export function UploadZone({ onUpload }: UploadZoneProps) {
       onClick={() => inputRef.current?.click()}
       className={clsx(
         "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 transition-colors",
-        dragging ? "border-indigo-500 bg-indigo-500/5" : "border-neutral-800 hover:border-neutral-600",
+        dragging ? "border-blue-500 bg-blue-500/5" : "border-neutral-800 hover:border-neutral-600",
       )}>
-      <Upload className={clsx("h-8 w-8", dragging ? "text-indigo-400" : "text-neutral-600")} />
+      <Upload className={clsx("h-8 w-8", dragging ? "text-blue-400" : "text-neutral-600")} />
       <p className="text-sm text-neutral-400">
         {dragging ? "Drop files here" : "Drag & drop files, or click to browse"}
       </p>

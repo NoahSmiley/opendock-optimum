@@ -40,16 +40,6 @@ export async function deleteNote(noteId: string): Promise<void> {
   return request<void>(`/api/notes/${noteId}`, { method: "DELETE" });
 }
 
-export async function duplicateNote(noteId: string): Promise<Note> {
-  const res = await request<{ note: Note }>(`/api/notes/${noteId}/duplicate`, { method: "POST" });
-  return res.note;
-}
-
-export async function searchNotes(query: string): Promise<Note[]> {
-  const res = await request<{ notes: Note[] }>(`/api/notes/search?q=${encodeURIComponent(query)}`);
-  return res.notes;
-}
-
 // --- Folders ---
 
 export async function fetchFolders(): Promise<Folder[]> {

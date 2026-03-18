@@ -1,6 +1,6 @@
 import * as boardsApi from "@/lib/api/boards";
 import { useBoardsStore } from "./store";
-import type { Board, Column, Ticket, Label, Sprint } from "./types";
+import type { Board, Column, Ticket, Label } from "./types";
 
 async function refreshBoard(boardId: string) {
   const snapshot = await boardsApi.fetchBoard(boardId);
@@ -120,15 +120,6 @@ export async function createLabel(boardId: string, name: string, color: string):
   const { label } = await boardsApi.createLabel(boardId, name, color);
   await refreshBoard(boardId);
   return label;
-}
-
-export async function createSprint(
-  boardId: string,
-  data: { name: string; goal?: string; startDate: string; endDate: string },
-): Promise<Sprint> {
-  const { sprint } = await boardsApi.createSprint(boardId, data);
-  await refreshBoard(boardId);
-  return sprint;
 }
 
 export async function addComment(ticketId: string, content: string) {

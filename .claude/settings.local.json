@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git fsck:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Read(~/.zshrc)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

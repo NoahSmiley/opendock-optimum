@@ -14,56 +14,42 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({
-  column,
-  ticketCount,
-  totalCount,
-  children,
-  footer,
-  droppableProvided,
-  isDraggingOver = false,
+  column, ticketCount, totalCount, children, footer, droppableProvided, isDraggingOver = false,
 }: KanbanColumnProps) {
   const isFiltered = totalCount !== undefined && totalCount !== ticketCount;
   const isOverLimit = column.wipLimit && ticketCount > column.wipLimit;
   const isAtLimit = column.wipLimit && ticketCount === column.wipLimit;
 
   return (
-    <div className="flex min-w-[24rem] max-w-[24rem] flex-col gap-3 self-start rounded-lg border border-neutral-800/60 p-5 transition-all duration-300">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-neutral-200">{column.title}</h3>
+    <div className="flex w-72 flex-col gap-2.5 self-start rounded-lg border border-white/[0.06] p-3.5">
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-[12px] font-medium uppercase tracking-wide text-neutral-500">{column.title}</h3>
         <span className={clsx(
-          "flex items-center gap-1 rounded-full bg-neutral-800/50 px-2.5 py-0.5 text-xs font-medium transition-colors",
-          isOverLimit
-            ? "text-red-400"
-            : isAtLimit
-              ? "text-amber-400"
-              : "text-neutral-400"
+          "text-[11px] tabular-nums",
+          isOverLimit ? "text-red-400" : isAtLimit ? "text-amber-400" : "text-neutral-600"
         )}>
           {ticketCount}
-          {isFiltered && <span className="text-[10px] font-normal text-neutral-600">/{totalCount}</span>}
-          {column.wipLimit && (
-            <span className="text-[10px] font-normal">/{column.wipLimit}</span>
-          )}
+          {isFiltered && <span className="text-neutral-700">/{totalCount}</span>}
+          {column.wipLimit && <span className="text-neutral-700">/{column.wipLimit}</span>}
         </span>
       </div>
       <div
         ref={droppableProvided.innerRef}
         {...droppableProvided.droppableProps}
         className={clsx(
-          "flex flex-col gap-2 rounded-md border p-0.5 transition-[border-color,background-color] duration-200 min-h-[4rem]",
-          isDraggingOver
-            ? "border-neutral-700/50 bg-neutral-800/30"
-            : "border-transparent",
+          "flex flex-col gap-1.5 rounded-md p-0.5 transition-colors duration-150 min-h-[3rem]",
+          isDraggingOver ? "bg-white/[0.02]" : "",
         )}
       >
         {children}
         {droppableProvided.placeholder}
         {ticketCount === 0 && !isDraggingOver && (
-          <div className="rounded-md border border-dashed border-neutral-800 p-4 text-center text-xs text-neutral-600">
-            {isFiltered ? "No issues match filters" : "Drop issues here"}
+          <div className="rounded-md border border-dashed border-white/[0.06] py-6 text-center text-[11px] text-neutral-600">
+            {isFiltered ? "No matches" : "No issues"}
           </div>
         )}
       </div>
-      {footer && <div>{footer}</div>}
+      {footer && <div className="px-0.5">{footer}</div>}
     </div>
   );
 }

@@ -44,10 +44,10 @@ export function RichTextEditor({ initialContent, onChange, placeholder = "Start 
         <div className="relative flex-1 overflow-y-auto">
           <RichTextPlugin
             contentEditable={
-              <ContentEditable className="min-h-full px-10 py-6 text-[15px] leading-relaxed text-neutral-200 outline-none" />
+              <ContentEditable className="min-h-full px-10 py-6 text-[14px] leading-[1.8] text-neutral-300 outline-none" />
             }
             placeholder={
-              <div className="pointer-events-none absolute left-10 top-6 text-[15px] text-neutral-600">
+              <div className="pointer-events-none absolute left-10 top-6 text-[14px] text-neutral-600">
                 {placeholder}
               </div>
             }

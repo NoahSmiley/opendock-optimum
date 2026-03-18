@@ -279,10 +279,12 @@ export const KanbanUpdateTicketSchema = z
   .object({
     title: nonEmptyTrimmed("Ticket title", 160).optional(),
     description: z.string().trim().max(5000).optional(),
+    columnId: KanbanIdSchema.optional(),
     assigneeIds: z.array(KanbanIdSchema).optional(),
     tags: z.array(nonEmptyTrimmed("Tag", 40)).optional(),
     labelIds: z.array(KanbanIdSchema).optional(),
     estimate: z.number().positive().nullable().optional(),
+    storyPoints: z.number().min(0).nullable().optional(),
     priority: z.enum(["low", "medium", "high"]).optional(),
     sprintId: KanbanIdSchema.nullish(),
     dueDate: z.string().trim().max(40).nullable().optional(),

@@ -1,6 +1,5 @@
-import { useState } from "react";
 import clsx from "clsx";
-import { Filter, User, Clock, AlertCircle, Calendar, X } from "lucide-react";
+import { Clock, AlertCircle, Calendar, X } from "lucide-react";
 
 interface QuickFilter {
   id: string;
@@ -9,8 +8,7 @@ interface QuickFilter {
 }
 
 const FILTERS: QuickFilter[] = [
-  { id: "my-issues", name: "My Issues", icon: User },
-  { id: "recently-updated", name: "Recently Updated", icon: Clock },
+  { id: "recently-updated", name: "Recent", icon: Clock },
   { id: "unassigned", name: "Unassigned", icon: AlertCircle },
   { id: "due-soon", name: "Due Soon", icon: Calendar },
   { id: "overdue", name: "Overdue", icon: AlertCircle },
@@ -24,45 +22,29 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ activeFilters, onToggleFilter, onClearAll }: FilterBarProps) {
-  const [showAll, setShowAll] = useState(false);
-  const displayed = showAll ? FILTERS : FILTERS.slice(0, 6);
-
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-        <Filter className="h-3.5 w-3.5" />
-        <span>Quick Filters</span>
-      </div>
-      {displayed.map((f) => {
+    <div className="flex flex-wrap items-center gap-1.5">
+      {FILTERS.map((f) => {
         const Icon = f.icon;
         const active = activeFilters.has(f.id);
         return (
-          <button
-            key={f.id}
-            onClick={() => onToggleFilter(f.id)}
+          <button key={f.id} onClick={() => onToggleFilter(f.id)}
             className={clsx(
-              "group flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+              "flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
               active
-                ? "border-neutral-500 text-white"
-                : "border-neutral-600 text-neutral-400 hover:border-neutral-500 hover:text-neutral-300",
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" />
+                ? "border-white/[0.12] text-neutral-200"
+                : "border-white/[0.06] text-neutral-500 hover:border-white/[0.1] hover:text-neutral-300",
+            )}>
+            <Icon className="h-3 w-3" />
             <span>{f.name}</span>
-            {active && <X className="h-3 w-3 opacity-60 group-hover:opacity-100" />}
+            {active && <X className="h-2.5 w-2.5 opacity-50 hover:opacity-100" />}
           </button>
         );
       })}
-      {FILTERS.length > 6 && (
-        <button onClick={() => setShowAll(!showAll)}
-          className="rounded-full border border-neutral-600 px-3 py-1.5 text-xs font-medium text-neutral-500 hover:border-neutral-500 hover:text-neutral-400">
-          {showAll ? "Show Less" : `+${FILTERS.length - 6} More`}
-        </button>
-      )}
       {activeFilters.size > 0 && (
         <button onClick={onClearAll}
-          className="ml-2 rounded-full border border-red-700 px-3 py-1.5 text-xs font-medium text-red-400 hover:border-red-600">
-          Clear All ({activeFilters.size})
+          className="ml-1 text-[11px] text-neutral-500 hover:text-neutral-300">
+          Clear
         </button>
       )}
     </div>

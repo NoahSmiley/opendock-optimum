@@ -22,8 +22,11 @@ export function TicketDetailSidebar({ ticket, board, members, labels, onUpdate, 
   const ticketLabels = labels.filter((l) => (ticket.labelIds ?? []).includes(l.id));
 
   const saveSP = async () => {
-    const points = editedSP ? parseInt(editedSP) : undefined;
-    if (points !== ticket.storyPoints) await onUpdate({ storyPoints: points });
+    const parsed = editedSP.trim() ? Number(editedSP) : NaN;
+    const points = Number.isFinite(parsed) ? parsed : null;
+    if (points !== (ticket.storyPoints ?? null)) {
+      await onUpdate({ storyPoints: points } as Partial<Ticket>);
+    }
     setIsEditingSP(false);
   };
 
@@ -80,13 +83,6 @@ export function TicketDetailSidebar({ ticket, board, members, labels, onUpdate, 
           </button>
           {showLabelMenu && <LabelMenu labels={labels} selectedIds={ticket.labelIds ?? []} onToggle={toggleLabel} onClose={() => setShowLabelMenu(false)} />}
         </div>
-      </Field>
-
-      <Field label="Sprint">
-        <select value={ticket.sprintId || "backlog"} onChange={(e) => onUpdate({ sprintId: e.target.value === "backlog" ? undefined : e.target.value })} className={selectCls}>
-          <option value="backlog">Backlog</option>
-          {board.sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
       </Field>
 
       <Field label="Story Points">

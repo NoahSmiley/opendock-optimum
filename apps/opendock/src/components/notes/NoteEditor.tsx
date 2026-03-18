@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Pin, Trash2, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { Pin, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import { RichTextEditor } from "./RichTextEditor";
 import { updateNote } from "@/stores/notes/actions";
@@ -12,8 +12,7 @@ interface NoteEditorProps {
 
 export function NoteEditor({ note, onDelete }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
-  const [showDetails, setShowDetails] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error" | "idle">("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => { setTitle(note.title); }, [note.id, note.title]);
@@ -22,8 +21,12 @@ export function NoteEditor({ note, onDelete }: NoteEditorProps) {
     clearTimeout(saveTimer.current);
     setSaveStatus("saving");
     saveTimer.current = setTimeout(async () => {
-      await updateNote(note.id, { [field]: value });
-      setSaveStatus("saved");
+      try {
+        await updateNote(note.id, { [field]: value });
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
     }, 1500);
   }, [note.id]);
 
@@ -36,14 +39,32 @@ export function NoteEditor({ note, onDelete }: NoteEditorProps) {
     debouncedSave("content", content);
   }, [debouncedSave]);
 
+  const handleTogglePin = async () => { await updateNote(note.id, { isPinned: !note.isPinned }); };
+
   return (
     <div className="flex h-full flex-col">
-      <EditorHeader
-        title={title} onTitleChange={handleTitleChange} saveStatus={saveStatus}
-        isPinned={note.isPinned} noteId={note.id} onDelete={() => onDelete(note.id)}
-      />
-      <DetailToggle open={showDetails} onToggle={() => setShowDetails(!showDetails)} note={note} />
-      {showDetails && <NoteDetails note={note} />}
+      <div className="shrink-0 px-10 pt-10 pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <input value={title} onChange={handleTitleChange} placeholder="Untitled"
+            className="flex-1 border-none bg-transparent p-0 text-xl font-semibold text-white outline-none placeholder:text-neutral-700 focus:ring-0" />
+          <div className="flex items-center gap-0.5 pt-0.5">
+            {saveStatus !== "idle" && (
+              <span className={`mr-1.5 text-[10px] ${saveStatus === "error" ? "text-red-400" : "text-neutral-600"}`}>
+                {saveStatus === "saving" ? "Saving" : saveStatus === "error" ? "Failed" : "Saved"}
+              </span>
+            )}
+            <button onClick={handleTogglePin} className={clsx("rounded-md p-1.5 transition-colors",
+              note.isPinned ? "text-amber-400/80" : "text-neutral-600 hover:text-neutral-400")}>
+              <Pin className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => onDelete(note.id)}
+              className="rounded-md p-1.5 text-neutral-600 transition-colors hover:text-red-400">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+      <NoteMetaBar note={note} />
       <div className="flex-1 overflow-hidden">
         <RichTextEditor key={note.id} initialContent={note.content} onChange={handleContentChange} />
       </div>
@@ -51,63 +72,18 @@ export function NoteEditor({ note, onDelete }: NoteEditorProps) {
   );
 }
 
-function EditorHeader({ title, onTitleChange, saveStatus, isPinned, noteId, onDelete }: {
-  title: string; onTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  saveStatus: string; isPinned: boolean; noteId: string; onDelete: () => void;
-}) {
-  const handleTogglePin = async () => { await updateNote(noteId, { isPinned: !isPinned }); };
+function NoteMetaBar({ note }: { note: Note }) {
+  const tags = note.tags ?? [];
   return (
-    <div className="shrink-0 px-10 pt-8 pb-4">
-      <div className="flex items-start justify-between gap-4">
-        <input value={title} onChange={onTitleChange} placeholder="Untitled"
-          className="flex-1 border-none bg-transparent p-0 text-2xl font-bold text-white outline-none placeholder:text-neutral-700 focus:ring-0" />
-        <div className="flex items-center gap-1 pt-1">
-          {saveStatus !== "idle" && (
-            <span className="mr-1 text-[11px] text-neutral-600">{saveStatus === "saving" ? "Saving..." : "Saved"}</span>
-          )}
-          <button onClick={handleTogglePin} className={clsx("rounded-md p-1.5 transition-colors",
-            isPinned ? "text-amber-400" : "text-neutral-600 hover:text-neutral-300")}>
-            <Pin className="h-4 w-4" />
-          </button>
-          <button onClick={onDelete}
-            className="rounded-md p-1.5 text-neutral-600 transition-colors hover:text-red-400">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DetailToggle({ open, onToggle, note }: { open: boolean; onToggle: () => void; note: Note }) {
-  return (
-    <button onClick={onToggle}
-      className="mx-10 flex items-center gap-2 border-t border-neutral-800/40 py-2.5 text-xs text-neutral-500 transition-colors hover:text-neutral-400">
-      {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-      <span className="font-medium">Details</span>
-      <span className="flex items-center gap-1 text-[11px] text-neutral-600">
-        <Clock className="h-3 w-3" /> {new Date(note.updatedAt).toLocaleDateString()}
-      </span>
-    </button>
-  );
-}
-
-function NoteDetails({ note }: { note: Note }) {
-  return (
-    <div className="mx-10 space-y-3 border-t border-neutral-800/40 py-4">
-      <div>
-        <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-600">Tags</span>
-        <div className="flex flex-wrap gap-1.5">
-          {(note.tags ?? []).map((t) => (
-            <span key={t} className="rounded-md border border-neutral-800/60 bg-neutral-800/30 px-2 py-0.5 text-xs text-neutral-400">{t}</span>
+    <div className="mx-10 flex items-center gap-3 border-t border-white/[0.04] py-2.5 text-[10px] text-neutral-600">
+      <span>{new Date(note.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+      {tags.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          {tags.map((t) => (
+            <span key={t} className="rounded-md border border-white/[0.06] px-1.5 py-px text-neutral-500">{t}</span>
           ))}
-          {(note.tags ?? []).length === 0 && <span className="text-xs text-neutral-600">No tags</span>}
         </div>
-      </div>
-      <div className="flex gap-6 text-[11px] text-neutral-600">
-        <span>Created {new Date(note.createdAt).toLocaleDateString()}</span>
-        <span>Updated {new Date(note.updatedAt).toLocaleDateString()}</span>
-      </div>
+      )}
     </div>
   );
 }

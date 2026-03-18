@@ -21,8 +21,6 @@ export function BoardsPage() {
   const [view, setView] = useState<BoardView>("board");
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchBoards(); }, [fetchBoards]);
 
@@ -30,18 +28,6 @@ export function BoardsPage() {
     setActiveFilters((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleSelectionMode = useCallback(() => {
-    setSelectionMode((prev) => { if (prev) setSelectedIds(new Set()); return !prev; });
-  }, []);
-
-  const toggleTicketSelect = useCallback((ticketId: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(ticketId)) next.delete(ticketId); else next.add(ticketId);
       return next;
     });
   }, []);
@@ -70,14 +56,11 @@ export function BoardsPage() {
         <BoardHeader board={activeBoard.board} boards={boards} ticketCount={activeBoard.tickets.length}
           search={search} onSearchChange={setSearch} onSelectBoard={fetchBoard}
           activeView={view} onViewChange={setView}
-          selectionMode={selectionMode} onToggleSelectionMode={toggleSelectionMode}
           onOpenSettings={() => setShowSettings(true)} />
         {snapshot && (
           <BoardContent view={view} snapshot={snapshot} activeBoard={activeBoard}
             activeFilters={activeFilters} toggleFilter={toggleFilter} setActiveFilters={setActiveFilters}
-            handleSelectTicket={handleSelectTicket} selectionMode={selectionMode}
-            selectedIds={selectedIds} toggleTicketSelect={toggleTicketSelect}
-            totalTicketCounts={totalTicketCounts} />
+            handleSelectTicket={handleSelectTicket} totalTicketCounts={totalTicketCounts} />
         )}
       </div>
       {selectedTicket && (
@@ -96,11 +79,10 @@ export function BoardsPage() {
 }
 
 function BoardContent({ view, snapshot, activeBoard, activeFilters, toggleFilter, setActiveFilters,
-  handleSelectTicket, selectionMode, selectedIds, toggleTicketSelect, totalTicketCounts }: {
+  handleSelectTicket, totalTicketCounts }: {
   view: BoardView; snapshot: BoardSnapshot; activeBoard: BoardSnapshot;
   activeFilters: Set<string>; toggleFilter: (id: string) => void; setActiveFilters: (f: Set<string>) => void;
-  handleSelectTicket: (t: Ticket) => void; selectionMode: boolean; selectedIds: Set<string>;
-  toggleTicketSelect: (id: string) => void; totalTicketCounts?: Map<string, number>;
+  handleSelectTicket: (t: Ticket) => void; totalTicketCounts?: Map<string, number>;
 }) {
   if (view === "overview") return <OverviewTab snapshot={activeBoard} />;
   if (view === "backlog") return (
@@ -108,14 +90,13 @@ function BoardContent({ view, snapshot, activeBoard, activeFilters, toggleFilter
       members={activeBoard.members} onTicketClick={handleSelectTicket} />
   );
   return (
-    <div className="mt-5 flex min-h-0 flex-1 flex-col space-y-5 overflow-hidden">
-      <div className="pl-4 sm:pl-6 lg:pl-8 xl:pl-10">
+    <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+      <div className="px-5 lg:px-8">
         <FilterBar activeFilters={activeFilters} onToggleFilter={toggleFilter}
           onClearAll={() => setActiveFilters(new Set())} />
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
         <KanbanView snapshot={snapshot} onTicketClick={handleSelectTicket}
-          selectionMode={selectionMode} selectedIds={selectedIds} onToggleSelect={toggleTicketSelect}
           totalTicketCounts={totalTicketCounts} />
       </div>
     </div>

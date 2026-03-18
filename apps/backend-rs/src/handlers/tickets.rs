@@ -16,17 +16,20 @@ pub async fn create_ticket(
     _auth: AuthUser,
     ValidatedJson(body): ValidatedJson<CreateTicketReq>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
-    if crate::db::boards::get_board(&state.db, &board_id).await?.is_none() {
-        return Err(AppError::not_found("BOARD_NOT_FOUND", "Board not found."));
-    }
+    let board_row = crate::db::boards::get_board(&state.db, &board_id).await?
+        .ok_or_else(|| AppError::not_found("BOARD_NOT_FOUND", "Board not found."))?;
     let id = ulid::Ulid::new().to_string().to_lowercase();
+    // Auto-generate ticket key: PROJECT_KEY-N
+    let ticket_num = crate::db::tickets::ticket_count_for_board(&state.db, &board_id).await? + 1;
+    let project_key = board_row.project_key.as_deref().unwrap_or("PROJ");
+    let key = format!("{}-{}", project_key, ticket_num);
     let order = crate::db::tickets::max_order_in_column(&state.db, &body.column_id).await? + 1;
     let ai = serde_json::to_string(&body.assignee_ids.unwrap_or_default()).unwrap();
     let tg = serde_json::to_string(&body.tags.unwrap_or_default()).unwrap();
     let li = serde_json::to_string(&body.label_ids.unwrap_or_default()).unwrap();
     let pri = body.priority.as_deref().unwrap_or("medium");
     let row = crate::db::tickets::create_ticket(
-        &state.db, &id, &board_id, &body.column_id, &body.title,
+        &state.db, &id, Some(&key), &board_id, &body.column_id, &body.title,
         body.description.as_deref(), &ai, &tg, &li,
         body.estimate, pri, body.sprint_id.as_deref(),
         body.due_date.as_deref(), order,
