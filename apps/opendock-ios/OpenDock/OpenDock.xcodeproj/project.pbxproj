@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4105E951680CBD8520EA4CCD /* NoteRow.swift */; };
 		2B1336DB67EC186687EB1B41 /* OpenAISans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */; };
 		6D01D44639BDF8B7D4247358 /* NoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF613D7E840B96B8109EAD9 /* NoteListView.swift */; };
 		9128C60AA018371B6B76B7F8 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F823E53EE2B76138F849392A /* NoteEditorView.swift */; };
@@ -23,6 +24,7 @@
 /* Begin PBXFileReference section */
 		05EC4EDE6D21D15C9CE1D215 /* NewNoteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewNoteSheet.swift; sourceTree = "<group>"; };
 		2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Semibold.ttf"; sourceTree = "<group>"; };
+		4105E951680CBD8520EA4CCD /* NoteRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteRow.swift; sourceTree = "<group>"; };
 		4FF613D7E840B96B8109EAD9 /* NoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteListView.swift; sourceTree = "<group>"; };
 		5E6E6CD666981BCC191EF111 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		67884C5555AADFE58819B4B4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 				F7430D69CF118778FA528A0B /* Note.swift */,
 				F823E53EE2B76138F849392A /* NoteEditorView.swift */,
 				4FF613D7E840B96B8109EAD9 /* NoteListView.swift */,
+				4105E951680CBD8520EA4CCD /* NoteRow.swift */,
 				99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */,
 				E9467EA43375042861D467E8 /* OpenDockApp.swift */,
 				5E6E6CD666981BCC191EF111 /* Theme.swift */,
@@ -157,6 +160,7 @@
 				DA390BBA8C40A6C6AEC53BDD /* Note.swift in Sources */,
 				9128C60AA018371B6B76B7F8 /* NoteEditorView.swift in Sources */,
 				6D01D44639BDF8B7D4247358 /* NoteListView.swift in Sources */,
+				158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */,
 				CDC18E5E7ABC6B7098072AE5 /* NotesStore.swift in Sources */,
 				E02B917033884499F0C01F92 /* OpenDockApp.swift in Sources */,
 				9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */,
