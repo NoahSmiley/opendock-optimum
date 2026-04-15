@@ -21,7 +21,6 @@ interface Props {
 export function Shell({ tool, setTool, mobileView, children }: Props) {
   return (
     <div className="shell" data-mobile-view={mobileView}>
-      {/* Desktop: left rail. Mobile: bottom tabs */}
       <nav className="nav-rail">
         <div className="nav-logo"><Logo /></div>
         <div className="nav-tools">
@@ -31,6 +30,14 @@ export function Shell({ tool, setTool, mobileView, children }: Props) {
             </button>
           ))}
         </div>
+      </nav>
+      {/* Mobile-only bottom tab bar */}
+      <nav className="tab-bar">
+        {tools.map((t) => (
+          <button key={t.id} className={`tab${tool === t.id ? " active" : ""}`} onClick={() => setTool(t.id)}>
+            {t.label}
+          </button>
+        ))}
       </nav>
       <div className="shell-content">
         {children}
