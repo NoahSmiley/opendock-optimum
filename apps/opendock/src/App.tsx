@@ -6,9 +6,16 @@ import { NewNoteModal } from "@/components/Modal";
 
 export function App() {
   const [showModal, setShowModal] = useState(false);
+  const [mobileView, setMobileView] = useState<"list" | "editor">("list");
   const createWithTitle = useNotes((s) => s.createWithTitle);
+  const activeId = useNotes((s) => s.activeId);
   const search = useNotes((s) => s.search);
   const setSearch = useNotes((s) => s.setSearch);
+
+  // Switch to editor when a note is selected on mobile
+  useEffect(() => {
+    if (activeId) setMobileView("editor");
+  }, [activeId]);
 
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
@@ -21,9 +28,9 @@ export function App() {
   }, [search, setSearch]);
 
   return (
-    <div className="app">
+    <div className="app" data-mobile-view={mobileView}>
       <Sidebar onNew={() => setShowModal(true)} />
-      <Editor />
+      <Editor onBack={() => setMobileView("list")} />
       {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={createWithTitle} />}
     </div>
   );

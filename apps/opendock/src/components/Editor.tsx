@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNotes, extractTags } from "@/stores/notes";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 
-export function Editor() {
+export function Editor({ onBack }: { onBack: () => void }) {
   const notes = useNotes((s) => s.notes);
   const activeId = useNotes((s) => s.activeId);
   const update = useNotes((s) => s.update);
@@ -33,8 +33,7 @@ export function Editor() {
     const start = el.selectionStart;
     const before = el.value.substring(0, start);
     const after = el.value.substring(el.selectionEnd);
-    const newContent = before + text + after;
-    update(note.id, { content: newContent });
+    update(note.id, { content: before + text + after });
     requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + text.length; el.focus(); });
     setSaved(false);
   }, [note, update]);
@@ -53,7 +52,7 @@ export function Editor() {
     { label: "Save now", shortcut: "Ctrl+S", action: save },
   ];
 
-  if (!note) return <div className="empty-state"><span>No notes yet</span><span>Press Ctrl+N to create one</span></div>;
+  if (!note) return <div className="empty-state"><span>No notes yet</span><span>Create a new note to get started</span></div>;
 
   const tags = extractTags(note.content);
   const words = note.content.split(/\s+/).filter(Boolean).length;
@@ -61,12 +60,12 @@ export function Editor() {
   return (
     <div className="editor-area">
       <div className="editor-header">
-        <span className="note-name">{note.title}</span>
-        {tags.map((t) => <span key={t} className="tag">{t}</span>)}
-        <span className="spacer" />
+        <button className="back-btn" onClick={onBack}>&larr;</button>
+        <input value={note.title} onChange={(e) => update(note.id, { title: e.target.value })} placeholder="Untitled" />
+        {tags.map((t) => <span key={t} className="editor-tag">{t}</span>)}
         <div className="actions">
           <button onClick={() => togglePin(note.id)}>{note.pinned ? "unpin" : "pin"}</button>
-          <button className="danger" onClick={() => remove(note.id)}>delete</button>
+          <button className="danger" onClick={() => { remove(note.id); onBack(); }}>delete</button>
         </div>
       </div>
       <div className="editor-body">
