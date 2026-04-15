@@ -51,8 +51,7 @@ export function NotesList({ onSelect, onNew }: { onSelect: (id: string) => void;
       </div>
       <div className="tool-list-search">
         <div className="search-pill">
-          <span className="search-icon">/</span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search notes..." />
         </div>
       </div>
       <div className="tool-list-items">
