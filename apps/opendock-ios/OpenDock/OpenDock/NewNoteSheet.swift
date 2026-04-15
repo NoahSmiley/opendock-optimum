@@ -3,7 +3,7 @@ import SwiftUI
 struct NewNoteSheet: View {
     @EnvironmentObject var store: NotesStore
     @Environment(\.dismiss) var dismiss
-    @Binding var path: NavigationPath
+    var onCreated: (UUID) -> Void
     @State private var title = ""
     @FocusState private var focused: Bool
 
@@ -52,9 +52,9 @@ struct NewNoteSheet: View {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
         store.create(title: trimmed)
-        dismiss()
         if let id = store.selectedId {
-            path.append(id)
+            onCreated(id)
         }
+        dismiss()
     }
 }

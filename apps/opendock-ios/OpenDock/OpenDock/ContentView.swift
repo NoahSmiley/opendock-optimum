@@ -19,6 +19,7 @@ struct ContentView: View {
     @State private var selectedTool: Tool = .notes
     @State private var notesPath = NavigationPath()
     @State private var showNewNote = false
+    @State private var pendingNoteId: UUID?
 
     var body: some View {
         TabView(selection: $selectedTool) {
@@ -52,8 +53,16 @@ struct ContentView: View {
                 }
         }
         .tint(Theme.active)
-        .sheet(isPresented: $showNewNote) {
-            NewNoteSheet(path: $notesPath)
+        .sheet(isPresented: $showNewNote, onDismiss: {
+            // Navigate to new note after sheet dismisses
+            if let id = pendingNoteId {
+                notesPath.append(id)
+                pendingNoteId = nil
+            }
+        }) {
+            NewNoteSheet(onCreated: { id in
+                pendingNoteId = id
+            })
         }
         .onAppear { setupAppearance() }
     }
@@ -75,13 +84,15 @@ struct ContentView: View {
         navAppearance.configureWithOpaqueBackground()
         navAppearance.backgroundColor = UIColor(Theme.bg)
         navAppearance.shadowColor = .clear
+        navAppearance.backButtonAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor(Theme.muted)]
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().tintColor = UIColor(Theme.muted)
 
-        // List
-        UITableView.appearance().backgroundColor = UIColor(Theme.bg)
+        // TextEditor cursor
+        UITextView.appearance().tintColor = UIColor(Theme.text)
 
-        // Window
+        // Window bg
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
