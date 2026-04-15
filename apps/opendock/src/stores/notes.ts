@@ -25,6 +25,7 @@ interface NotesState {
   setActive: (id: string | null) => void;
   setSearch: (q: string) => void;
   create: () => void;
+  createWithTitle: (title: string) => void;
   update: (id: string, patch: Partial<Pick<Note, "title" | "content">>) => void;
   remove: (id: string) => void;
   togglePin: (id: string) => void;
@@ -50,6 +51,13 @@ export const useNotes = create<NotesState>((set, get) => ({
 
   create: () => {
     const note: Note = { id: crypto.randomUUID(), title: "Untitled", content: "", pinned: false, updatedAt: Date.now() };
+    const notes = sorted([note, ...get().notes]);
+    save(notes);
+    set({ notes, activeId: note.id });
+  },
+
+  createWithTitle: (title: string) => {
+    const note: Note = { id: crypto.randomUUID(), title, content: "", pinned: false, updatedAt: Date.now() };
     const notes = sorted([note, ...get().notes]);
     save(notes);
     set({ notes, activeId: note.id });

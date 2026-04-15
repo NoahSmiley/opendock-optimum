@@ -1,25 +1,31 @@
 import { useEffect, useRef } from "react";
 
-interface MenuItem { label: string; action: () => void; danger?: boolean }
-interface ContextMenuProps { x: number; y: number; items: MenuItem[]; onClose: () => void }
+export interface MenuItem { label: string; shortcut?: string; action: () => void; danger?: boolean; divider?: boolean }
 
-export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+interface Props { x: number; y: number; items: MenuItem[]; onClose: () => void }
+
+export function ContextMenu({ x, y, items, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
+    const handle = () => onClose();
+    document.addEventListener("click", handle);
+    return () => document.removeEventListener("click", handle);
   }, [onClose]);
 
+  // Keep on screen
+  const finalX = Math.min(x, window.innerWidth - 188);
+  const finalY = Math.min(y, window.innerHeight - items.length * 32 - 8);
+
   return (
-    <div ref={ref} className="context-menu" style={{ left: x, top: y }}>
-      {items.map((item) => (
-        <button key={item.label} className={item.danger ? "danger" : ""} onClick={() => { item.action(); onClose(); }}>
-          {item.label}
-        </button>
+    <div ref={ref} className="context-menu" style={{ left: finalX, top: finalY }}>
+      {items.map((item, i) => item.divider ? (
+        <div key={i} className="context-menu-divider" />
+      ) : (
+        <div key={i} className={`context-menu-item${item.danger ? " danger" : ""}`} onClick={(e) => { e.stopPropagation(); item.action(); onClose(); }}>
+          <span>{item.label}</span>
+          {item.shortcut && <span className="context-menu-shortcut">{item.shortcut}</span>}
+        </div>
       ))}
     </div>
   );
