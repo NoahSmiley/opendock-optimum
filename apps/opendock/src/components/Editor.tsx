@@ -35,7 +35,7 @@ export function Editor({ onBack }: { onBack: () => void }) {
     setSaved(false);
   }, [note, update]);
 
-  if (!note) return <div className="empty">Select a note or create one</div>;
+  if (!note) return <div className="editor-area"><div className="empty">Select a note or create one</div></div>;
 
   const tags = extractTags(note.content);
   const words = note.content.split(/\s+/).filter(Boolean).length;
