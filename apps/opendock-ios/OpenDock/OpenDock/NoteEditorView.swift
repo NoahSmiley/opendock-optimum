@@ -15,11 +15,11 @@ struct NoteEditorView: View {
         VStack(spacing: 0) {
             // Title
             TextField("Untitled", text: $title)
-                .font(.system(size: 24, weight: .semibold))
+                .font(.custom(Theme.fontSemibold, size: 24))
                 .foregroundColor(Theme.active)
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 4)
+                .padding(.top, 8)
+                .padding(.bottom, 2)
                 .onChange(of: title) { _, val in store.update(noteId, title: val) }
 
             // Tags
@@ -28,28 +28,27 @@ struct NoteEditorView: View {
                     HStack(spacing: 8) {
                         ForEach(note.tags, id: \.self) { tag in
                             Text(tag)
-                                .font(.system(size: 12))
+                                .font(.custom(Theme.fontName, size: 11))
                                 .foregroundColor(Theme.faint)
                         }
                     }
                     .padding(.horizontal, 20)
                 }
-                .padding(.bottom, 8)
+                .padding(.vertical, 4)
             }
 
             // Divider
-            Rectangle()
-                .fill(Theme.border)
-                .frame(height: 0.5)
+            Rectangle().fill(Theme.border).frame(height: 0.5)
                 .padding(.horizontal, 20)
+                .padding(.top, 8)
 
             // Editor
             TextEditor(text: $content)
-                .font(.system(size: 15, design: .monospaced))
+                .font(.custom("Menlo", size: 14))
                 .foregroundColor(Theme.text)
                 .scrollContentBackground(.hidden)
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.top, 8)
                 .focused($editorFocused)
                 .onChange(of: content) { _, val in store.update(noteId, content: val) }
 
@@ -60,14 +59,15 @@ struct NoteEditorView: View {
                 Text("saved")
                 Spacer()
             }
-            .font(.system(size: 11))
+            .font(.custom(Theme.fontName, size: 11))
             .foregroundColor(Theme.ghost)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
-            .background(Theme.bg)
         }
         .background(Theme.bg)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Theme.bg, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -91,8 +91,6 @@ struct NoteEditorView: View {
                 }
             }
         }
-        .toolbarBackground(Theme.bg, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .onAppear {
             if let note {
                 title = note.title

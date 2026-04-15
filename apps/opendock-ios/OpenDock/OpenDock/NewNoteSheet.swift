@@ -11,16 +11,14 @@ struct NewNoteSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 TextField("Note title", text: $title)
-                    .font(.system(size: 18))
+                    .font(.custom(Theme.fontName, size: 18))
                     .foregroundColor(Theme.active)
                     .focused($focused)
                     .padding(.horizontal, 20)
                     .padding(.top, 24)
                     .onSubmit { create() }
 
-                Rectangle()
-                    .fill(Theme.border)
-                    .frame(height: 0.5)
+                Rectangle().fill(Theme.border).frame(height: 0.5)
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
 
@@ -31,12 +29,12 @@ struct NewNoteSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                        .font(.system(size: 15))
+                        .font(.custom(Theme.fontName, size: 15))
                         .foregroundColor(Theme.muted)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") { create() }
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.custom(Theme.fontSemibold, size: 15))
                         .foregroundColor(title.trimmingCharacters(in: .whitespaces).isEmpty ? Theme.ghost : Theme.active)
                         .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }

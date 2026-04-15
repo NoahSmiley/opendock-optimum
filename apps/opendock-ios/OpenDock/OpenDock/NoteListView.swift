@@ -7,25 +7,30 @@ struct NoteListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Custom header
-            HStack {
-                Text("Notes")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Theme.active)
+            // Header
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("OpenDock")
+                        .font(.custom(Theme.fontName, size: 11))
+                        .foregroundColor(Theme.ghost)
+                    Text("Notes")
+                        .font(.custom(Theme.fontSemibold, size: 20))
+                        .foregroundColor(Theme.active)
+                }
                 Spacer()
                 Text("\(store.filtered.count)")
-                    .font(.system(size: 13))
+                    .font(.custom(Theme.fontName, size: 12))
                     .foregroundColor(Theme.ghost)
+                    .padding(.trailing, 4)
                 Button { showNewNote = true } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 18))
+                        .font(.system(size: 20, weight: .light))
                         .foregroundColor(Theme.muted)
                 }
-                .padding(.leading, 8)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 12)
+            .padding(.top, 16)
+            .padding(.bottom, 16)
 
             // Search
             HStack(spacing: 8) {
@@ -33,7 +38,7 @@ struct NoteListView: View {
                     .font(.system(size: 14))
                     .foregroundColor(Theme.ghost)
                 TextField("Search", text: $store.searchQuery)
-                    .font(.system(size: 15))
+                    .font(.custom(Theme.fontName, size: 15))
                     .foregroundColor(Theme.text)
                 if !store.searchQuery.isEmpty {
                     Button { store.searchQuery = "" } label: {
@@ -43,63 +48,56 @@ struct NoteListView: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
             .background(Theme.input)
             .cornerRadius(10)
             .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            .padding(.bottom, 12)
+
+            // Divider
+            Rectangle().fill(Theme.border).frame(height: 0.5)
 
             // Notes list
             if store.filtered.isEmpty {
                 Spacer()
                 VStack(spacing: 8) {
                     Text("No notes")
-                        .font(.system(size: 15))
+                        .font(.custom(Theme.fontMedium, size: 15))
                         .foregroundColor(Theme.faint)
                     Text("Tap + to create one")
-                        .font(.system(size: 13))
+                        .font(.custom(Theme.fontName, size: 13))
                         .foregroundColor(Theme.ghost)
                 }
                 Spacer()
             } else {
-                List {
-                    ForEach(store.filtered) { note in
-                        Button {
-                            store.selectedId = note.id
-                            path.append(note.id)
-                        } label: {
-                            NoteRow(note: note)
-                        }
-                        .listRowBackground(Theme.bg)
-                        .listRowSeparatorTint(Theme.border)
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) { store.delete(note.id) } label: {
-                                Label("Delete", systemImage: "trash")
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(store.filtered) { note in
+                            Button {
+                                store.selectedId = note.id
+                                path.append(note.id)
+                            } label: {
+                                NoteRow(note: note)
                             }
-                        }
-                        .swipeActions(edge: .leading) {
-                            Button { store.togglePin(note.id) } label: {
-                                Label(note.pinned ? "Unpin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin")
+                            .contextMenu {
+                                Button { store.togglePin(note.id) } label: {
+                                    Label(note.pinned ? "Unpin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin")
+                                }
+                                Button { store.duplicate(note.id) } label: {
+                                    Label("Duplicate", systemImage: "doc.on.doc")
+                                }
+                                Divider()
+                                Button(role: .destructive) { store.delete(note.id) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
-                            .tint(Theme.faint)
-                        }
-                        .contextMenu {
-                            Button { store.togglePin(note.id) } label: {
-                                Label(note.pinned ? "Unpin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin")
-                            }
-                            Button { store.duplicate(note.id) } label: {
-                                Label("Duplicate", systemImage: "doc.on.doc")
-                            }
-                            Divider()
-                            Button(role: .destructive) { store.delete(note.id) } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
+
+                            Rectangle().fill(Theme.border).frame(height: 0.5)
+                                .padding(.horizontal, 20)
                         }
                     }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
             }
         }
         .background(Theme.bg)
@@ -111,7 +109,7 @@ struct NoteRow: View {
     let note: Note
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 if note.pinned {
                     Image(systemName: "pin.fill")
@@ -119,7 +117,7 @@ struct NoteRow: View {
                         .foregroundColor(Theme.faint)
                 }
                 Text(note.title.isEmpty ? "Untitled" : note.title)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.custom(Theme.fontMedium, size: 16))
                     .foregroundColor(Theme.text)
                     .lineLimit(1)
             }
@@ -128,16 +126,18 @@ struct NoteRow: View {
                 Text(note.timeAgo)
                 Text("\(note.wordCount)w")
             }
-            .font(.system(size: 12))
+            .font(.custom(Theme.fontName, size: 11))
             .foregroundColor(Theme.faint)
 
             if !note.preview.isEmpty {
                 Text(note.preview)
-                    .font(.system(size: 13))
+                    .font(.custom(Theme.fontName, size: 13))
                     .foregroundColor(Theme.faint)
                     .lineLimit(1)
             }
         }
-        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
     }
 }
