@@ -8,7 +8,18 @@ class NotesStore: ObservableObject {
 
     private let key = "opendock-notes"
 
-    init() { load() }
+    init() {
+        load()
+        // Seed sample notes if empty
+        if notes.isEmpty {
+            notes = [
+                Note(title: "Getting Started", content: "Welcome to OpenDock Notes.\n\nThis is a plain text editor with #markdown support.\n\nFeatures:\n- Pin notes to the top\n- Search across all notes\n- Tags via #hashtags\n- Word count\n- Auto-save", pinned: true),
+                Note(title: "Meeting Notes", content: "Project sync — April 15\n\n- Review Q2 roadmap\n- Discuss hiring timeline\n- Ship v0.2 by end of month\n\n#work #meeting"),
+                Note(title: "Ideas", content: "Things to explore:\n\n- Self-hosted git forge\n- Desktop + mobile sync\n- Markdown preview\n- Keyboard shortcuts\n\n#ideas"),
+            ]
+            save()
+        }
+    }
 
     var filtered: [Note] {
         let sorted = notes.sorted {

@@ -8,28 +8,26 @@ struct NoteListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("OpenDock")
-                        .font(.custom(Theme.fontName, size: 11))
-                        .foregroundColor(Theme.ghost)
+                        .font(.custom(Theme.fontMedium, size: 13))
+                        .foregroundColor(Theme.faint)
+                        .tracking(0.5)
                     Text("Notes")
-                        .font(.custom(Theme.fontSemibold, size: 20))
+                        .font(.custom(Theme.fontSemibold, size: 28))
                         .foregroundColor(Theme.active)
                 }
                 Spacer()
-                Text("\(store.filtered.count)")
-                    .font(.custom(Theme.fontName, size: 12))
-                    .foregroundColor(Theme.ghost)
-                    .padding(.trailing, 4)
                 Button { showNewNote = true } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 20, weight: .light))
+                        .font(.system(size: 22, weight: .light))
                         .foregroundColor(Theme.muted)
                 }
+                .padding(.bottom, 4)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.top, 8)
             .padding(.bottom, 16)
 
             // Search
