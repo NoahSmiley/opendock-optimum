@@ -4,11 +4,11 @@
 @font-face { font-family: "OpenAI Sans"; src: url("/fonts/OpenAISans-Semibold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 
 :root {
-  --a-bg: #0c0c0c; --a-bg-input: #0c0c0c; --a-highlight: #1e1e1e; --a-selected: #222;
-  --a-text: #d1d1d1; --a-text-bright: #fff; --a-text-dim: #707070; --a-text-muted: #404040;
-  --a-border: #2a2a2a; --a-border-subtle: #161616;
-  --a-danger: #f44; --a-warning: #cc0; --a-font: "OpenAI Sans", sans-serif;
-  --a-mono: Menlo, "SF Mono", monospace;
+  --a-bg: #060606; --a-bg-input: #111; --a-highlight: #1a1a1a; --a-selected: #1a1a1a;
+  --a-text: #c8c8c8; --a-text-bright: #fff; --a-text-dim: #828282; --a-text-muted: #555;
+  --a-border: #2a2a2a; --a-border-subtle: #1a1a1a;
+  --a-danger: #c44; --a-warning: #cc0; --a-font: "OpenAI Sans", sans-serif;
+  --a-mono: "Courier New", Courier, monospace;
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
