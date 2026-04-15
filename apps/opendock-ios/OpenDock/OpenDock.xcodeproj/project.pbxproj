@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686D85BDB4EE25B273844E76 /* BoardDetailView.swift */; };
 		158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4105E951680CBD8520EA4CCD /* NoteRow.swift */; };
 		2B1336DB67EC186687EB1B41 /* OpenAISans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */; };
+		5C467E7477D8E4CB3B197229 /* BoardsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E943E12501F84B9CA8E335E0 /* BoardsListView.swift */; };
 		6D01D44639BDF8B7D4247358 /* NoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF613D7E840B96B8109EAD9 /* NoteListView.swift */; };
+		774BC903D5F946BDB0E7566C /* BoardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */; };
 		9128C60AA018371B6B76B7F8 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F823E53EE2B76138F849392A /* NoteEditorView.swift */; };
 		9A239E8B326FA71AD5CAD743 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAA507A694F1D8FFE6BB1C8E /* ContentView.swift */; };
 		9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6E6CD666981BCC191EF111 /* Theme.swift */; };
@@ -24,14 +27,17 @@
 /* Begin PBXFileReference section */
 		05EC4EDE6D21D15C9CE1D215 /* NewNoteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewNoteSheet.swift; sourceTree = "<group>"; };
 		2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Semibold.ttf"; sourceTree = "<group>"; };
+		2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardsStore.swift; sourceTree = "<group>"; };
 		4105E951680CBD8520EA4CCD /* NoteRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteRow.swift; sourceTree = "<group>"; };
 		4FF613D7E840B96B8109EAD9 /* NoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteListView.swift; sourceTree = "<group>"; };
 		5E6E6CD666981BCC191EF111 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		67884C5555AADFE58819B4B4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		686D85BDB4EE25B273844E76 /* BoardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardDetailView.swift; sourceTree = "<group>"; };
 		99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesStore.swift; sourceTree = "<group>"; };
 		B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Medium.ttf"; sourceTree = "<group>"; };
 		C37BAA3A09300DB73892A0C3 /* OpenAISans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Regular.ttf"; sourceTree = "<group>"; };
 		CAA507A694F1D8FFE6BB1C8E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E943E12501F84B9CA8E335E0 /* BoardsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardsListView.swift; sourceTree = "<group>"; };
 		E9467EA43375042861D467E8 /* OpenDockApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenDockApp.swift; sourceTree = "<group>"; };
 		F7430D69CF118778FA528A0B /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
 		F823E53EE2B76138F849392A /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
@@ -68,6 +74,9 @@
 		D4E5961A22856804EC7578E4 /* OpenDock */ = {
 			isa = PBXGroup;
 			children = (
+				686D85BDB4EE25B273844E76 /* BoardDetailView.swift */,
+				E943E12501F84B9CA8E335E0 /* BoardsListView.swift */,
+				2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */,
 				CAA507A694F1D8FFE6BB1C8E /* ContentView.swift */,
 				67884C5555AADFE58819B4B4 /* Info.plist */,
 				05EC4EDE6D21D15C9CE1D215 /* NewNoteSheet.swift */,
@@ -155,6 +164,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */,
+				5C467E7477D8E4CB3B197229 /* BoardsListView.swift in Sources */,
+				774BC903D5F946BDB0E7566C /* BoardsStore.swift in Sources */,
 				9A239E8B326FA71AD5CAD743 /* ContentView.swift in Sources */,
 				AE224D54855B3EDC70146965 /* NewNoteSheet.swift in Sources */,
 				DA390BBA8C40A6C6AEC53BDD /* Note.swift in Sources */,

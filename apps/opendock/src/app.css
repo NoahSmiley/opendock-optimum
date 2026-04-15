@@ -37,7 +37,24 @@
 .modal-actions button:hover { color: var(--a-text); }
 .modal-actions .primary { color: var(--a-text-active); font-weight: 600; }
 
+/* Boards */
+.board-columns { display: flex; gap: 12px; padding: 16px 28px; flex: 1; overflow-x: auto; }
+.board-column { width: 240px; min-width: 240px; display: flex; flex-direction: column; }
+.board-column-header { display: flex; align-items: center; gap: 6px; padding: 0 0 8px; font: 500 13px var(--a-font); color: var(--a-text-muted); }
+.board-column-count { font: 11px var(--a-font); color: var(--a-text-ghost); }
+.board-column-add { font-size: 14px; color: var(--a-text-ghost); margin-left: auto; transition: color 0.15s; }
+.board-column-add:hover { color: var(--a-text); }
+.board-card { padding: 10px; border: 1px solid var(--a-border); margin-bottom: 6px; cursor: pointer; }
+.board-card:hover { border-color: var(--a-text-ghost); }
+.board-card-title { font: 13px var(--a-font); color: var(--a-text); }
+.board-card-actions { display: flex; gap: 6px; margin-top: 6px; }
+.board-card-actions button { font: 11px var(--a-font); color: var(--a-text-ghost); transition: color 0.15s; }
+.board-card-actions button:hover { color: var(--a-text); }
+.board-card-input { width: 100%; font: 13px var(--a-font); background: var(--a-bg-input); border: none; border-radius: 4px; padding: 8px; color: var(--a-text); outline: none; margin-bottom: 6px; }
+
 @media (max-width: 1024px) {
+  .board-columns { flex-direction: column; padding: 12px 20px; }
+  .board-column { width: 100%; min-width: 100%; }
   .shell { flex-direction: column; }
   .nav-rail { display: none; }
   .tab-bar { display: flex; order: 2; justify-content: space-around; align-items: center; border-top: 1px solid var(--a-border); padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom, 16px)); background: var(--a-bg); }
