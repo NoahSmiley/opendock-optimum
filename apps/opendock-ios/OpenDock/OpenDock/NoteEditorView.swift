@@ -1,0 +1,103 @@
+import SwiftUI
+
+struct NoteEditorView: View {
+    @EnvironmentObject var store: NotesStore
+    @Environment(\.dismiss) var dismiss
+    let noteId: UUID
+
+    @State private var title = ""
+    @State private var content = ""
+    @FocusState private var editorFocused: Bool
+
+    private var note: Note? { store.notes.first { $0.id == noteId } }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Title
+            TextField("Untitled", text: $title)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundColor(Theme.active)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+                .onChange(of: title) { _, val in store.update(noteId, title: val) }
+
+            // Tags
+            if let note, !note.tags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(note.tags, id: \.self) { tag in
+                            Text(tag)
+                                .font(.system(size: 12))
+                                .foregroundColor(Theme.faint)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+                .padding(.bottom, 8)
+            }
+
+            // Divider
+            Rectangle()
+                .fill(Theme.border)
+                .frame(height: 0.5)
+                .padding(.horizontal, 20)
+
+            // Editor
+            TextEditor(text: $content)
+                .font(.system(size: 15, design: .monospaced))
+                .foregroundColor(Theme.text)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .focused($editorFocused)
+                .onChange(of: content) { _, val in store.update(noteId, content: val) }
+
+            // Footer
+            HStack(spacing: 8) {
+                Text("\(note?.wordCount ?? 0) words")
+                Text("·")
+                Text("saved")
+                Spacer()
+            }
+            .font(.system(size: 11))
+            .foregroundColor(Theme.ghost)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(Theme.bg)
+        }
+        .background(Theme.bg)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button { store.togglePin(noteId) } label: {
+                        Label(note?.pinned == true ? "Unpin" : "Pin", systemImage: note?.pinned == true ? "pin.slash" : "pin")
+                    }
+                    Button { store.duplicate(noteId) } label: {
+                        Label("Duplicate", systemImage: "doc.on.doc")
+                    }
+                    Divider()
+                    Button(role: .destructive) {
+                        store.delete(noteId)
+                        dismiss()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 14))
+                        .foregroundColor(Theme.muted)
+                }
+            }
+        }
+        .toolbarBackground(Theme.bg, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .onAppear {
+            if let note {
+                title = note.title
+                content = note.content
+            }
+        }
+    }
+}
