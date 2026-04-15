@@ -8,33 +8,24 @@ struct Note: Identifiable, Codable, Equatable {
     var updatedAt: Date
 
     init(title: String = "Untitled", content: String = "", pinned: Bool = false) {
-        self.id = UUID()
-        self.title = title
-        self.content = content
-        self.pinned = pinned
-        self.updatedAt = Date()
+        self.id = UUID(); self.title = title; self.content = content; self.pinned = pinned; self.updatedAt = Date()
     }
 
-    var wordCount: Int {
-        content.split(separator: " ").count
-    }
+    var wordCount: Int { content.split(separator: " ").count }
 
     var tags: [String] {
-        let words = content.components(separatedBy: .whitespacesAndNewlines)
-        return Array(Set(words.filter { $0.hasPrefix("#") && $0.count > 1 })).sorted()
+        Array(Set(content.components(separatedBy: .whitespacesAndNewlines).filter { $0.hasPrefix("#") && $0.count > 1 })).sorted()
     }
 
     var preview: String {
-        let lines = content.components(separatedBy: "\n")
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty && !$0.hasPrefix("#") }
-        return String(lines.first?.prefix(80) ?? "")
+        String(content.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty && !$0.hasPrefix("#") }.first?.prefix(80) ?? "")
     }
 
     var timeAgo: String {
-        let diff = Date().timeIntervalSince(updatedAt)
-        if diff < 60 { return "now" }
-        if diff < 3600 { return "\(Int(diff / 60))m" }
-        if diff < 86400 { return "\(Int(diff / 3600))h" }
-        return "\(Int(diff / 86400))d"
+        let d = Date().timeIntervalSince(updatedAt)
+        if d < 60 { return "now" }
+        if d < 3600 { return "\(Int(d / 60))m" }
+        if d < 86400 { return "\(Int(d / 3600))h" }
+        return "\(Int(d / 86400))d"
     }
 }
