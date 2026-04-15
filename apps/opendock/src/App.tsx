@@ -1,37 +1,37 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNotes } from "@/stores/notes";
-import { Sidebar } from "@/components/Sidebar";
+import { useState, useCallback } from "react";
+import { Shell } from "@/components/Shell";
+import { NotesList } from "@/components/NotesList";
 import { Editor } from "@/components/Editor";
 import { NewNoteModal } from "@/components/Modal";
+import { useNotes } from "@/stores/notes";
+
+export type Tool = "notes" | "boards" | "calendar";
 
 export function App() {
+  const [tool, setTool] = useState<Tool>("notes");
+  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
   const [showModal, setShowModal] = useState(false);
-  const [mobileView, setMobileView] = useState<"list" | "editor">("list");
-  const createWithTitle = useNotes((s) => s.createWithTitle);
   const setActive = useNotes((s) => s.setActive);
-  const search = useNotes((s) => s.search);
-  const setSearch = useNotes((s) => s.setSearch);
+  const createWithTitle = useNotes((s) => s.createWithTitle);
 
   const selectNote = useCallback((id: string) => {
     setActive(id);
-    setMobileView("editor");
+    setMobileView("detail");
   }, [setActive]);
 
-  useEffect(() => {
-    const handle = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "n") { e.preventDefault(); setShowModal(true); }
-      if (e.ctrlKey && e.key === "f") { e.preventDefault(); document.querySelector<HTMLInputElement>(".sidebar-search input")?.focus(); }
-      if (e.key === "Escape" && search) { setSearch(""); }
-    };
-    document.addEventListener("keydown", handle);
-    return () => document.removeEventListener("keydown", handle);
-  }, [search, setSearch]);
+  const back = useCallback(() => setMobileView("list"), []);
 
   return (
-    <div className="app" data-mobile-view={mobileView}>
-      <Sidebar onNew={() => setShowModal(true)} onSelect={selectNote} />
-      <Editor onBack={() => setMobileView("list")} />
-      {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={(title) => { createWithTitle(title); setMobileView("editor"); }} />}
-    </div>
+    <Shell tool={tool} setTool={setTool} mobileView={mobileView}>
+      {tool === "notes" && (
+        <>
+          <NotesList onSelect={selectNote} onNew={() => setShowModal(true)} />
+          <Editor onBack={back} />
+          {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={(t) => { createWithTitle(t); setMobileView("detail"); }} />}
+        </>
+      )}
+      {tool === "boards" && <div className="empty">Boards — coming soon</div>}
+      {tool === "calendar" && <div className="empty">Calendar — coming soon</div>}
+    </Shell>
   );
 }
