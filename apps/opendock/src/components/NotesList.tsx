@@ -43,12 +43,17 @@ export function NotesList({ onSelect, onNew }: { onSelect: (id: string) => void;
   return (
     <div className="tool-list">
       <div className="tool-list-header">
-        <span className="tool-list-title">Notes</span>
-        <span className="tool-list-count">{notes.length}</span>
+        <div>
+          <div className="tool-list-brand">OpenDock</div>
+          <div className="tool-list-title">Notes</div>
+        </div>
         <button className="tool-list-add" onClick={onNew}>+</button>
       </div>
       <div className="tool-list-search">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" />
+        <div className="search-pill">
+          <span className="search-icon">&#x1F50D;</span>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" />
+        </div>
       </div>
       <div className="tool-list-items">
         {notes.length === 0 && <div className="empty">No notes</div>}

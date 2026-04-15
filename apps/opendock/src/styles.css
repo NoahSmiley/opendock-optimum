@@ -21,50 +21,55 @@ button { font: inherit; background: none; border: none; color: var(--a-text); cu
 
 /* Desktop nav rail */
 .nav-rail {
-  width: 48px; background: var(--a-bg); border-right: 1px solid var(--a-border);
+  width: 56px; background: var(--a-bg); border-right: 1px solid var(--a-border);
   display: flex; flex-direction: column; align-items: center; padding: 16px 0;
   -webkit-app-region: drag; flex-shrink: 0;
 }
-.nav-logo { margin-bottom: 20px; color: var(--a-text-active); }
-.nav-tools { display: flex; flex-direction: column; gap: 4px; -webkit-app-region: no-drag; }
+.nav-brand {
+  font: 500 11px var(--a-font); color: var(--a-text-faint); margin-bottom: 16px;
+  writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 1px;
+}
+.nav-tools { display: flex; flex-direction: column; gap: 2px; -webkit-app-region: no-drag; }
 .nav-tool {
   writing-mode: vertical-rl; text-orientation: mixed;
-  font-size: 11px; color: var(--a-text-ghost); padding: 8px 4px;
-  transition: color 0.15s; letter-spacing: 0.5px;
+  font: 12px var(--a-font); color: var(--a-text-ghost); padding: 8px 4px;
+  transition: color 0.15s;
 }
 .nav-tool:hover { color: var(--a-text-muted); }
-.nav-tool.active { color: var(--a-text-active); }
+.nav-tool.active { color: var(--a-text-active); font-weight: 500; }
 
 /* Mobile tab bar — hidden on desktop */
 .tab-bar { display: none; }
 
 .shell-content { flex: 1; display: flex; min-width: 0; }
 
-/* ── Tool list (shared pattern for notes/boards/etc) ── */
+/* ── Tool list ── */
 .tool-list {
-  width: 260px; min-width: 260px; background: var(--a-bg);
+  width: 280px; min-width: 280px; background: var(--a-bg);
   display: flex; flex-direction: column; border-right: 1px solid var(--a-border);
 }
 .tool-list-header {
-  padding: 20px 20px 0; display: flex; align-items: center; gap: 8px;
+  padding: 20px 20px 0; display: flex; align-items: flex-end; justify-content: space-between;
 }
-.tool-list-title { font-size: 13px; font-weight: 600; color: var(--a-text-active); }
-.tool-list-count { font-size: 11px; color: var(--a-text-ghost); flex: 1; }
+.tool-list-brand { font: 500 12px var(--a-font); color: var(--a-text-faint); letter-spacing: 0.3px; margin-bottom: 2px; }
+.tool-list-title { font: 600 22px var(--a-font); color: var(--a-text-active); }
 .tool-list-add {
-  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-  font-size: 16px; color: var(--a-text-faint); transition: color 0.15s;
+  font-size: 20px; color: var(--a-text-faint); transition: color 0.15s; padding-bottom: 4px;
 }
 .tool-list-add:hover { color: var(--a-text); }
 
-.tool-list-search { padding: 14px 20px 8px; }
-.tool-list-search input {
-  width: 100%; background: none; border: none; border-bottom: 1px solid var(--a-border);
-  padding: 0 0 8px; font: 13px var(--a-font); color: var(--a-text); outline: none;
+.tool-list-search { padding: 14px 16px 8px; }
+.search-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--a-bg-input); border-radius: 8px; padding: 8px 12px;
 }
-.tool-list-search input:focus { border-color: var(--a-text-faint); }
-.tool-list-search input::placeholder { color: var(--a-text-ghost); }
+.search-icon { font-size: 12px; color: var(--a-text-ghost); line-height: 1; }
+.search-pill input {
+  flex: 1; background: none; border: none; font: 13px var(--a-font); color: var(--a-text); outline: none;
+}
+.search-pill input::placeholder { color: var(--a-text-ghost); }
 
-.tool-list-items { flex: 1; overflow-y: auto; padding: 4px 12px; }
+.tool-list-items { flex: 1; overflow-y: auto; padding: 4px 8px; }
 .tool-list-items::-webkit-scrollbar { width: 0; }
 
 /* ── List items ── */
