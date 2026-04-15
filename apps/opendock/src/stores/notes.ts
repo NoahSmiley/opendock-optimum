@@ -28,6 +28,7 @@ interface NotesState {
   update: (id: string, patch: Partial<Pick<Note, "title" | "content">>) => void;
   remove: (id: string) => void;
   togglePin: (id: string) => void;
+  duplicate: (id: string) => void;
   filtered: () => Note[];
 }
 
@@ -70,6 +71,15 @@ export const useNotes = create<NotesState>((set, get) => ({
     const notes = sorted(get().notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n));
     save(notes);
     set({ notes });
+  },
+
+  duplicate: (id) => {
+    const source = get().notes.find((n) => n.id === id);
+    if (!source) return;
+    const note: Note = { id: crypto.randomUUID(), title: `${source.title} (copy)`, content: source.content, pinned: false, updatedAt: Date.now() };
+    const notes = sorted([note, ...get().notes]);
+    save(notes);
+    set({ notes, activeId: note.id });
   },
 
   filtered: () => {
