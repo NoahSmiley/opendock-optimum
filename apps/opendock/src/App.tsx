@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNotes } from "@/stores/notes";
 import { Sidebar } from "@/components/Sidebar";
 import { Editor } from "@/components/Editor";
@@ -8,14 +8,14 @@ export function App() {
   const [showModal, setShowModal] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "editor">("list");
   const createWithTitle = useNotes((s) => s.createWithTitle);
-  const activeId = useNotes((s) => s.activeId);
+  const setActive = useNotes((s) => s.setActive);
   const search = useNotes((s) => s.search);
   const setSearch = useNotes((s) => s.setSearch);
 
-  // Switch to editor when a note is selected on mobile
-  useEffect(() => {
-    if (activeId) setMobileView("editor");
-  }, [activeId]);
+  const selectNote = useCallback((id: string) => {
+    setActive(id);
+    setMobileView("editor");
+  }, [setActive]);
 
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
@@ -29,9 +29,9 @@ export function App() {
 
   return (
     <div className="app" data-mobile-view={mobileView}>
-      <Sidebar onNew={() => setShowModal(true)} />
+      <Sidebar onNew={() => setShowModal(true)} onSelect={selectNote} />
       <Editor onBack={() => setMobileView("list")} />
-      {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={createWithTitle} />}
+      {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={(title) => { createWithTitle(title); setMobileView("editor"); }} />}
     </div>
   );
 }
