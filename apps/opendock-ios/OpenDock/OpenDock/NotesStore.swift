@@ -66,6 +66,8 @@ class NotesStore: ObservableObject {
             if let i = notes.firstIndex(where: { $0.id == patch.id }) { notes[i] = patch } else { notes.insert(patch, at: 0) }
         case .noteDeleted(let noteId, _):
             notes.removeAll { $0.id == noteId }; if selectedId == noteId { selectedId = nil }
+        case .noteShareAdded, .noteShareRemoved:
+            Task { await self.load() }
         default: break
         }
     }
