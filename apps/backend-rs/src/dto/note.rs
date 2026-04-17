@@ -9,7 +9,6 @@ pub struct Note {
     pub title: String,
     pub content: String,
     pub pinned: bool,
-    pub shared_with: Vec<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -26,5 +25,15 @@ pub struct UpdateNote {
     pub title: Option<String>,
     pub content: Option<String>,
     pub pinned: Option<bool>,
-    pub shared_with: Option<Vec<Uuid>>,
 }
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct NoteMember {
+    pub user_id: Uuid,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub role: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddNoteMember { pub email: String, pub role: Option<String> }

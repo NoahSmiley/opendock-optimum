@@ -2,6 +2,7 @@ use crate::auth::extract::AuthUser;
 use crate::db::{board, card, column};
 use crate::dto::board::{Board, BoardDetail, CreateBoard, UpdateBoard};
 use crate::error::{ApiError, ApiResult};
+use crate::live::events::{LiveEvent, Room};
 use crate::state::AppState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -31,9 +32,9 @@ async fn create(State(s): State<AppState>, user: AuthUser, Json(body): Json<Crea
 async fn detail(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>) -> ApiResult<Json<BoardDetail>> {
     if !board::is_member(&s.pool, id, user.0.id).await? { return Err(ApiError::NotFound); }
     let boards = board::list_for_user(&s.pool, user.0.id).await?;
-    let board = boards.into_iter().find(|b| b.id == id).ok_or(ApiError::NotFound)?;
+    let b = boards.into_iter().find(|b| b.id == id).ok_or(ApiError::NotFound)?;
     Ok(Json(BoardDetail {
-        board,
+        board: b,
         columns: column::list_for_board(&s.pool, id).await?,
         cards: card::list_for_board(&s.pool, id).await?,
         members: board::members(&s.pool, id).await?,
@@ -41,11 +42,15 @@ async fn detail(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>)
 }
 
 async fn update(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>, Json(body): Json<UpdateBoard>) -> ApiResult<Json<Board>> {
-    Ok(Json(board::update(&s.pool, id, user.0.id, body).await?))
+    let b = board::update(&s.pool, id, user.0.id, body).await?;
+    let patch = serde_json::to_value(&b).unwrap_or_default();
+    s.hub.publish(Room::Board { id }, LiveEvent::BoardUpdated { board_id: id, actor_id: user.0.id, patch });
+    Ok(Json(b))
 }
 
 async fn remove(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>) -> ApiResult<StatusCode> {
     board::delete(&s.pool, id, user.0.id).await?;
+    s.hub.publish(Room::Board { id }, LiveEvent::BoardDeleted { board_id: id, actor_id: user.0.id });
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -55,14 +60,17 @@ async fn list_members(State(s): State<AppState>, user: AuthUser, Path(id): Path<
 }
 
 #[derive(Deserialize)]
-struct AddMemberBody { user_id: Uuid }
+struct AddMemberBody { email: Option<String>, user_id: Option<Uuid> }
 
-async fn add_member(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>, Json(body): Json<AddMemberBody>) -> ApiResult<StatusCode> {
-    board::add_member(&s.pool, id, user.0.id, body.user_id).await?;
+async fn add_member(State(s): State<AppState>, u: AuthUser, Path(id): Path<Uuid>, Json(body): Json<AddMemberBody>) -> ApiResult<StatusCode> {
+    let target = board::resolve_member_id(&s.pool, body.user_id, body.email.as_deref()).await?;
+    board::add_member(&s.pool, id, u.0.id, target).await?;
+    s.hub.publish(Room::Board { id }, LiveEvent::BoardMembersChanged { board_id: id, actor_id: u.0.id });
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn remove_member(State(s): State<AppState>, user: AuthUser, Path((id, user_id)): Path<(Uuid, Uuid)>) -> ApiResult<StatusCode> {
-    board::remove_member(&s.pool, id, user.0.id, user_id).await?;
+async fn remove_member(State(s): State<AppState>, u: AuthUser, Path((id, user_id)): Path<(Uuid, Uuid)>) -> ApiResult<StatusCode> {
+    board::remove_member(&s.pool, id, u.0.id, user_id).await?;
+    s.hub.publish(Room::Board { id }, LiveEvent::BoardMembersChanged { board_id: id, actor_id: u.0.id });
     Ok(StatusCode::NO_CONTENT)
 }
