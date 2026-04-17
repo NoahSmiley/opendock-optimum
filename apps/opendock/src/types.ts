@@ -59,9 +59,16 @@ export interface Card {
   updated_at: string;
 }
 
+export interface BoardMember {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  role: "owner" | "member";
+}
+
 export interface BoardDetail {
   board: Board;
   columns: Column[];
   cards: Card[];
-  members: string[];
+  members: BoardMember[];
 }

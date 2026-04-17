@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import type { Card } from "@/types";
+import type { BoardMember, Card } from "@/types";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface CardDetailProps {
   card: Card;
+  members: BoardMember[];
   onUpdate: (p: Partial<Pick<Card, "title" | "description">>) => void;
+  onAssign: (userId: string | null) => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-export function CardDetail({ card, onUpdate, onDelete, onClose }: CardDetailProps) {
+export function CardDetail({ card, members, onUpdate, onAssign, onDelete, onClose }: CardDetailProps) {
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description);
   const [confirming, setConfirming] = useState(false);
+  const assignee = members.find((m) => m.user_id === card.assignee_id);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !confirming) onClose(); };
@@ -29,6 +32,14 @@ export function CardDetail({ card, onUpdate, onDelete, onClose }: CardDetailProp
         </div>
         <input className="card-detail-title" value={title} onChange={(e) => setTitle(e.target.value)}
           onBlur={() => { if (title !== card.title) onUpdate({ title }); }} placeholder="Card title" />
+        <div className="card-detail-assignee">
+          <label>Assignee</label>
+          <select value={card.assignee_id ?? ""} onChange={(e) => onAssign(e.target.value || null)}>
+            <option value="">Unassigned</option>
+            {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.display_name || m.email}</option>)}
+          </select>
+          {assignee && <span className="card-detail-assignee-current">{assignee.display_name || assignee.email}</span>}
+        </div>
         <textarea className="card-detail-body" value={description} onChange={(e) => setDescription(e.target.value)}
           onBlur={() => { if (description !== card.description) onUpdate({ description }); }} placeholder="Add a description..." />
         <div className="card-detail-meta">Updated {new Date(card.updated_at).toLocaleString()}</div>

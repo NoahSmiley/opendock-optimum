@@ -4,6 +4,8 @@ import type { Card } from "@/types";
 import { CardDetail } from "@/components/CardDetail";
 import { BoardCard } from "@/components/BoardCard";
 import { useBoardDrag } from "@/hooks/useBoardDrag";
+import { useAuth } from "@/stores/auth";
+import { BoardMembersPanel } from "@/components/BoardMembersPanel";
 
 interface BoardViewProps { onBack: () => void }
 
@@ -14,9 +16,12 @@ export function BoardView({ onBack }: BoardViewProps) {
   const moveCard = useBoards((s) => s.moveCard);
   const deleteCard = useBoards((s) => s.deleteCard);
   const updateCard = useBoards((s) => s.updateCard);
+  const assignCard = useBoards((s) => s.assignCard);
+  const currentUserId = useAuth((s) => s.data.user_id ?? null);
   const [addingCol, setAddingCol] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showingMembers, setShowingMembers] = useState(false);
 
   const onDropAt = useCallback((cardId: string, colId: string) => {
     if (!detail) return;
@@ -49,6 +54,7 @@ export function BoardView({ onBack }: BoardViewProps) {
       <div className="board-header">
         <button className="back-btn" onClick={onBack}>&larr;</button>
         <span className="board-header-title">{detail.board.name}</span>
+        <button className="board-add-col" onClick={() => setShowingMembers(true)}>share</button>
         <button className="board-add-col" onClick={() => { const t = window.prompt("Column title")?.trim(); if (t) addColumn(t); }}>+ column</button>
       </div>
       <div className="board-columns">
@@ -69,7 +75,7 @@ export function BoardView({ onBack }: BoardViewProps) {
                 )}
                 {cards.length === 0 && addingCol !== col.id && <div className="board-empty">No cards</div>}
                 {cards.map((card) => (
-                  <BoardCard key={card.id} card={card} selected={selectedId === card.id}
+                  <BoardCard key={card.id} card={card} members={detail.members} selected={selectedId === card.id}
                     onOpen={onCardOpen} onPointerDown={onPointerDown} />
                 ))}
               </div>
@@ -77,8 +83,11 @@ export function BoardView({ onBack }: BoardViewProps) {
           );
         })}
       </div>
-      {selected && <CardDetail key={selected.id} card={selected} onUpdate={(p) => updateCard(selected.id, p)}
+      {selected && <CardDetail key={selected.id} card={selected} members={detail.members}
+        onUpdate={(p) => updateCard(selected.id, p)}
+        onAssign={(uid) => assignCard(selected.id, uid)}
         onDelete={() => deleteCard(selected.id)} onClose={() => setSelectedId(null)} />}
+      {showingMembers && <BoardMembersPanel ownerId={detail.board.owner_id} currentUserId={currentUserId} onClose={() => setShowingMembers(false)} />}
     </div>
   );
 }

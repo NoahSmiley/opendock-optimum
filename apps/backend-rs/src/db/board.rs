@@ -61,7 +61,19 @@ pub async fn is_member(pool: &PgPool, board_id: Uuid, user_id: Uuid) -> ApiResul
     Ok(row.is_some())
 }
 
-pub async fn members(pool: &PgPool, board_id: Uuid) -> ApiResult<Vec<Uuid>> {
+pub async fn members(pool: &PgPool, board_id: Uuid) -> ApiResult<Vec<crate::dto::board::BoardMember>> {
+    let rows = sqlx::query_as::<_, crate::dto::board::BoardMember>(
+        "SELECT m.user_id, u.email, u.display_name, m.role::text
+         FROM board_members m
+         JOIN users u ON u.id = m.user_id
+         WHERE m.board_id = $1
+         ORDER BY m.role = 'owner' DESC, u.email ASC",
+    )
+    .bind(board_id).fetch_all(pool).await?;
+    Ok(rows)
+}
+
+pub async fn member_ids(pool: &PgPool, board_id: Uuid) -> ApiResult<Vec<Uuid>> {
     let rows: Vec<(Uuid,)> = sqlx::query_as(
         "SELECT user_id FROM board_members WHERE board_id = $1",
     )

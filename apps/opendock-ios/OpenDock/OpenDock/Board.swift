@@ -9,9 +9,17 @@ struct Board: Identifiable, Codable, Equatable {
     var updatedAt: Date
 }
 
+struct BoardMember: Identifiable, Codable, Equatable, Hashable {
+    var id: UUID { userId }
+    let userId: UUID
+    let email: String
+    let displayName: String?
+    let role: String
+}
+
 struct BoardDetail: Codable, Equatable {
     var board: Board
     var columns: [BoardColumn]
     var cards: [Card]
-    var members: [UUID]
+    var members: [BoardMember]
 }

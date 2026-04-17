@@ -3,7 +3,7 @@ import SwiftUI
 struct NoteListView: View {
     @EnvironmentObject var store: NotesStore
     @Binding var path: NavigationPath
-    @Binding var showNewNote: Bool
+    let onCreateNew: () -> Void
     @State private var deleting: Note?
 
     var body: some View {
@@ -27,7 +27,7 @@ struct NoteListView: View {
                 Text("Notes").font(.custom(Theme.fontSemibold, size: 28)).foregroundColor(Theme.active)
             }
             Spacer()
-            Button { showNewNote = true } label: { Image(systemName: "plus").font(.system(size: 22, weight: .light)).foregroundColor(Theme.muted) }.padding(.bottom, 4)
+            Button { onCreateNew() } label: { Image(systemName: "plus").font(.system(size: 22, weight: .light)).foregroundColor(Theme.muted) }.padding(.bottom, 4)
         }
         .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 16)
     }

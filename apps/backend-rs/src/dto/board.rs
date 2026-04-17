@@ -32,12 +32,26 @@ pub struct Card {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct BoardMember {
+    pub user_id: Uuid,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub role: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct BoardDetail {
     pub board: Board,
     pub columns: Vec<Column>,
     pub cards: Vec<Card>,
-    pub members: Vec<Uuid>,
+    pub members: Vec<BoardMember>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddBoardMember {
+    pub email: Option<String>,
+    pub user_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]

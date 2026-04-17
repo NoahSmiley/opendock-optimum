@@ -35,16 +35,22 @@ struct ColumnView: View {
                             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Cancel", action: onCancel); Button("Add", action: onSubmit).bold() } }
                     }
                     ForEach(cards) { card in
-                        HStack { Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text).multilineTextAlignment(.leading); Spacer() }
-                            .padding(.horizontal, 14).padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Theme.elevated))
-                            .contentShape(Rectangle()).onTapGesture { onOpen(card.id) }
-                            .draggable(card.id.uuidString) {
-                                Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text)
-                                    .padding(.horizontal, 14).padding(.vertical, 12)
-                                    .background(RoundedRectangle(cornerRadius: 8).fill(Theme.elevated))
-                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
+                        HStack(spacing: 8) {
+                            Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text).multilineTextAlignment(.leading)
+                            Spacer()
+                            if let a = card.assigneeId, let m = store.detail?.members.first(where: { $0.userId == a }) {
+                                AssigneeBadge(label: (m.displayName ?? m.email).prefix(1).uppercased())
                             }
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.elevated))
+                        .contentShape(Rectangle()).onTapGesture { onOpen(card.id) }
+                        .draggable(card.id.uuidString) {
+                            Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text)
+                                .padding(.horizontal, 14).padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.elevated))
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
+                        }
                     }
                     if cards.isEmpty && !adding {
                         Rectangle().fill(Color.clear).frame(height: 100).overlay(

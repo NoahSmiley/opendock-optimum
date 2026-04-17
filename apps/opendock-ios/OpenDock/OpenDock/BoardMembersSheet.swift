@@ -1,17 +1,18 @@
 import SwiftUI
 
-struct MembersSheet: View {
-    let noteId: UUID
+struct BoardMembersSheet: View {
+    let boardId: UUID
     let ownerId: UUID
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var store: BoardsStore
     @EnvironmentObject var auth: AuthStore
-    @State private var members: [NoteMember] = []
     @State private var email = ""
     @State private var results: [UserSummary] = []
     @State private var error: String?
     @State private var searched = false
     @State private var searchTask: Task<Void, Never>?
 
+    private var members: [BoardMember] { store.detail?.board.id == boardId ? (store.detail?.members ?? []) : [] }
     private var isOwner: Bool { auth.userId == ownerId }
     private var memberIds: Set<UUID> { Set(members.map { $0.userId }) }
     private var filteredResults: [UserSummary] { results.filter { !memberIds.contains($0.id) } }
@@ -26,16 +27,15 @@ struct MembersSheet: View {
                     ForEach(members) { m in
                         MemberRowView(email: m.email, displayName: m.displayName, role: m.role,
                             canRemove: isOwner && m.userId != ownerId) {
-                                Task { await remove(userId: m.userId) }
+                                Task { await store.removeBoardMember(boardId, userId: m.userId) }
                             }
                     }
                 }.listRowBackground(Theme.bg)
             }
             .listStyle(.insetGrouped).scrollContentBackground(.hidden).background(Theme.bg)
-            .navigationTitle("Sharing").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Board members").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() }.foregroundColor(Theme.active) } }
         }
-        .task { await load() }
         .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) { error = nil }
         } message: { Text(error ?? "") }
@@ -64,8 +64,6 @@ struct MembersSheet: View {
         }
     }
 
-    private func load() async { do { members = try await NotesAPI.members(noteId) } catch { self.error = "\(error)" } }
-
     private func schedule(query: String) {
         searchTask?.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
@@ -78,13 +76,8 @@ struct MembersSheet: View {
     }
 
     private func add(email: String) async {
-        do { try await NotesAPI.addMember(noteId, email: email); self.email = ""; results = []; searched = false; await load() }
-        catch { self.error = "\(error)" }
-    }
-
-    private func remove(userId: UUID) async {
-        do { try await NotesAPI.removeMember(noteId, userId: userId); await load() }
-        catch { self.error = "\(error)" }
+        let ok = await store.addBoardMember(boardId, email: email)
+        if ok { self.email = ""; results = []; searched = false }
     }
 }
 

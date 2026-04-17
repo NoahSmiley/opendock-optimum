@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/api/client";
-import type { Board, BoardDetail, Card, Column } from "@/types";
+import type { Board, BoardDetail, BoardMember, Card, Column } from "@/types";
 
 export const fetchBoards = () => apiGet<Board[]>("/boards");
 export const fetchBoardDetail = (id: string) => apiGet<BoardDetail>(`/boards/${id}`);
@@ -27,3 +27,10 @@ export interface CardPatch {
   position?: number;
   assignee_id?: string | null;
 }
+
+export const fetchBoardMembers = (boardId: string) =>
+  apiGet<BoardMember[]>(`/boards/${boardId}/members`);
+export const addBoardMember = (boardId: string, email: string) =>
+  apiPost<null>(`/boards/${boardId}/members`, { email });
+export const removeBoardMember = (boardId: string, userId: string) =>
+  apiDelete(`/boards/${boardId}/members/${userId}`);

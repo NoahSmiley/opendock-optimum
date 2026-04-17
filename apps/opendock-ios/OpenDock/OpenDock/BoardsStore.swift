@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 class BoardsStore: ObservableObject {
     @Published private(set) var boards: [Board] = []
-    @Published private(set) var detail: BoardDetail?
+    @Published internal(set) var detail: BoardDetail?
     @Published var selectedId: UUID?
     @Published private(set) var loading = false
     @Published var error: String?
@@ -67,31 +67,13 @@ class BoardsStore: ObservableObject {
         } catch { self.error = "\(error)" }
     }
 
-    func addCard(boardId: UUID, columnId: UUID, title: String) async {
-        do {
-            let c = try await BoardsAPI.createCard(boardId, columnId: columnId, title: title)
-            detail?.cards.append(c)
-        } catch { self.error = "\(error)" }
+    func addBoardMember(_ boardId: UUID, email: String) async -> Bool {
+        do { try await BoardsAPI.addMember(boardId, email: email); await loadDetail(boardId); return true }
+        catch { self.error = "\(error)"; return false }
     }
 
-    func updateCard(boardId: UUID, cardId: UUID, title: String? = nil, description: String? = nil) async {
-        do {
-            let body = UpdateCardBody(title: title, description: description, columnId: nil, position: nil, assigneeId: nil)
-            let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
-            if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) { detail?.cards[i] = fresh }
-        } catch { self.error = "\(error)" }
-    }
-
-    func moveCard(boardId: UUID, cardId: UUID, to columnId: UUID) async {
-        do {
-            let body = UpdateCardBody(title: nil, description: nil, columnId: columnId, position: nil, assigneeId: nil)
-            let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
-            if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) { detail?.cards[i] = fresh }
-        } catch { self.error = "\(error)" }
-    }
-
-    func deleteCard(boardId: UUID, cardId: UUID) async {
-        do { try await BoardsAPI.deleteCard(boardId, cardId: cardId); detail?.cards.removeAll { $0.id == cardId } }
+    func removeBoardMember(_ boardId: UUID, userId: UUID) async {
+        do { try await BoardsAPI.removeMember(boardId, userId: userId); await loadDetail(boardId) }
         catch { self.error = "\(error)" }
     }
 

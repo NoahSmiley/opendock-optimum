@@ -18,7 +18,9 @@
 .board-card.selected { background: var(--a-bg-input); }
 .board-card.dragging-source { visibility: hidden; }
 .board-card:focus, .board-card:focus-visible, .board-card:focus-within, .board-card:active { outline: none !important; }
-.board-card-title { font: 13px/1.4 var(--a-font); color: var(--a-text); }
+.board-card { position: relative; }
+.board-card-title { font: 13px/1.4 var(--a-font); color: var(--a-text); padding-right: 28px; }
+.board-card-assignee { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--a-bg-input); color: var(--a-text); font: 600 10px var(--a-font); display: flex; align-items: center; justify-content: center; border: 0.5px solid var(--a-border-strong); }
 .board-card-input { width: 100%; font: 13px var(--a-font); background: var(--a-bg-input); border: 1px solid var(--a-border-strong); padding: 10px 12px; color: var(--a-text); outline: none; margin: 0 0 6px; }
 .board-card-input:focus { border-color: var(--a-text-faint); }
 .board-empty { padding: 16px 4px; font: 12px var(--a-font); color: var(--a-text-ghost); }
@@ -30,6 +32,10 @@
 .card-detail-delete { font: 11px var(--a-font); color: var(--a-text-faint); }
 .card-detail-delete:hover { color: var(--a-error); }
 .card-detail-title { background: none; border: none; padding: 16px 20px 4px; font: 600 18px var(--a-font); color: var(--a-text-active); outline: none; }
+.card-detail-assignee { display: flex; align-items: center; gap: 10px; padding: 4px 20px 12px; font: 11px var(--a-font); color: var(--a-text-faint); }
+.card-detail-assignee label { text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+.card-detail-assignee select { background: var(--a-bg-input); border: 1px solid var(--a-border); color: var(--a-text); padding: 4px 8px; border-radius: 4px; font: 12px var(--a-font); cursor: pointer; }
+.card-detail-assignee-current { color: var(--a-text-ghost); }
 .card-detail-title::placeholder { color: var(--a-text-ghost); }
 .card-detail-body { flex: 1; background: none; border: none; padding: 8px 20px 16px; font: 13px/1.6 var(--a-font); color: var(--a-text); outline: none; resize: none; }
 .card-detail-body::placeholder { color: var(--a-text-ghost); }
