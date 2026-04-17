@@ -1,0 +1,20 @@
+/* @athion/style — context menus, modals, dialogs */
+.context-menu { position: fixed; z-index: 200; background: var(--a-bg-elevated); border: 1px solid var(--a-border-strong); min-width: 200px; padding: 4px 0; }
+.context-menu-item { padding: 7px 14px; font-size: 13px; color: var(--a-text); cursor: pointer; display: flex; justify-content: space-between; }
+.context-menu-item:hover { background: var(--a-bg-input); }
+.context-menu-item.danger { color: var(--a-error); }
+.context-menu-shortcut { color: var(--a-text-ghost); font-size: 11px; margin-left: 24px; }
+.context-menu-divider { height: 1px; background: var(--a-border); margin: 4px 0; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal { background: var(--a-bg-elevated); border: 1px solid var(--a-border-strong); padding: 20px 24px; width: 360px; }
+.modal-title { font-size: 15px; font-weight: 600; color: var(--a-text-active); margin-bottom: 16px; }
+.modal-message { font-size: 13px; color: var(--a-text-muted); margin-bottom: 16px; line-height: 1.5; }
+.modal input { width: 100%; background: var(--a-bg); border: none; border-bottom: 1px solid var(--a-border); padding: 0 0 10px; font: 15px var(--a-font); color: var(--a-text-active); outline: none; margin-bottom: 16px; border-radius: 0; }
+.modal input:focus { border-color: var(--a-text-faint); }
+.modal input::placeholder { color: var(--a-text-ghost); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 16px; }
+.modal-actions button { font-size: 13px; color: var(--a-text-muted); }
+.modal-actions button:hover { color: var(--a-text); }
+.modal-actions .primary { color: var(--a-text-active); font-weight: 600; }
+.modal-actions .danger { color: var(--a-error); font-weight: 600; }

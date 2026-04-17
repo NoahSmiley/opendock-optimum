@@ -1,0 +1,17 @@
+/* @athion/style — notes editor */
+.editor-area { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--a-bg); position: relative; }
+.editor-top { padding: 20px 28px 0; display: flex; align-items: center; gap: 12px; }
+.editor-top input { background: none; border: none; color: var(--a-text-active); font: 600 20px var(--a-font); flex: 1; outline: none; }
+.editor-top .actions { display: flex; gap: 12px; opacity: 0; transition: opacity 0.15s; }
+.editor-top:hover .actions { opacity: 1; }
+.editor-top .actions button { font-size: 11px; color: var(--a-text-faint); transition: color 0.15s; }
+.editor-top .actions button:hover { color: var(--a-text); }
+.editor-top .actions .danger:hover { color: var(--a-error); }
+.editor-tags { padding: 6px 28px 0; display: flex; gap: 6px; }
+.editor-tag { font-size: 11px; color: var(--a-text-faint); }
+.editor-body { flex: 1; overflow: hidden; padding: 16px 28px; }
+.editor-body textarea { width: 100%; height: 100%; background: none; border: none; outline: none; resize: none; color: var(--a-text); font: 14px/2 var(--a-mono); tab-size: 4; }
+.editor-body textarea::placeholder { color: var(--a-text-ghost); }
+.editor-body textarea::-webkit-scrollbar { width: 0; }
+.editor-footer { padding: 6px 28px 8px; font-size: 11px; color: var(--a-text-ghost); display: flex; gap: 8px; }
+.save-unsaved { color: var(--a-text-faint); }

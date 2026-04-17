@@ -1,109 +1,43 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/auth/store";
-import { Titlebar } from "@/components/shell/Titlebar";
-import { ZoomControls } from "@/components/shell/ZoomControls";
-import { AppLayout } from "@/components/shell/AppLayout";
-import { AuthPage } from "@/pages/AuthPage";
-import { DashboardPage } from "@/pages/DashboardPage";
-import { BoardsPage } from "@/pages/BoardsPage";
-import { NotesPage } from "@/pages/NotesPage";
-import { CalendarPage } from "@/pages/CalendarPage";
-import { FilesPage } from "@/pages/FilesPage";
-
-function isTauri(): boolean {
-  return "__TAURI_INTERNALS__" in window;
-}
+import { useState, useCallback } from "react";
+import { Shell } from "@/components/Shell";
+import { NotesList } from "@/components/NotesList";
+import { Editor } from "@/components/Editor";
+import { BoardsList } from "@/components/BoardsList";
+import { BoardView } from "@/components/BoardView";
+import { NewNoteModal } from "@/components/Modal";
+import { useNotes } from "@/stores/notes";
+import { useBoards } from "@/stores/boards";
+import type { Tool, MobileView } from "@/types";
 
 export function App() {
-  if (isTauri()) return <TauriApp />;
-  return <BrowserApp />;
-}
+  const [tool, setTool] = useState<Tool>("notes");
+  const [mobileView, setMobileView] = useState<MobileView>("list");
+  const [showModal, setShowModal] = useState(false);
+  const activeNoteId = useNotes((s) => s.activeId);
+  const setActiveNote = useNotes((s) => s.setActive);
+  const createNote = useNotes((s) => s.createWithTitle);
+  const setActiveBoard = useBoards((s) => s.setActiveBoard);
 
-function TauriApp() {
-  const [ssoChecked, setSsoChecked] = useState(false);
-  const user = useAuthStore((s) => s.user);
-  const loading = useAuthStore((s) => s.loading);
-  const checkSession = useAuthStore((s) => s.checkSession);
-
-  // Check Athion SSO status, then always check backend session for CSRF
-  useEffect(() => {
-    (async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        await invoke<{ logged_in: boolean }>("get_auth_status");
-      } catch { /* ignore */ }
-      setSsoChecked(true);
-      checkSession();
-    })();
-  }, [checkSession]);
-
-  if (!ssoChecked || loading) {
-    return (
-      <div className="app-shell">
-        <Titlebar />
-        <div className="auth-layout">
-          <p style={{ color: "var(--color-text-tertiary)" }}>Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const back = useCallback(() => setMobileView("list"), []);
+  const selectNote = useCallback((id: string) => { setActiveNote(id); setMobileView("detail"); }, [setActiveNote]);
+  const selectBoard = useCallback((id: string) => { setActiveBoard(id); setMobileView("detail"); }, [setActiveBoard]);
 
   return (
-    <BrowserRouter>
-      <ZoomControls />
-      <div className="app-shell">
-        <Titlebar />
-        {user ? <AuthenticatedRoutes /> : (
-          <Routes><Route path="*" element={<AuthPage />} /></Routes>
-        )}
-      </div>
-    </BrowserRouter>
-  );
-}
-
-function BrowserApp() {
-  const user = useAuthStore((s) => s.user);
-  const loading = useAuthStore((s) => s.loading);
-  const checkSession = useAuthStore((s) => s.checkSession);
-
-  useEffect(() => { checkSession(); }, [checkSession]);
-
-  if (loading) {
-    return (
-      <div className="app-shell">
-        <Titlebar />
-        <div className="auth-layout">
-          <p style={{ color: "var(--color-text-tertiary)" }}>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <BrowserRouter>
-      <ZoomControls />
-      <div className="app-shell">
-        <Titlebar />
-        {user ? <AuthenticatedRoutes /> : (
-          <Routes><Route path="*" element={<AuthPage />} /></Routes>
-        )}
-      </div>
-    </BrowserRouter>
-  );
-}
-
-function AuthenticatedRoutes() {
-  return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/boards" element={<BoardsPage />} />
-        <Route path="/notes" element={<NotesPage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/files" element={<FilesPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Route>
-    </Routes>
+    <Shell tool={tool} setTool={setTool} mobileView={mobileView}>
+      {tool === "notes" && (
+        <>
+          <NotesList onSelect={selectNote} onNew={() => setShowModal(true)} />
+          <Editor key={activeNoteId ?? "empty"} onBack={back} />
+          {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={(t) => { createNote(t); setMobileView("detail"); }} />}
+        </>
+      )}
+      {tool === "boards" && (
+        <>
+          <BoardsList onSelect={selectBoard} />
+          <BoardView onBack={back} />
+        </>
+      )}
+      {tool === "calendar" && <div className="empty">Calendar — coming soon</div>}
+    </Shell>
   );
 }

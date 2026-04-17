@@ -1,0 +1,408 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686D85BDB4EE25B273844E76 /* BoardDetailView.swift */; };
+		0954E5BC69C41635B8A9F839 /* Placeholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160C0E239F7C310D98D518E5 /* Placeholder.swift */; };
+		158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4105E951680CBD8520EA4CCD /* NoteRow.swift */; };
+		2B1336DB67EC186687EB1B41 /* OpenAISans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */; };
+		2C497C9720CD48A7569B2292 /* IDWrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05E118904ED263E530A04BA /* IDWrap.swift */; };
+		3029A273B2CD11060FFD8880 /* NoteFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CD7B3ACBF8892E1E4DA98A /* NoteFormat.swift */; };
+		5C467E7477D8E4CB3B197229 /* BoardsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E943E12501F84B9CA8E335E0 /* BoardsListView.swift */; };
+		661B46D4DEE68E175023C97D /* CardDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ABAB6A907F2A3DA237F1071 /* CardDetailSheet.swift */; };
+		6D01D44639BDF8B7D4247358 /* NoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF613D7E840B96B8109EAD9 /* NoteListView.swift */; };
+		72C26FB37334FC37ED7FC9FF /* Board.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46A61F775B4A02C9E3A9D4F1 /* Board.swift */; };
+		774BC903D5F946BDB0E7566C /* BoardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */; };
+		9128C60AA018371B6B76B7F8 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F823E53EE2B76138F849392A /* NoteEditorView.swift */; };
+		9A239E8B326FA71AD5CAD743 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAA507A694F1D8FFE6BB1C8E /* ContentView.swift */; };
+		9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6E6CD666981BCC191EF111 /* Theme.swift */; };
+		A7A4A56EC00F0BE0CF7A6B71 /* OpenAISans-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */; };
+		AE224D54855B3EDC70146965 /* NewNoteSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EC4EDE6D21D15C9CE1D215 /* NewNoteSheet.swift */; };
+		C21E37C7A409303268309636 /* ColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219DF57BD62CEF8A263611AF /* ColumnView.swift */; };
+		CDC18E5E7ABC6B7098072AE5 /* NotesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */; };
+		DA390BBA8C40A6C6AEC53BDD /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7430D69CF118778FA528A0B /* Note.swift */; };
+		DE887E0ABA085772BD269BD5 /* BoardsSeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1BE3E4D68FAE59B5EC11FA /* BoardsSeed.swift */; };
+		E02B917033884499F0C01F92 /* OpenDockApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9467EA43375042861D467E8 /* OpenDockApp.swift */; };
+		E49E7CDD6DC1BDC7EAB4C488 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FC1A28E8913656B1C7D7B2D /* Card.swift */; };
+		EDC53B62850BD161E6D720AA /* OpenAISans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C37BAA3A09300DB73892A0C3 /* OpenAISans-Regular.ttf */; };
+		FCC4DF6D270B473145C77511 /* BoardColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EF77E58ACF34E7A634AADD0 /* BoardColumn.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		05EC4EDE6D21D15C9CE1D215 /* NewNoteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewNoteSheet.swift; sourceTree = "<group>"; };
+		160C0E239F7C310D98D518E5 /* Placeholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Placeholder.swift; sourceTree = "<group>"; };
+		1A1BE3E4D68FAE59B5EC11FA /* BoardsSeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardsSeed.swift; sourceTree = "<group>"; };
+		219DF57BD62CEF8A263611AF /* ColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnView.swift; sourceTree = "<group>"; };
+		24CD7B3ACBF8892E1E4DA98A /* NoteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFormat.swift; sourceTree = "<group>"; };
+		2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Semibold.ttf"; sourceTree = "<group>"; };
+		2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardsStore.swift; sourceTree = "<group>"; };
+		4105E951680CBD8520EA4CCD /* NoteRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteRow.swift; sourceTree = "<group>"; };
+		46A61F775B4A02C9E3A9D4F1 /* Board.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Board.swift; sourceTree = "<group>"; };
+		4FF613D7E840B96B8109EAD9 /* NoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteListView.swift; sourceTree = "<group>"; };
+		5E6E6CD666981BCC191EF111 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		5FC1A28E8913656B1C7D7B2D /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
+		67884C5555AADFE58819B4B4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		686D85BDB4EE25B273844E76 /* BoardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardDetailView.swift; sourceTree = "<group>"; };
+		6ABAB6A907F2A3DA237F1071 /* CardDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailSheet.swift; sourceTree = "<group>"; };
+		6EF77E58ACF34E7A634AADD0 /* BoardColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardColumn.swift; sourceTree = "<group>"; };
+		99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesStore.swift; sourceTree = "<group>"; };
+		B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Medium.ttf"; sourceTree = "<group>"; };
+		C37BAA3A09300DB73892A0C3 /* OpenAISans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Regular.ttf"; sourceTree = "<group>"; };
+		CAA507A694F1D8FFE6BB1C8E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E943E12501F84B9CA8E335E0 /* BoardsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardsListView.swift; sourceTree = "<group>"; };
+		E9467EA43375042861D467E8 /* OpenDockApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenDockApp.swift; sourceTree = "<group>"; };
+		F05E118904ED263E530A04BA /* IDWrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IDWrap.swift; sourceTree = "<group>"; };
+		F7430D69CF118778FA528A0B /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
+		F823E53EE2B76138F849392A /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
+		F887752849BA46582EF40368 /* OpenDock.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OpenDock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		06AD21C4BAB416AB604A12C1 = {
+			isa = PBXGroup;
+			children = (
+				D4E5961A22856804EC7578E4 /* OpenDock */,
+				3A327E2E5E7E4F5A99D6F33B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3A327E2E5E7E4F5A99D6F33B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F887752849BA46582EF40368 /* OpenDock.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5ACCF0EC41C69EFE562E50F2 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */,
+				C37BAA3A09300DB73892A0C3 /* OpenAISans-Regular.ttf */,
+				2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		D4E5961A22856804EC7578E4 /* OpenDock */ = {
+			isa = PBXGroup;
+			children = (
+				46A61F775B4A02C9E3A9D4F1 /* Board.swift */,
+				6EF77E58ACF34E7A634AADD0 /* BoardColumn.swift */,
+				686D85BDB4EE25B273844E76 /* BoardDetailView.swift */,
+				E943E12501F84B9CA8E335E0 /* BoardsListView.swift */,
+				1A1BE3E4D68FAE59B5EC11FA /* BoardsSeed.swift */,
+				2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */,
+				5FC1A28E8913656B1C7D7B2D /* Card.swift */,
+				6ABAB6A907F2A3DA237F1071 /* CardDetailSheet.swift */,
+				219DF57BD62CEF8A263611AF /* ColumnView.swift */,
+				CAA507A694F1D8FFE6BB1C8E /* ContentView.swift */,
+				F05E118904ED263E530A04BA /* IDWrap.swift */,
+				67884C5555AADFE58819B4B4 /* Info.plist */,
+				05EC4EDE6D21D15C9CE1D215 /* NewNoteSheet.swift */,
+				F7430D69CF118778FA528A0B /* Note.swift */,
+				F823E53EE2B76138F849392A /* NoteEditorView.swift */,
+				24CD7B3ACBF8892E1E4DA98A /* NoteFormat.swift */,
+				4FF613D7E840B96B8109EAD9 /* NoteListView.swift */,
+				4105E951680CBD8520EA4CCD /* NoteRow.swift */,
+				99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */,
+				E9467EA43375042861D467E8 /* OpenDockApp.swift */,
+				160C0E239F7C310D98D518E5 /* Placeholder.swift */,
+				5E6E6CD666981BCC191EF111 /* Theme.swift */,
+				5ACCF0EC41C69EFE562E50F2 /* Fonts */,
+			);
+			path = OpenDock;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CF18626D89445ABA13B73611 /* OpenDock */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5977C89E70E773F3C7B7E3B9 /* Build configuration list for PBXNativeTarget "OpenDock" */;
+			buildPhases = (
+				261B5B93756A89DD34396D46 /* Sources */,
+				4FF5FAA90DF4DE6C44F7AD27 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OpenDock;
+			packageProductDependencies = (
+			);
+			productName = OpenDock;
+			productReference = F887752849BA46582EF40368 /* OpenDock.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E49B8E6DD45B893AAD91EFAC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					CF18626D89445ABA13B73611 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = B8A57472612802D979828506 /* Build configuration list for PBXProject "OpenDock" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 06AD21C4BAB416AB604A12C1;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3A327E2E5E7E4F5A99D6F33B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CF18626D89445ABA13B73611 /* OpenDock */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4FF5FAA90DF4DE6C44F7AD27 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B1336DB67EC186687EB1B41 /* OpenAISans-Medium.ttf in Resources */,
+				EDC53B62850BD161E6D720AA /* OpenAISans-Regular.ttf in Resources */,
+				A7A4A56EC00F0BE0CF7A6B71 /* OpenAISans-Semibold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		261B5B93756A89DD34396D46 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				72C26FB37334FC37ED7FC9FF /* Board.swift in Sources */,
+				FCC4DF6D270B473145C77511 /* BoardColumn.swift in Sources */,
+				05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */,
+				5C467E7477D8E4CB3B197229 /* BoardsListView.swift in Sources */,
+				DE887E0ABA085772BD269BD5 /* BoardsSeed.swift in Sources */,
+				774BC903D5F946BDB0E7566C /* BoardsStore.swift in Sources */,
+				E49E7CDD6DC1BDC7EAB4C488 /* Card.swift in Sources */,
+				661B46D4DEE68E175023C97D /* CardDetailSheet.swift in Sources */,
+				C21E37C7A409303268309636 /* ColumnView.swift in Sources */,
+				9A239E8B326FA71AD5CAD743 /* ContentView.swift in Sources */,
+				2C497C9720CD48A7569B2292 /* IDWrap.swift in Sources */,
+				AE224D54855B3EDC70146965 /* NewNoteSheet.swift in Sources */,
+				DA390BBA8C40A6C6AEC53BDD /* Note.swift in Sources */,
+				9128C60AA018371B6B76B7F8 /* NoteEditorView.swift in Sources */,
+				3029A273B2CD11060FFD8880 /* NoteFormat.swift in Sources */,
+				6D01D44639BDF8B7D4247358 /* NoteListView.swift in Sources */,
+				158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */,
+				CDC18E5E7ABC6B7098072AE5 /* NotesStore.swift in Sources */,
+				E02B917033884499F0C01F92 /* OpenDockApp.swift in Sources */,
+				0954E5BC69C41635B8A9F839 /* Placeholder.swift in Sources */,
+				9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1349F8EC3C2EBA50C6D86758 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		DB55BA33A84FB62386C7A99B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OpenDock/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OpenDock;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.athion.opendock;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		EBAF64AE4464C5544A8749EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OpenDock/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OpenDock;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.athion.opendock;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F5CA0214D84D03EAE0671F05 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5977C89E70E773F3C7B7E3B9 /* Build configuration list for PBXNativeTarget "OpenDock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBAF64AE4464C5544A8749EF /* Debug */,
+				DB55BA33A84FB62386C7A99B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B8A57472612802D979828506 /* Build configuration list for PBXProject "OpenDock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1349F8EC3C2EBA50C6D86758 /* Debug */,
+				F5CA0214D84D03EAE0671F05 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E49B8E6DD45B893AAD91EFAC /* Project object */;
+}
