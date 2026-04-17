@@ -71,7 +71,6 @@ struct ColumnView: View {
 
     private func handleColumnDrop(ids: [String], _ point: CGPoint) -> Bool {
         withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
-        store.draggingCardId = nil
         guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
         Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: nil) }
         return true
@@ -84,7 +83,6 @@ struct ColumnView: View {
 
     private func handleCardDrop(ids: [String], beforeId: UUID) -> Bool {
         withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
-        store.draggingCardId = nil
         guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
         Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: beforeId) }
         return true

@@ -7,7 +7,6 @@ class BoardsStore: ObservableObject {
     @Published var selectedId: UUID?
     @Published private(set) var loading = false
     @Published var error: String?
-    @Published var draggingCardId: UUID?
 
     var cardsByColumn: [UUID: [Card]] {
         guard let d = detail else { return [:] }
