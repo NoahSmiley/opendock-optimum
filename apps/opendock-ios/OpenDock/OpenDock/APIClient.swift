@@ -15,9 +15,18 @@ final class APIClient {
 
     var token: String? { auth?.token }
 
+    private func url(_ path: String) -> URL {
+        let parts = path.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        let pathPart = parts[0]
+        let queryPart = parts.count > 1 ? parts[1] : nil
+        var comps = URLComponents(url: base.appendingPathComponent(pathPart), resolvingAgainstBaseURL: false)!
+        if let q = queryPart { comps.percentEncodedQuery = q }
+        return comps.url ?? base
+    }
+
     private func request<B: Encodable>(_ method: String, _ path: String, body: B?) async throws -> Data {
         guard let token = auth?.token else { throw APIError(message: "not authenticated", status: 401) }
-        var req = URLRequest(url: base.appendingPathComponent(path))
+        var req = URLRequest(url: url(path))
         req.httpMethod = method
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         if let body {
