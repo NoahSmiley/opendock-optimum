@@ -17,9 +17,8 @@
 .board-column.drop-target .board-column-body { outline: 1px dashed var(--a-text-ghost); outline-offset: -6px; }
 .board-card { padding: 12px 14px; background: var(--a-bg-elevated); margin-bottom: 4px; cursor: grab; outline: none !important; user-select: none; touch-action: none; }
 .board-card.selected { background: var(--a-bg-input); }
-.board-card.dragging-source { visibility: hidden; }
-.board-card.drop-before { position: relative; }
-.board-card.drop-before::before { content: ""; position: absolute; left: 0; right: 0; top: -3px; height: 2px; background: var(--a-text-muted); border-radius: 1px; }
+.board-card.dragging-source { display: none; }
+.board-card.card-shift { transition: transform 0.15s ease-out; }
 .board-card:focus, .board-card:focus-visible, .board-card:focus-within, .board-card:active { outline: none !important; }
 .board-card { position: relative; }
 .board-card-title { font: 13px/1.4 var(--a-font); color: var(--a-text); padding-right: 28px; }
