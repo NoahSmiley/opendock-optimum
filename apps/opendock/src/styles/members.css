@@ -1,0 +1,25 @@
+.members-panel {
+  position: fixed; top: 60px; right: 16px; width: 320px; max-height: 70vh;
+  background: var(--a-bg); border: 1px solid var(--a-border-strong); border-radius: 8px;
+  display: flex; flex-direction: column; z-index: 150; overflow: hidden;
+  font-family: var(--a-font);
+}
+.members-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--a-border); }
+.members-header h3 { margin: 0; font-size: 13px; color: var(--a-text-active); font-weight: 600; }
+.members-header button { background: none; border: 0; color: var(--a-text-ghost); cursor: pointer; font-size: 18px; }
+.members-add { padding: 10px 14px; border-bottom: 1px solid var(--a-border); display: flex; flex-direction: column; gap: 4px; }
+.members-add input {
+  background: var(--a-bg-input); border: 1px solid var(--a-border); color: var(--a-text);
+  border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit;
+}
+.members-result {
+  background: none; border: 0; color: var(--a-text); padding: 6px 8px; text-align: left;
+  border-radius: 4px; cursor: pointer; display: flex; flex-direction: column;
+}
+.members-result:hover { background: var(--a-bg-elevated); }
+.members-list { overflow: auto; padding: 8px 0; }
+.members-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; gap: 8px; }
+.members-row button { background: none; border: 0; color: var(--a-text-ghost); cursor: pointer; font-size: 14px; }
+.members-name { color: var(--a-text); font-size: 13px; font-weight: 500; }
+.members-email, .members-meta { color: var(--a-text-faint); font-size: 11px; }
+.members-error { color: var(--a-err); font-size: 12px; padding: 8px 14px; }

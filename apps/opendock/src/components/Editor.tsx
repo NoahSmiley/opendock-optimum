@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNotes } from "@/stores/notes";
+import { useAuth } from "@/stores/auth";
+import { useLiveNote } from "@/hooks/useLiveNote";
 import { extractTags } from "@/lib/tags";
 import { wordCount } from "@/lib/notes";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { MembersPanel } from "@/components/MembersPanel";
 
 interface EditorProps { onBack: () => void }
 
@@ -13,9 +16,12 @@ export function Editor({ onBack }: EditorProps) {
   const update = useNotes((s) => s.update);
   const remove = useNotes((s) => s.remove);
   const togglePin = useNotes((s) => s.togglePin);
+  const currentUserId = useAuth((s) => s.data.user_id ?? null);
+  useLiveNote(activeId);
   const [saved, setSaved] = useState(true);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [showingMembers, setShowingMembers] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<number | null>(null);
 
@@ -58,6 +64,7 @@ export function Editor({ onBack }: EditorProps) {
         <button className="back-btn" onClick={onBack}>&larr;</button>
         <input value={note.title} onChange={(e) => update(note.id, { title: e.target.value })} placeholder="Untitled" />
         <div className="actions">
+          <button onClick={() => setShowingMembers(true)}>share</button>
           <button onClick={() => togglePin(note.id)}>{note.pinned ? "unpin" : "pin"}</button>
           <button className="danger" onClick={() => setConfirmingDelete(true)}>delete</button>
         </div>
@@ -74,6 +81,7 @@ export function Editor({ onBack }: EditorProps) {
       {menu && <ContextMenu x={menu.x} y={menu.y} items={editorMenu} onClose={() => setMenu(null)} />}
       {confirmingDelete && <ConfirmDialog title="Delete note?" message={`"${note.title || "Untitled"}" will be permanently deleted.`}
         confirmLabel="Delete" danger onConfirm={() => { remove(note.id); setConfirmingDelete(false); onBack(); }} onCancel={() => setConfirmingDelete(false)} />}
+      {showingMembers && <MembersPanel noteId={note.id} ownerId={note.owner_id} currentUserId={currentUserId} onClose={() => setShowingMembers(false)} />}
     </div>
   );
 }

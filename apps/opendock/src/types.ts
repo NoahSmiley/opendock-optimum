@@ -14,9 +14,22 @@ export interface Note {
   title: string;
   content: string;
   pinned: boolean;
-  shared_with: string[];
   created_at: string;
   updated_at: string;
+}
+
+export interface NoteMember {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  role: "owner" | "editor" | "viewer";
+}
+
+export interface UserSummary {
+  id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
 }
 
 export interface Board {

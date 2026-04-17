@@ -45,3 +45,8 @@ pub async fn auth_logout(state: State<'_, AuthState>) -> Result<(), String> {
     state.clear().await;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn auth_token(state: State<'_, AuthState>) -> Result<String, String> {
+    state.get().await.token.ok_or_else(|| "not authenticated".to_string())
+}

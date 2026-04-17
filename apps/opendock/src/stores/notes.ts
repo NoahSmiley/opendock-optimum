@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import * as api from "@/api/notes";
 import type { Note } from "@/types";
+import type { LiveEvent } from "@/api/live";
 
 interface NotesState {
   notes: Note[];
@@ -16,6 +17,7 @@ interface NotesState {
   remove: (id: string) => Promise<void>;
   togglePin: (id: string) => Promise<void>;
   duplicate: (id: string) => Promise<void>;
+  applyEvent: (ev: LiveEvent) => void;
   reset: () => void;
 }
 
@@ -71,6 +73,19 @@ export const useNotes = create<NotesState>((set, get) => ({
     const src = get().notes.find((n) => n.id === id); if (!src) return;
     const note = await api.createNote({ title: `${src.title} (copy)`, content: src.content });
     set({ notes: [note, ...get().notes], activeId: note.id });
+  },
+
+  applyEvent: (ev) => {
+    if (ev.kind === "note_updated") {
+      const { notes } = get();
+      const i = notes.findIndex((n) => n.id === ev.patch.id);
+      set({ notes: i >= 0 ? notes.map((n, k) => k === i ? ev.patch : n) : [ev.patch, ...notes] });
+    } else if (ev.kind === "note_deleted") {
+      set({
+        notes: get().notes.filter((n) => n.id !== ev.note_id),
+        activeId: get().activeId === ev.note_id ? null : get().activeId,
+      });
+    }
   },
 
   reset: () => set({ notes: [], activeId: null, search: "", error: null }),
