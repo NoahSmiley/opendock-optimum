@@ -16,9 +16,17 @@ extension BoardsStore {
         } catch { self.error = "\(error)" }
     }
 
-    func moveCard(boardId: UUID, cardId: UUID, to columnId: UUID) async {
+    func reorderCard(boardId: UUID, cardId: UUID, to columnId: UUID, before beforeId: UUID?) async {
+        guard let d = detail, let card = d.cards.first(where: { $0.id == cardId }) else { return }
+        let siblings = d.cards.filter { $0.columnId == columnId && $0.id != cardId }.sorted { $0.position < $1.position }
+        let idx = beforeId.flatMap { id in siblings.firstIndex { $0.id == id } }
+        let position = idx ?? siblings.count
+        if card.columnId == columnId && card.position == position { return }
+        if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) {
+            detail?.cards[i].columnId = columnId; detail?.cards[i].position = position
+        }
         do {
-            let body = UpdateCardBody(title: nil, description: nil, columnId: columnId, position: nil)
+            let body = UpdateCardBody(title: nil, description: nil, columnId: columnId, position: position)
             let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
             if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) { detail?.cards[i] = fresh }
         } catch { self.error = "\(error)" }

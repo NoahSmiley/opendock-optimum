@@ -34,22 +34,12 @@ struct ColumnView: View {
                             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Cancel", action: onCancel); Button("Add", action: onSubmit).bold() } }
                     }
                     ForEach(cards) { card in
-                        HStack(spacing: 8) {
-                            Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text).multilineTextAlignment(.leading)
-                            Spacer()
-                            if let a = card.assigneeId, let m = store.detail?.members.first(where: { $0.userId == a }) {
-                                AssigneeBadge(label: (m.displayName ?? m.email).prefix(1).uppercased())
+                        CardRowView(card: card, members: store.detail?.members ?? [], onOpen: onOpen)
+                            .dropDestination(for: String.self) { ids, _ in
+                                guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
+                                Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: card.id) }
+                                return true
                             }
-                        }
-                        .padding(.horizontal, 14).padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.input))
-                        .contentShape(Rectangle()).onTapGesture { onOpen(card.id) }
-                        .draggable(card.id.uuidString) {
-                            Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text)
-                                .padding(.horizontal, 14).padding(.vertical, 12)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.input))
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
-                        }
                     }
                     if cards.isEmpty && !adding {
                         Rectangle().fill(Color.clear).frame(height: 100).overlay(
@@ -64,7 +54,8 @@ struct ColumnView: View {
             }
             .dropDestination(for: String.self) { ids, _ in
                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
-                Task { await store.moveCard(boardId: boardId, cardId: cid, to: col.id) }; return true
+                Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: nil) }
+                return true
             } isTargeted: { isTargeted = $0 }
         }
         .frame(width: 288).frame(maxHeight: .infinity, alignment: .top)
