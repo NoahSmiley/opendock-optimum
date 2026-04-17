@@ -59,4 +59,14 @@ class NotesStore: ObservableObject {
     }
 
     func reset() { notes = []; searchQuery = ""; selectedId = nil; error = nil }
+
+    func apply(event: LiveEvent) {
+        switch event {
+        case .noteUpdated(_, _, let patch):
+            if let i = notes.firstIndex(where: { $0.id == patch.id }) { notes[i] = patch } else { notes.insert(patch, at: 0) }
+        case .noteDeleted(let noteId, _):
+            notes.removeAll { $0.id == noteId }; if selectedId == noteId { selectedId = nil }
+        default: break
+        }
+    }
 }

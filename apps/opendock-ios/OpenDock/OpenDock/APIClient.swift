@@ -2,26 +2,18 @@ import Foundation
 
 struct APIError: Error { let message: String; let status: Int }
 
-nonisolated(unsafe) private let iso = ISO8601DateFormatter.opendock()
-
 @MainActor
 final class APIClient {
     static let shared = APIClient()
     weak var auth: AuthStore?
 
     private let base = AuthEndpoints.api
-    private let decoder: JSONDecoder = {
-        let d = JSONDecoder(); d.keyDecodingStrategy = .convertFromSnakeCase
-        d.dateDecodingStrategy = .custom { decoder in
-            let s = try decoder.singleValueContainer().decode(String.self)
-            if let date = iso.date(from: s) { return date }
-            throw DecodingError.dataCorruptedError(in: try decoder.singleValueContainer(), debugDescription: "bad date \(s)")
-        }
-        return d
-    }()
+    private let decoder = JSONDecoder.live()
     private let encoder: JSONEncoder = {
         let e = JSONEncoder(); e.keyEncodingStrategy = .convertToSnakeCase; return e
     }()
+
+    var token: String? { auth?.token }
 
     private func request<B: Encodable>(_ method: String, _ path: String, body: B?) async throws -> Data {
         guard let token = auth?.token else { throw APIError(message: "not authenticated", status: 401) }
@@ -45,6 +37,9 @@ final class APIClient {
     }
     func post<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T {
         try decoder.decode(T.self, from: await request("POST", path, body: body))
+    }
+    func postVoid<B: Encodable>(_ path: String, body: B) async throws {
+        _ = try await request("POST", path, body: body)
     }
     func patch<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T {
         try decoder.decode(T.self, from: await request("PATCH", path, body: body))
