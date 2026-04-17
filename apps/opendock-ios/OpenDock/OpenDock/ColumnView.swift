@@ -39,6 +39,7 @@ struct ColumnView: View {
                             .offset(y: shiftOffset(for: idx))
                             .dropDestination(for: String.self) { ids, _ in
                                 withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
+                                store.draggingCardId = nil
                                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
                                 Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: card.id) }
                                 return true
@@ -61,6 +62,7 @@ struct ColumnView: View {
             }
             .dropDestination(for: String.self) { ids, _ in
                 withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
+                store.draggingCardId = nil
                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
                 Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: nil) }
                 return true
