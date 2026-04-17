@@ -1,6 +1,6 @@
 import Foundation
 
-enum LiveScope: String { case note, board }
+enum LiveScope: String { case note, board, user }
 
 @MainActor
 final class LiveSocket {

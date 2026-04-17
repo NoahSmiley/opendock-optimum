@@ -10,6 +10,7 @@ import { useAuth } from "@/stores/auth";
 import { useNotes } from "@/stores/notes";
 import { useBoards } from "@/stores/boards";
 import { useAppShortcuts } from "@/hooks/useAppShortcuts";
+import { useUserInbox } from "@/hooks/useUserInbox";
 import type { Tool, MobileView } from "@/types";
 
 export function App() {
@@ -18,6 +19,7 @@ export function App() {
   const [showModal, setShowModal] = useState(false);
   const authLoading = useAuth((s) => s.loading);
   const token = useAuth((s) => s.data.token);
+  const userId = useAuth((s) => s.data.user_id);
   const refresh = useAuth((s) => s.refresh);
   const activeNoteId = useNotes((s) => s.activeId);
   const setActiveNote = useNotes((s) => s.setActive);
@@ -28,6 +30,7 @@ export function App() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { if (token) { loadNotes(); loadBoards(); } }, [token, loadNotes, loadBoards]);
+  useUserInbox(userId);
 
   const back = useCallback(() => setMobileView("list"), []);
   const selectNote = useCallback((id: string) => { setActiveNote(id); setMobileView("detail"); }, [setActiveNote]);

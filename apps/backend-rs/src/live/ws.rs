@@ -33,6 +33,7 @@ fn parse_room(scope: &str, id: Uuid) -> Option<Room> {
     match scope {
         "note" => Some(Room::Note { id }),
         "board" => Some(Room::Board { id }),
+        "user" => Some(Room::User { id }),
         _ => None,
     }
 }

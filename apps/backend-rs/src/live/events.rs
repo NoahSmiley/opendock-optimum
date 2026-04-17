@@ -12,6 +12,10 @@ pub enum LiveEvent {
     BoardMembersChanged { board_id: Uuid, actor_id: Uuid },
     CardUpserted { board_id: Uuid, actor_id: Uuid, card: serde_json::Value },
     CardDeleted { board_id: Uuid, card_id: Uuid, actor_id: Uuid },
+    NoteShareAdded { note_id: Uuid, actor_id: Uuid },
+    NoteShareRemoved { note_id: Uuid, actor_id: Uuid },
+    BoardShareAdded { board_id: Uuid, actor_id: Uuid },
+    BoardShareRemoved { board_id: Uuid, actor_id: Uuid },
 }
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -19,4 +23,5 @@ pub enum LiveEvent {
 pub enum Room {
     Note { id: Uuid },
     Board { id: Uuid },
+    User { id: Uuid },
 }

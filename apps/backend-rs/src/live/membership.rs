@@ -13,6 +13,7 @@ pub async fn can_access_room(pool: &PgPool, room: Room, user_id: Uuid) -> ApiRes
             .bind(id).bind(user_id).fetch_optional(pool).await?;
             Ok(row.is_some())
         }
+        Room::User { id } => Ok(id == user_id),
     }
 }
 
@@ -22,4 +23,10 @@ pub async fn is_note_member(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> ApiR
     )
     .bind(note_id).bind(user_id).fetch_optional(pool).await?;
     Ok(row.is_some())
+}
+
+pub async fn note_member_ids(pool: &PgPool, note_id: Uuid) -> ApiResult<Vec<Uuid>> {
+    let rows: Vec<(Uuid,)> = sqlx::query_as("SELECT user_id FROM note_members WHERE note_id = $1")
+        .bind(note_id).fetch_all(pool).await?;
+    Ok(rows.into_iter().map(|(u,)| u).collect())
 }

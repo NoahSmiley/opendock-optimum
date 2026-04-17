@@ -89,4 +89,12 @@ class BoardsStore: ObservableObject {
     }
 
     func reset() { boards = []; detail = nil; selectedId = nil; error = nil }
+
+    func apply(event: LiveEvent) {
+        switch event {
+        case .boardShareAdded, .boardShareRemoved:
+            Task { await self.loadBoards() }
+        default: break
+        }
+    }
 }

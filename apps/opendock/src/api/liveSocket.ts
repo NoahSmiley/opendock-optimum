@@ -9,7 +9,7 @@ export class LiveSocket {
   private attempt = 0;
 
   constructor(
-    private scope: "note" | "board",
+    private scope: "note" | "board" | "user",
     private id: string,
     private onEvent: (ev: LiveEvent) => void,
   ) {}

@@ -4,6 +4,13 @@ use crate::dto::board::{Board, BoardDetail, CreateBoard, UpdateBoard};
 use crate::error::{ApiError, ApiResult};
 use crate::live::events::{LiveEvent, Room};
 use crate::state::AppState;
+
+fn notify_board_share(s: &AppState, board_id: Uuid, actor_id: Uuid, target_id: Uuid, added: bool, members: &[Uuid]) {
+    s.hub.publish(Room::Board { id: board_id }, LiveEvent::BoardMembersChanged { board_id, actor_id });
+    let make = || if added { LiveEvent::BoardShareAdded { board_id, actor_id } } else { LiveEvent::BoardShareRemoved { board_id, actor_id } };
+    s.hub.publish(Room::User { id: target_id }, make());
+    for m in members { s.hub.publish(Room::User { id: *m }, make()); }
+}
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::Json;
@@ -65,12 +72,14 @@ struct AddMemberBody { email: Option<String>, user_id: Option<Uuid> }
 async fn add_member(State(s): State<AppState>, u: AuthUser, Path(id): Path<Uuid>, Json(body): Json<AddMemberBody>) -> ApiResult<StatusCode> {
     let target = board::resolve_member_id(&s.pool, body.user_id, body.email.as_deref()).await?;
     board::add_member(&s.pool, id, u.0.id, target).await?;
-    s.hub.publish(Room::Board { id }, LiveEvent::BoardMembersChanged { board_id: id, actor_id: u.0.id });
+    let members = board::members(&s.pool, id).await?;
+    notify_board_share(&s, id, u.0.id, target, true, &members);
     Ok(StatusCode::NO_CONTENT)
 }
 
 async fn remove_member(State(s): State<AppState>, u: AuthUser, Path((id, user_id)): Path<(Uuid, Uuid)>) -> ApiResult<StatusCode> {
     board::remove_member(&s.pool, id, u.0.id, user_id).await?;
-    s.hub.publish(Room::Board { id }, LiveEvent::BoardMembersChanged { board_id: id, actor_id: u.0.id });
+    let members = board::members(&s.pool, id).await?;
+    notify_board_share(&s, id, u.0.id, user_id, false, &members);
     Ok(StatusCode::NO_CONTENT)
 }
