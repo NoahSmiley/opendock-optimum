@@ -6,8 +6,6 @@ struct ContentView: View {
     @State private var tab = 0
     @State private var notesPath = NavigationPath()
     @State private var boardsPath = NavigationPath()
-    @State private var showNewNote = false
-    @State private var pendingNoteId: UUID?
 
     var tabSelection: Binding<Int> {
         Binding(get: { tab }, set: { new in
@@ -22,7 +20,7 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: tabSelection) {
             NavigationStack(path: $notesPath) {
-                NoteListView(path: $notesPath, showNewNote: $showNewNote)
+                NoteListView(path: $notesPath, onCreateNew: createBlankNote)
                     .background(Theme.bg).navigationDestination(for: UUID.self) { id in
                         NoteEditorView(noteId: id).background(Theme.bg)
                     }
@@ -40,9 +38,13 @@ struct ContentView: View {
             Placeholder("Calendar").tabItem { Label("Calendar", systemImage: "calendar") }.tag(2)
         }
         .tint(Theme.active)
-        .sheet(isPresented: $showNewNote, onDismiss: {
-            if let id = pendingNoteId { notesPath.append(id); pendingNoteId = nil }
-        }) { NewNoteSheet { pendingNoteId = $0 } }
         .onAppear { Theme.setupGlobal() }
+    }
+
+    private func createBlankNote() {
+        Task {
+            await notesStore.create(title: "")
+            if let id = notesStore.selectedId { notesPath.append(id) }
+        }
     }
 }

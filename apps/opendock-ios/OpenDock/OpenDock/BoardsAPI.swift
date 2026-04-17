@@ -9,8 +9,9 @@ struct UpdateCardBody: Encodable {
     var description: String?
     var columnId: UUID?
     var position: Int?
-    var assigneeId: UUID?
 }
+struct AssignCardBody: Encodable { let assigneeId: UUID? }
+struct AddBoardMemberBody: Encodable { let email: String }
 
 enum BoardsAPI {
     static func list() async throws -> [Board] { try await APIClient.shared.get("boards") }
@@ -28,8 +29,21 @@ enum BoardsAPI {
     static func updateCard(_ boardId: UUID, cardId: UUID, body: UpdateCardBody) async throws -> Card {
         try await APIClient.shared.patch("\(path(boardId))/cards/\(cardId.uuidString.lowercased())", body: body)
     }
+    static func assignCard(_ boardId: UUID, cardId: UUID, assigneeId: UUID?) async throws -> Card {
+        try await APIClient.shared.patch("\(path(boardId))/cards/\(cardId.uuidString.lowercased())", body: AssignCardBody(assigneeId: assigneeId))
+    }
     static func deleteCard(_ boardId: UUID, cardId: UUID) async throws {
         try await APIClient.shared.delete("\(path(boardId))/cards/\(cardId.uuidString.lowercased())")
+    }
+
+    static func members(_ boardId: UUID) async throws -> [BoardMember] {
+        try await APIClient.shared.get("\(path(boardId))/members")
+    }
+    static func addMember(_ boardId: UUID, email: String) async throws {
+        try await APIClient.shared.postVoid("\(path(boardId))/members", body: AddBoardMemberBody(email: email))
+    }
+    static func removeMember(_ boardId: UUID, userId: UUID) async throws {
+        try await APIClient.shared.delete("\(path(boardId))/members/\(userId.uuidString.lowercased())")
     }
 
     private static func path(_ id: UUID) -> String { "boards/\(id.uuidString.lowercased())" }

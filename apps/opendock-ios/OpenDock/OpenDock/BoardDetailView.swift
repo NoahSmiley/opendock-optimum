@@ -10,6 +10,7 @@ struct BoardDetailView: View {
     @State private var openCardId: UUID?
     @State private var addingColumn = false
     @State private var newColumnTitle = ""
+    @State private var showingMembers = false
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -31,14 +32,20 @@ struct BoardDetailView: View {
                 Text(store.detail?.board.name ?? "Board").font(.custom(Theme.fontSemibold, size: 17)).foregroundColor(Theme.active)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button { addingColumn = true } label: {
-                    Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 14)).foregroundColor(Theme.muted)
-                }
+                Button { showingMembers = true } label: { Image(systemName: "person.2").font(.system(size: 15)).foregroundColor(Theme.muted) }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { addingColumn = true } label: { Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 15)).foregroundColor(Theme.muted) }
             }
         }
         .task(id: boardId) { await store.loadDetail(boardId) }
         .sheet(item: Binding(get: { openCardId.map { IDWrap(id: $0) } }, set: { openCardId = $0?.id })) { w in
             CardDetailSheet(boardId: boardId, cardId: w.id).environmentObject(store)
+        }
+        .sheet(isPresented: $showingMembers) {
+            if let d = store.detail, d.board.id == boardId {
+                BoardMembersSheet(boardId: boardId, ownerId: d.board.ownerId).environmentObject(store)
+            }
         }
         .alert("New column", isPresented: $addingColumn) {
             TextField("Column title", text: $newColumnTitle)

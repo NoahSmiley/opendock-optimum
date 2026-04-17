@@ -11,6 +11,7 @@ struct CardDetailSheet: View {
     @State private var saveTask: Task<Void, Never>?
 
     private var card: Card? { store.detail?.cards.first { $0.id == cardId } }
+    private var members: [BoardMember] { store.detail?.board.id == boardId ? (store.detail?.members ?? []) : [] }
 
     var body: some View {
         NavigationStack {
@@ -19,10 +20,14 @@ struct CardDetailSheet: View {
                     .font(.custom(Theme.fontSemibold, size: 20)).foregroundColor(Theme.active)
                     .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
                     .onChange(of: title) { _, v in schedule(title: v, description: nil) }
+                AssigneeRow(members: members, assignee: card?.assigneeId) { newId in
+                    Task { await store.assignCard(boardId: boardId, cardId: cardId, to: newId) }
+                }
+                Rectangle().fill(Theme.border).frame(height: 0.5).padding(.horizontal, 20)
                 TextEditor(text: $description)
                     .font(.custom(Theme.fontName, size: 15)).foregroundColor(Theme.text)
                     .scrollContentBackground(.hidden).background(Theme.bg)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 16).padding(.top, 8)
                     .onChange(of: description) { _, v in schedule(title: nil, description: v) }
                 if let c = card {
                     Text("Updated \(c.updatedAt.formatted(date: .abbreviated, time: .shortened))")
@@ -53,5 +58,34 @@ struct CardDetailSheet: View {
             if Task.isCancelled { return }
             await store.updateCard(boardId: boardId, cardId: cardId, title: title, description: description)
         }
+    }
+}
+
+private struct AssigneeRow: View {
+    let members: [BoardMember]
+    let assignee: UUID?
+    let onPick: (UUID?) -> Void
+
+    private var current: BoardMember? { members.first { $0.userId == assignee } }
+    private var label: String { current.map { $0.displayName ?? $0.email } ?? "Unassigned" }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "person.circle").font(.system(size: 13)).foregroundColor(Theme.faint)
+            Menu {
+                Button("Unassigned") { onPick(nil) }
+                Divider()
+                ForEach(members) { m in
+                    Button(m.displayName ?? m.email) { onPick(m.userId) }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(label).font(.custom(Theme.fontName, size: 13)).foregroundColor(assignee == nil ? Theme.faint : Theme.text)
+                    Image(systemName: "chevron.down").font(.system(size: 9)).foregroundColor(Theme.ghost)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20).padding(.bottom, 10)
     }
 }
