@@ -59,15 +59,9 @@ struct BoardDetailView: View {
     }
 
     @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Text(store.detail?.board.name ?? "Board").font(.custom(Theme.fontSemibold, size: 17)).foregroundColor(Theme.active)
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button { showingMembers = true } label: { Image(systemName: "person.2").font(.system(size: 15)).foregroundColor(Theme.muted) }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button { addingColumn = true } label: { Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 15)).foregroundColor(Theme.muted) }
-        }
+        ToolbarItem(placement: .principal) { Text(store.detail?.board.name ?? "Board").font(.custom(Theme.fontSemibold, size: 17)).foregroundColor(Theme.active) }
+        ToolbarItem(placement: .topBarTrailing) { Button { showingMembers = true } label: { Image(systemName: "person.2").font(.system(size: 15)).foregroundColor(Theme.muted) } }
+        ToolbarItem(placement: .topBarTrailing) { Button { addingColumn = true } label: { Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 15)).foregroundColor(Theme.muted) } }
     }
 
     private func submit(colId: UUID) {
@@ -77,13 +71,14 @@ struct BoardDetailView: View {
     }
 
     private func handleDrop(_ note: Notification) {
-        guard let info = note.userInfo, let cardId = info["cardId"] as? UUID, let columnId = info["columnId"] as? UUID else { return }
-        Task { await store.reorderCard(boardId: boardId, cardId: cardId, to: columnId, before: info["beforeId"] as? UUID) }
+        guard let i = note.userInfo, let c = i["cardId"] as? UUID, let col = i["columnId"] as? UUID else { coord.finish(); return }
+        let b = i["beforeId"] as? UUID
+        _ = store.applyReorderLocally(cardId: c, to: col, before: b); coord.finish()
+        Task { await store.reorderCard(boardId: boardId, cardId: c, to: col, before: b) }
     }
 
     private func submitColumn() {
-        let t = newColumnTitle.trimmingCharacters(in: .whitespaces)
-        newColumnTitle = ""
+        let t = newColumnTitle.trimmingCharacters(in: .whitespaces); newColumnTitle = ""
         guard !t.isEmpty else { return }
         Task { await store.addColumn(boardId: boardId, title: t) }
     }

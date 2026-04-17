@@ -23,22 +23,24 @@ final class DragCoordinator: ObservableObject {
     }
 
     func end() -> (card: UUID, column: UUID, before: UUID?)? {
-        guard let a = active, let col = targetColumn else { active = nil; targetColumn = nil; targetBefore = nil; return nil }
-        let result = (card: a.cardId, column: col, before: targetBefore)
-        active = nil; targetColumn = nil; targetBefore = nil
-        return result
+        guard let a = active, let col = targetColumn else { cancel(); return nil }
+        return (card: a.cardId, column: col, before: targetBefore)
     }
 
-    func cancel() { active = nil; targetColumn = nil; targetBefore = nil }
+    func finish() {
+        active = nil; targetColumn = nil; targetBefore = nil
+    }
+
+    func cancel() { finish() }
 
     private func recomputeTarget() {
         guard let a = active else { targetColumn = nil; targetBefore = nil; return }
         let col = columnFrames.first { $0.value.contains(location) }?.key
         targetColumn = col
         guard let col else { targetBefore = nil; return }
-        let siblings = cardFrames.filter { cardColumn[$0.key] == col && $0.key != a.cardId }
-        let before = siblings.first { $0.value.midY > location.y && location.y < $0.value.minY + $0.value.height / 2 + 20 }?.key
-            ?? siblings.filter { location.y < $0.value.midY }.min(by: { $0.value.minY < $1.value.minY })?.key
-        targetBefore = before
+        let siblings = cardFrames
+            .filter { cardColumn[$0.key] == col && $0.key != a.cardId }
+            .sorted { $0.value.minY < $1.value.minY }
+        targetBefore = siblings.first { location.y < $0.value.midY }?.key
     }
 }
