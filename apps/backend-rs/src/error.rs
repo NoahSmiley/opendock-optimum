@@ -1,83 +1,34 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
+use axum::Json;
+use serde_json::json;
 
-/// Unified error type returned by all handlers.
-#[derive(Debug)]
-pub struct AppError {
-    pub status: StatusCode,
-    pub code: String,
-    pub message: String,
+#[derive(Debug, thiserror::Error)]
+pub enum ApiError {
+    #[error("unauthorized")]
+    Unauthorized,
+    #[error("not found")]
+    NotFound,
+    #[error("database error: {0}")]
+    Db(#[from] sqlx::Error),
+    #[error("upstream error: {0}")]
+    Upstream(#[from] reqwest::Error),
+    #[error("internal error: {0}")]
+    Internal(#[from] anyhow::Error),
 }
 
-impl AppError {
-    pub fn new(status: StatusCode, code: &str, message: &str) -> Self {
-        Self {
-            status,
-            code: code.to_string(),
-            message: message.to_string(),
-        }
-    }
-
-    pub fn not_found(code: &str, message: &str) -> Self {
-        Self::new(StatusCode::NOT_FOUND, code, message)
-    }
-
-    pub fn bad_request(code: &str, message: &str) -> Self {
-        Self::new(StatusCode::BAD_REQUEST, code, message)
-    }
-
-    pub fn unauthorized() -> Self {
-        Self::new(
-            StatusCode::UNAUTHORIZED,
-            "UNAUTHENTICATED",
-            "You must be signed in.",
-        )
-    }
-
-    pub fn internal(message: &str) -> Self {
-        Self::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "INTERNAL_ERROR",
-            message,
-        )
-    }
-
-    pub fn conflict(code: &str, message: &str) -> Self {
-        Self::new(StatusCode::CONFLICT, code, message)
-    }
-
-    pub fn forbidden(code: &str, message: &str) -> Self {
-        Self::new(StatusCode::FORBIDDEN, code, message)
-    }
-}
-
-#[derive(Serialize)]
-struct ErrorBody {
-    error: ErrorDetail,
-}
-
-#[derive(Serialize)]
-struct ErrorDetail {
-    code: String,
-    message: String,
-}
-
-impl IntoResponse for AppError {
+impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let body = ErrorBody {
-            error: ErrorDetail {
-                code: self.code,
-                message: self.message,
-            },
+        let (status, msg): (StatusCode, &'static str) = match &self {
+            ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized"),
+            ApiError::NotFound => (StatusCode::NOT_FOUND, "not found"),
+            ApiError::Db(_) => (StatusCode::INTERNAL_SERVER_ERROR, "database error"),
+            ApiError::Upstream(_) => (StatusCode::BAD_GATEWAY, "upstream error"),
+            ApiError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "internal error"),
         };
-        (self.status, axum::Json(body)).into_response()
+        if status.is_server_error() { tracing::error!(error = ?self, "api error"); }
+        (status, Json(json!({ "error": msg }))).into_response()
     }
 }
 
-impl From<sqlx::Error> for AppError {
-    fn from(err: sqlx::Error) -> Self {
-        tracing::error!("database error: {err}");
-        Self::internal("A database error occurred.")
-    }
-}
+pub type ApiResult<T> = Result<T, ApiError>;
