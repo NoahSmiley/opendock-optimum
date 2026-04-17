@@ -1,8 +1,54 @@
 export type Tool = "notes" | "boards" | "calendar";
 export type MobileView = "list" | "detail";
 
-export interface Note { id: string; title: string; content: string; pinned: boolean; updatedAt: number }
+export interface AuthData {
+  token?: string;
+  user_id?: string;
+  email?: string;
+  display_name?: string;
+}
 
-export interface Card { id: string; title: string; description: string; columnId: string; order: number; updatedAt: number }
-export interface Column { id: string; title: string; order: number }
-export interface Board { id: string; name: string; columns: Column[]; cards: Card[] }
+export interface Note {
+  id: string;
+  owner_id: string;
+  title: string;
+  content: string;
+  pinned: boolean;
+  shared_with: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Board {
+  id: string;
+  owner_id: string;
+  name: string;
+  pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Column {
+  id: string;
+  board_id: string;
+  title: string;
+  position: number;
+}
+
+export interface Card {
+  id: string;
+  board_id: string;
+  column_id: string;
+  title: string;
+  description: string;
+  position: number;
+  assignee_id: string | null;
+  updated_at: string;
+}
+
+export interface BoardDetail {
+  board: Board;
+  columns: Column[];
+  cards: Card[];
+  members: string[];
+}

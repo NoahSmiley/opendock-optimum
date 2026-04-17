@@ -34,9 +34,6 @@ struct ColumnView: View {
                             .onSubmit(onSubmit).submitLabel(.done)
                             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Cancel", action: onCancel); Button("Add", action: onSubmit).bold() } }
                     }
-                    if cards.isEmpty && !adding {
-                        Text("No cards").font(.custom(Theme.fontName, size: 12)).foregroundColor(Theme.ghost).padding(.top, 20)
-                    }
                     ForEach(cards) { card in
                         HStack { Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text).multilineTextAlignment(.leading); Spacer() }
                             .padding(.horizontal, 14).padding(.vertical, 12)
@@ -49,16 +46,24 @@ struct ColumnView: View {
                                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
                             }
                     }
+                    if cards.isEmpty && !adding {
+                        Rectangle().fill(Color.clear).frame(height: 100).overlay(
+                            Text("Drop here").font(.custom(Theme.fontName, size: 12))
+                                .foregroundColor(isTargeted ? Theme.muted : Theme.ghost)
+                        )
+                    }
+                    Color.clear.frame(minHeight: 60)
                 }
                 .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 16)
+                .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
             }
+            .dropDestination(for: String.self) { ids, _ in
+                guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
+                Task { await store.moveCard(boardId: boardId, cardId: cid, to: col.id) }; return true
+            } isTargeted: { isTargeted = $0 }
         }
         .frame(width: 300).frame(maxHeight: .infinity, alignment: .top)
         .background(isTargeted ? Theme.elevated : Color.clear)
         .overlay(Rectangle().frame(width: 0.5).foregroundColor(Theme.border), alignment: .trailing)
-        .dropDestination(for: String.self) { ids, _ in
-            guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
-            store.moveCard(boardId: boardId, cardId: cid, to: col.id); return true
-        } isTargeted: { isTargeted = $0 }
     }
 }

@@ -50,7 +50,6 @@ export function BoardsList({ onSelect }: BoardsListProps) {
           <div key={b.id} className={`list-item${b.id === activeBoardId ? " active" : ""}`} onClick={() => onSelect(b.id)}
             onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, id: b.id, name: b.name }); }}>
             <div className="list-item-title">{b.name}</div>
-            <div className="list-item-meta"><span>{b.cards.length} cards</span><span>{b.columns.length} cols</span></div>
           </div>
         ))}
       </div>

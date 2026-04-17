@@ -64,7 +64,7 @@ export function NotesList({ onSelect, onNew }: NotesListProps) {
                 {n.pinned && <span className="list-item-pin">&#9679;</span>}
                 {n.title || "Untitled"}
               </div>
-              <div className="list-item-meta"><span>{timeAgo(n.updatedAt)}</span><span>{wordCount(n.content)}w</span></div>
+              <div className="list-item-meta"><span>{timeAgo(n.updated_at)}</span><span>{wordCount(n.content)}w</span></div>
               {preview && <div className="list-item-preview">{preview}</div>}
             </div>
           );

@@ -1,7 +1,8 @@
 import type { Note } from "@/types";
 
-export function timeAgo(ts: number): string {
-  const d = Date.now() - ts;
+export function timeAgo(ts: string | number): string {
+  const ms = typeof ts === "string" ? Date.parse(ts) : ts;
+  const d = Date.now() - ms;
   if (d < 60_000) return "now";
   if (d < 3_600_000) return `${Math.floor(d / 60_000)}m`;
   if (d < 86_400_000) return `${Math.floor(d / 3_600_000)}h`;

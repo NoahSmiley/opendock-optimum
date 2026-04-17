@@ -4,6 +4,7 @@ use tokio::sync::RwLock;
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct AuthData {
     pub token: Option<String>,
+    pub user_id: Option<String>,
     pub email: Option<String>,
     pub display_name: Option<String>,
 }
@@ -14,25 +15,18 @@ pub struct AuthState {
 
 impl AuthState {
     pub fn new() -> Self {
-        Self {
-            inner: RwLock::new(AuthData::default()),
-        }
+        Self { inner: RwLock::new(AuthData::default()) }
     }
 
-    pub async fn set_auth(&self, token: String, email: String, display_name: Option<String>) {
-        let mut data = self.inner.write().await;
-        data.token = Some(token);
-        data.email = Some(email);
-        data.display_name = display_name;
+    pub async fn set(&self, data: AuthData) {
+        *self.inner.write().await = data;
     }
 
     pub async fn clear(&self) {
-        let mut data = self.inner.write().await;
-        *data = AuthData::default();
+        *self.inner.write().await = AuthData::default();
     }
 
     pub async fn get(&self) -> AuthData {
         self.inner.read().await.clone()
     }
-
 }
