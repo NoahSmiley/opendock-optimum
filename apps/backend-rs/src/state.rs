@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::live::hub::Hub;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
@@ -7,6 +8,7 @@ pub struct AppState {
     pub pool: PgPool,
     pub athion_verify_url: String,
     pub http: reqwest::Client,
+    pub hub: Hub,
 }
 
 impl AppState {
@@ -19,6 +21,7 @@ impl AppState {
             pool,
             athion_verify_url: cfg.athion_verify_url.clone(),
             http: reqwest::Client::new(),
+            hub: Hub::new(),
         })
     }
 }

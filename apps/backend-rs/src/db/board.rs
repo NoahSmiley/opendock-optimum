@@ -81,3 +81,11 @@ pub async fn remove_member(pool: &PgPool, board_id: Uuid, owner_id: Uuid, user_i
         .bind(board_id).bind(user_id).execute(pool).await?;
     Ok(())
 }
+
+pub async fn resolve_member_id(pool: &PgPool, user_id: Option<Uuid>, email: Option<&str>) -> ApiResult<Uuid> {
+    if let Some(id) = user_id { return Ok(id); }
+    let email = email.ok_or(ApiError::NotFound)?;
+    let row: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM users WHERE LOWER(email) = LOWER($1)")
+        .bind(email).fetch_optional(pool).await?;
+    row.map(|(u,)| u).ok_or(ApiError::NotFound)
+}

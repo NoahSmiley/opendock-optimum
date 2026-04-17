@@ -8,6 +8,7 @@ mod config;
 mod db;
 mod dto;
 mod error;
+mod live;
 mod routes;
 mod state;
 
@@ -26,10 +27,13 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .merge(routes::health::router())
         .merge(routes::me::router(state.clone()))
+        .merge(routes::users::router(state.clone()))
         .merge(routes::notes::router(state.clone()))
+        .merge(routes::note_members::router(state.clone()))
         .merge(routes::boards::router(state.clone()))
         .merge(routes::board_columns::router(state.clone()))
         .merge(routes::board_cards::router(state.clone()))
+        .merge(live::ws::router(state.clone()))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
