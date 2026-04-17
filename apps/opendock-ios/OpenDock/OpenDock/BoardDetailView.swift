@@ -1,10 +1,10 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct BoardDetailView: View {
     @EnvironmentObject var store: BoardsStore
     @EnvironmentObject var auth: AuthStore
     let boardId: UUID
+    @StateObject private var coord = DragCoordinator()
     @State private var newCardTitle = ""
     @State private var adding = false
     @State private var addingCol: UUID?
@@ -15,33 +15,21 @@ struct BoardDetailView: View {
     @State private var socket: LiveSocket?
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 0) {
-                if let d = store.detail, d.board.id == boardId {
-                    ForEach(d.columns.sorted { $0.position < $1.position }) { col in
-                        ColumnView(col: col, cards: store.cardsByColumn[col.id] ?? [], boardId: boardId,
-                            adding: adding && addingCol == col.id, newCardTitle: $newCardTitle,
-                            onAdd: { addingCol = col.id; adding = true }, onSubmit: { submit(colId: col.id) },
-                            onCancel: { adding = false; newCardTitle = "" }, onOpen: { openCardId = $0 })
-                    }
-                }
-            }
+        ZStack(alignment: .topLeading) {
+            ScrollView(.horizontal, showsIndicators: false) { columns }
+                .scrollDisabled(coord.active != nil)
+                .onPreferenceChange(CardFramesKey.self) { coord.cardFrames = $0 }
+                .onPreferenceChange(ColumnFramesKey.self) { coord.columnFrames = $0 }
+            DragOverlay(coord: coord)
         }
+        .coordinateSpace(name: "board")
+        .environmentObject(coord)
         .background(Theme.bg).navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Theme.bg, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text(store.detail?.board.name ?? "Board").font(.custom(Theme.fontSemibold, size: 17)).foregroundColor(Theme.active)
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { showingMembers = true } label: { Image(systemName: "person.2").font(.system(size: 15)).foregroundColor(Theme.muted) }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { addingColumn = true } label: { Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 15)).foregroundColor(Theme.muted) }
-            }
-        }
+        .toolbar { toolbarContent }
         .task(id: boardId) { await store.loadDetail(boardId); startSocket() }
         .onDisappear { socket?.stop(); socket = nil }
+        .onReceive(NotificationCenter.default.publisher(for: .opendockCardDrop), perform: handleDrop)
         .sheet(item: Binding(get: { openCardId.map { IDWrap(id: $0) } }, set: { openCardId = $0?.id })) { w in
             CardDetailSheet(boardId: boardId, cardId: w.id).environmentObject(store)
         }
@@ -57,10 +45,40 @@ struct BoardDetailView: View {
         }
     }
 
+    private var columns: some View {
+        HStack(alignment: .top, spacing: 0) {
+            if let d = store.detail, d.board.id == boardId {
+                ForEach(d.columns.sorted { $0.position < $1.position }) { col in
+                    ColumnView(col: col, cards: store.cardsByColumn[col.id] ?? [], boardId: boardId,
+                        adding: adding && addingCol == col.id, newCardTitle: $newCardTitle,
+                        onAdd: { addingCol = col.id; adding = true }, onSubmit: { submit(colId: col.id) },
+                        onCancel: { adding = false; newCardTitle = "" }, onOpen: { openCardId = $0 })
+                }
+            }
+        }
+    }
+
+    @ToolbarContentBuilder private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Text(store.detail?.board.name ?? "Board").font(.custom(Theme.fontSemibold, size: 17)).foregroundColor(Theme.active)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { showingMembers = true } label: { Image(systemName: "person.2").font(.system(size: 15)).foregroundColor(Theme.muted) }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { addingColumn = true } label: { Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 15)).foregroundColor(Theme.muted) }
+        }
+    }
+
     private func submit(colId: UUID) {
         guard !newCardTitle.isEmpty else { return }
         let t = newCardTitle; newCardTitle = ""; adding = false
         Task { await store.addCard(boardId: boardId, columnId: colId, title: t) }
+    }
+
+    private func handleDrop(_ note: Notification) {
+        guard let info = note.userInfo, let cardId = info["cardId"] as? UUID, let columnId = info["columnId"] as? UUID else { return }
+        Task { await store.reorderCard(boardId: boardId, cardId: cardId, to: columnId, before: info["beforeId"] as? UUID) }
     }
 
     private func submitColumn() {

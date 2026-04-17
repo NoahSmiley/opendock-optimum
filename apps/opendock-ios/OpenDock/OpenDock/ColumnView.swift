@@ -1,8 +1,8 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct ColumnView: View {
     @EnvironmentObject var store: BoardsStore
+    @EnvironmentObject var coord: DragCoordinator
     let col: BoardColumn
     let cards: [Card]
     let boardId: UUID
@@ -12,12 +12,15 @@ struct ColumnView: View {
     let onSubmit: () -> Void
     let onCancel: () -> Void
     let onOpen: (UUID) -> Void
-    @State private var isTargeted = false
-    @State private var hoverBeforeId: UUID?
+
+    var isTargeted: Bool { coord.targetColumn == col.id && coord.active != nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) { header; cardsList }
             .frame(width: 288).frame(maxHeight: .infinity, alignment: .top)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: ColumnFramesKey.self, value: [col.id: geo.frame(in: .named("board"))])
+            })
             .background(RoundedRectangle(cornerRadius: 12).fill(isTargeted ? Theme.input : Theme.elevated))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderStrong, lineWidth: 0.5))
             .padding(.horizontal, 6).padding(.vertical, 12)
@@ -37,22 +40,18 @@ struct ColumnView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 6) {
                 if adding { newCardField }
-                ForEach(Array(cards.enumerated()), id: \.element.id) { idx, card in cardRow(idx: idx, card: card) }
-                if cards.isEmpty && !adding { emptyState }
+                ForEach(Array(cards.enumerated()), id: \.element.id) { idx, card in
+                    CardRowView(card: card, columnId: col.id, members: store.detail?.members ?? [], onOpen: onOpen)
+                        .offset(y: shiftOffset(for: idx))
+                        .animation(.easeOut(duration: 0.18), value: coord.targetBefore)
+                        .animation(.easeOut(duration: 0.18), value: coord.targetColumn)
+                }
+                if cards.isEmpty { emptyState }
                 Color.clear.frame(minHeight: 60)
             }
             .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 16)
             .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
         }
-        .dropDestination(for: String.self, action: handleColumnDrop, isTargeted: handleColumnTarget)
-    }
-
-    private func cardRow(idx: Int, card: Card) -> some View {
-        CardRowView(card: card, members: store.detail?.members ?? [], onOpen: onOpen)
-            .offset(y: shiftOffset(for: idx))
-            .dropDestination(for: String.self, action: { ids, _ in handleCardDrop(ids: ids, beforeId: card.id) }, isTargeted: { hovering in
-                if hovering { withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = card.id } }
-            })
     }
 
     private var newCardField: some View {
@@ -69,27 +68,9 @@ struct ColumnView: View {
         )
     }
 
-    private func handleColumnDrop(ids: [String], _ point: CGPoint) -> Bool {
-        withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
-        guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
-        Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: nil) }
-        return true
-    }
-
-    private func handleColumnTarget(_ hovering: Bool) {
-        isTargeted = hovering
-        if !hovering { withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil } }
-    }
-
-    private func handleCardDrop(ids: [String], beforeId: UUID) -> Bool {
-        withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
-        guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
-        Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: beforeId) }
-        return true
-    }
-
     private func shiftOffset(for idx: Int) -> CGFloat {
-        guard let beforeId = hoverBeforeId, let hoverIdx = cards.firstIndex(where: { $0.id == beforeId }) else { return 0 }
-        return idx > hoverIdx ? 48 : 0
+        guard coord.targetColumn == col.id, let beforeId = coord.targetBefore,
+              let hoverIdx = cards.firstIndex(where: { $0.id == beforeId }) else { return 0 }
+        return idx >= hoverIdx ? 48 : 0
     }
 }
