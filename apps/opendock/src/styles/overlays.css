@@ -1,5 +1,5 @@
 /* @athion/style — context menus, modals, dialogs */
-.context-menu { position: fixed; z-index: 200; background: var(--a-bg-elevated); border: 1px solid var(--a-border-strong); min-width: 200px; padding: 4px 0; }
+.context-menu { position: fixed; z-index: 90; background: var(--a-bg-elevated); border: 1px solid var(--a-border-strong); min-width: 200px; padding: 4px 0; }
 .context-menu-item { padding: 7px 14px; font-size: 13px; color: var(--a-text); cursor: pointer; display: flex; justify-content: space-between; }
 .context-menu-item:hover { background: var(--a-bg-input); }
 .context-menu-item.danger { color: var(--a-error); }

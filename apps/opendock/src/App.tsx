@@ -7,6 +7,7 @@ import { BoardView } from "@/components/BoardView";
 import { NewNoteModal } from "@/components/Modal";
 import { useNotes } from "@/stores/notes";
 import { useBoards } from "@/stores/boards";
+import { useAppShortcuts } from "@/hooks/useAppShortcuts";
 import type { Tool, MobileView } from "@/types";
 
 export function App() {
@@ -21,6 +22,12 @@ export function App() {
   const back = useCallback(() => setMobileView("list"), []);
   const selectNote = useCallback((id: string) => { setActiveNote(id); setMobileView("detail"); }, [setActiveNote]);
   const selectBoard = useCallback((id: string) => { setActiveBoard(id); setMobileView("detail"); }, [setActiveBoard]);
+
+  useAppShortcuts({
+    setTool,
+    onNewNote: useCallback(() => { setTool("notes"); setShowModal(true); }, []),
+    onFocusSearch: useCallback(() => { setTool("notes"); window.dispatchEvent(new Event("opendock:focus-search")); }, []),
+  });
 
   return (
     <Shell tool={tool} setTool={setTool} mobileView={mobileView}>

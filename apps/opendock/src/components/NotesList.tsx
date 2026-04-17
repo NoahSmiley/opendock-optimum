@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNotes } from "@/stores/notes";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -18,6 +18,13 @@ export function NotesList({ onSelect, onNew }: NotesListProps) {
   const notes = useMemo(() => filterNotes(allNotes, search), [allNotes, search]);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [deleting, setDeleting] = useState<{ id: string; title: string } | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onFocus = () => searchRef.current?.focus();
+    window.addEventListener("opendock:focus-search", onFocus);
+    return () => window.removeEventListener("opendock:focus-search", onFocus);
+  }, []);
 
   const onContext = useCallback((e: React.MouseEvent, noteId: string) => {
     e.preventDefault();
@@ -44,7 +51,7 @@ export function NotesList({ onSelect, onNew }: NotesListProps) {
       </div>
       <div className="tool-list-search">
         <div className="search-pill">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search notes..." />
+          <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search notes..." />
         </div>
       </div>
       <div className="tool-list-items">

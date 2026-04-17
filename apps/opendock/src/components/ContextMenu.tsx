@@ -4,11 +4,22 @@ export interface MenuItem { label: string; shortcut?: string; action: () => void
 
 interface ContextMenuProps { x: number; y: number; items: MenuItem[]; onClose: () => void }
 
+const CLOSE_EVENT = "opendock:close-context-menus";
+
 export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   useEffect(() => {
-    const handle = () => onClose();
-    document.addEventListener("click", handle);
-    return () => document.removeEventListener("click", handle);
+    window.dispatchEvent(new Event(CLOSE_EVENT));
+    const onClick = () => onClose();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onExternal = () => onClose();
+    document.addEventListener("click", onClick);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener(CLOSE_EVENT, onExternal);
+    return () => {
+      document.removeEventListener("click", onClick);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(CLOSE_EVENT, onExternal);
+    };
   }, [onClose]);
 
   const finalX = Math.min(x, window.innerWidth - 188);
