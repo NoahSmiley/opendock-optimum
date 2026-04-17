@@ -6,6 +6,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 mod auth;
 mod config;
 mod db;
+mod dto;
 mod error;
 mod routes;
 mod state;
@@ -25,6 +26,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .merge(routes::health::router())
         .merge(routes::me::router(state.clone()))
+        .merge(routes::notes::router(state.clone()))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
