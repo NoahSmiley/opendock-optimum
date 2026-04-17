@@ -10,6 +10,7 @@ interface BoardViewProps { onBack: () => void }
 export function BoardView({ onBack }: BoardViewProps) {
   const detail = useBoards((s) => s.detail);
   const addCard = useBoards((s) => s.addCard);
+  const addColumn = useBoards((s) => s.addColumn);
   const moveCard = useBoards((s) => s.moveCard);
   const deleteCard = useBoards((s) => s.deleteCard);
   const updateCard = useBoards((s) => s.updateCard);
@@ -48,6 +49,7 @@ export function BoardView({ onBack }: BoardViewProps) {
       <div className="board-header">
         <button className="back-btn" onClick={onBack}>&larr;</button>
         <span className="board-header-title">{detail.board.name}</span>
+        <button className="board-add-col" onClick={() => { const t = window.prompt("Column title")?.trim(); if (t) addColumn(t); }}>+ column</button>
       </div>
       <div className="board-columns">
         {detail.columns.map((col) => {

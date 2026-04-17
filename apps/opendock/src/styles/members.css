@@ -23,3 +23,4 @@
 .members-name { color: var(--a-text); font-size: 13px; font-weight: 500; }
 .members-email, .members-meta { color: var(--a-text-faint); font-size: 11px; }
 .members-error { color: var(--a-err); font-size: 12px; padding: 8px 14px; }
+.members-hint { color: var(--a-text-faint); font-size: 11px; padding: 6px 2px; }
