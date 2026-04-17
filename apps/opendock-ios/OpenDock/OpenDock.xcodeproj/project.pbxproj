@@ -35,6 +35,7 @@
 		9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6E6CD666981BCC191EF111 /* Theme.swift */; };
 		A7A4A56EC00F0BE0CF7A6B71 /* OpenAISans-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */; };
 		A987B38D07A5ADAF4C7C0175 /* BoardsAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9435BED65CB0C19CE8AF2 /* BoardsAPI.swift */; };
+		B64FE69FF60D2015F247CFA9 /* CardRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE3758F961E275DAAA3C6BE /* CardRowView.swift */; };
 		C21E37C7A409303268309636 /* ColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219DF57BD62CEF8A263611AF /* ColumnView.swift */; };
 		C3A7235CF086A75FD4977912 /* LiveEventDecode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357B3C3DC060A51DD2EC7614 /* LiveEventDecode.swift */; };
 		CDC18E5E7ABC6B7098072AE5 /* NotesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */; };
@@ -49,6 +50,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0FE3758F961E275DAAA3C6BE /* CardRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardRowView.swift; sourceTree = "<group>"; };
 		1608876BBE6F3385762FB1AB /* AuthStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		219DF57BD62CEF8A263611AF /* ColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnView.swift; sourceTree = "<group>"; };
 		24CD7B3ACBF8892E1E4DA98A /* NoteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFormat.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 				5D16E759B3CD8548F2ED9E19 /* MemberRowView.swift */,
 				E25F671CD5DAE46C37B12639 /* BoardsStore+Cards.swift */,
 				90A4221086AB03011D925BCC /* ProfileView.swift */,
+				0FE3758F961E275DAAA3C6BE /* CardRowView.swift */,
 			);
 			path = OpenDock;
 			sourceTree = "<group>";
@@ -270,6 +273,7 @@
 				2CD1761AED29735FFECF93FB /* MemberRowView.swift in Sources */,
 				608C062AFF8349DE330FAC58 /* BoardsStore+Cards.swift in Sources */,
 				77EA2E58DE9D4FE89F0559A1 /* ProfileView.swift in Sources */,
+				B64FE69FF60D2015F247CFA9 /* CardRowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
