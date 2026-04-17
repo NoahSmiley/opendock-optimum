@@ -1,4 +1,11 @@
 /* @athion/style — mobile/tablet layout overrides */
+@media (max-width: 1200px) and (min-width: 1025px) {
+  .nav-rail { width: 92px; padding-left: 10px; padding-right: 10px; }
+  .tool-list { width: 240px; min-width: 240px; }
+  .board-column { width: 260px; min-width: 260px; }
+  .card-detail { width: 320px; }
+}
+
 @media (max-width: 1024px) {
   .board-columns { flex-direction: column; padding: 12px 20px; }
   .board-column { width: 100%; min-width: 100%; }

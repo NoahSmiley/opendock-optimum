@@ -1,5 +1,17 @@
+import * as api from "@/api/boards";
 import type { BoardDetail, Card, Column } from "@/types";
 import type { LiveEvent } from "@/api/live";
+
+export async function addMember(boardId: string, email: string, reload: () => Promise<void>): Promise<boolean> {
+  await api.addBoardMember(boardId, email);
+  await reload();
+  return true;
+}
+
+export async function removeMember(boardId: string, userId: string, reload: () => Promise<void>): Promise<void> {
+  await api.removeBoardMember(boardId, userId);
+  await reload();
+}
 
 export function withColumn(d: BoardDetail | null, c: Column): BoardDetail | null {
   return d ? { ...d, columns: [...d.columns, c] } : d;

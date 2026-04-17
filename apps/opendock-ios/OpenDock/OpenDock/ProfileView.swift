@@ -8,12 +8,12 @@ struct ProfileView: View {
         let label = auth.displayName ?? auth.email ?? ""
         let initial = label.prefix(1).uppercased()
         VStack(spacing: 0) {
-            VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("OpenDock").font(.custom(Theme.fontMedium, size: 13)).foregroundColor(Theme.faint).tracking(0.5)
                 Text("Profile").font(.custom(Theme.fontSemibold, size: 28)).foregroundColor(Theme.active)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 32)
+            .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 16)
 
             HStack(spacing: 14) {
                 Text(initial).font(.custom(Theme.fontSemibold, size: 18)).foregroundColor(Theme.active)
@@ -26,7 +26,7 @@ struct ProfileView: View {
                 }
                 Spacer()
             }
-            .padding(.horizontal, 20).padding(.bottom, 24)
+            .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 24)
 
             Button { confirmingLogout = true } label: {
                 Text("Sign out").font(.custom(Theme.fontMedium, size: 14)).foregroundColor(Theme.error)

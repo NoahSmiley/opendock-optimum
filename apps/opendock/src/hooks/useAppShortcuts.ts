@@ -18,7 +18,6 @@ export function useAppShortcuts({ setTool, onNewNote, onFocusSearch }: Options) 
       if (e.key === "f") { e.preventDefault(); onFocusSearch(); return; }
       if (e.key === "1") { e.preventDefault(); setTool("notes"); return; }
       if (e.key === "2") { e.preventDefault(); setTool("boards"); return; }
-      if (e.key === "3") { e.preventDefault(); setTool("calendar"); return; }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

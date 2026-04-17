@@ -3,13 +3,14 @@ import { useCallback, useEffect, useRef } from "react";
 interface DragState { id: string; ghost: HTMLElement; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean }
 
 interface UseBoardDragArgs {
-  onDropAt: (cardId: string, colId: string) => void;
+  onDropAt: (cardId: string, colId: string, beforeCardId: string | null) => void;
   onDragStart?: () => void;
 }
 
 export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
   const drag = useRef<DragState | null>(null);
   const dropCol = useRef<string | null>(null);
+  const dropBefore = useRef<string | null>(null);
   const justDragged = useRef(0);
 
   const setDropHighlight = useCallback((colId: string | null) => {
@@ -17,6 +18,13 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
     if (dropCol.current) document.querySelector(`[data-col="${dropCol.current}"]`)?.classList.remove("drop-target");
     if (colId) document.querySelector(`[data-col="${colId}"]`)?.classList.add("drop-target");
     dropCol.current = colId;
+  }, []);
+
+  const setDropIndicator = useCallback((beforeId: string | null) => {
+    if (dropBefore.current === beforeId) return;
+    document.querySelectorAll(".drop-before").forEach((n) => n.classList.remove("drop-before"));
+    if (beforeId) document.querySelector(`[data-card="${beforeId}"]`)?.classList.add("drop-before");
+    dropBefore.current = beforeId;
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent, id: string) => {
@@ -44,6 +52,11 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       const under = document.elementFromPoint(e.clientX, e.clientY);
       const col = under?.closest("[data-col]") as HTMLElement | null;
       setDropHighlight(col?.dataset.col ?? null);
+      if (col) {
+        const cards = Array.from(col.querySelectorAll<HTMLElement>("[data-card]")).filter((c) => c.dataset.card !== d.id);
+        const before = cards.find((c) => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+        setDropIndicator(before?.dataset.card ?? null);
+      } else setDropIndicator(null);
     };
     const up = () => {
       const d = drag.current; if (!d) return;
@@ -52,17 +65,17 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
         document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         document.body.style.cursor = "";
         const target = dropCol.current;
-        if (target) onDropAt(d.id, target);
+        if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
       }
-      setDropHighlight(null);
+      setDropHighlight(null); setDropIndicator(null);
       drag.current = null;
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
     return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); };
-  }, [onDropAt, onDragStart, setDropHighlight]);
+  }, [onDropAt, onDragStart, setDropHighlight, setDropIndicator]);
 
   const shouldOpenOnClick = useCallback(() => Date.now() - justDragged.current > 100, []);
 

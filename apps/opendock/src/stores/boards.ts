@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as api from "@/api/boards";
-import { applyBoardEvent, removeCard, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
+import { addMember, applyBoardEvent, removeCard, removeMember, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
 import type { Board, BoardDetail } from "@/types";
 import type { LiveEvent } from "@/api/live";
 
@@ -19,7 +19,7 @@ interface BoardsState {
   addColumn: (title: string) => Promise<void>;
   addCard: (columnId: string, title: string) => Promise<void>;
   updateCard: (cardId: string, patch: api.CardPatch) => Promise<void>;
-  moveCard: (cardId: string, toColumnId: string) => Promise<void>;
+  reorderCard: (cardId: string, toColumnId: string, beforeCardId: string | null) => Promise<void>;
   assignCard: (cardId: string, assigneeId: string | null) => Promise<void>;
   deleteCard: (cardId: string) => Promise<void>;
   addMember: (email: string) => Promise<boolean>;
@@ -36,66 +36,66 @@ export const useBoards = create<BoardsState>((set, get) => ({
   error: null,
   loadBoards: async () => {
     set({ loading: true, error: null });
-    try { const boards = await api.fetchBoards(); set({ boards, loading: false }); }
+    try { set({ boards: await api.fetchBoards(), loading: false }); }
     catch (e) { set({ loading: false, error: String(e) }); }
   },
   loadDetail: async (id) => {
-    try { const detail = await api.fetchBoardDetail(id); set({ detail, activeBoardId: id }); }
+    try { set({ detail: await api.fetchBoardDetail(id), activeBoardId: id }); }
     catch (e) { set({ error: String(e) }); }
   },
   setActiveBoard: (id) => { set({ activeBoardId: id, detail: null }); if (id) get().loadDetail(id); },
   createBoard: async (name) => {
-    const board = await api.createBoard(name);
-    set({ boards: [board, ...get().boards], activeBoardId: board.id });
-    await get().loadDetail(board.id);
+    const b = await api.createBoard(name);
+    set({ boards: [b, ...get().boards], activeBoardId: b.id });
+    await get().loadDetail(b.id);
   },
   deleteBoard: async (id) => {
     await api.deleteBoard(id);
-    set({ boards: get().boards.filter((b) => b.id !== id), activeBoardId: get().activeBoardId === id ? null : get().activeBoardId, detail: null });
+    const active = get().activeBoardId === id ? null : get().activeBoardId;
+    set({ boards: get().boards.filter((b) => b.id !== id), activeBoardId: active, detail: null });
   },
   renameBoard: async (id, name) => {
-    const fresh = await api.updateBoard(id, { name });
-    set({ boards: get().boards.map((b) => b.id === id ? fresh : b) });
-    const d = get().detail; if (d && d.board.id === id) set({ detail: { ...d, board: fresh } });
+    const fresh = await api.updateBoard(id, { name }); const d = get().detail;
+    set({ boards: get().boards.map((b) => b.id === id ? fresh : b), detail: d && d.board.id === id ? { ...d, board: fresh } : d });
   },
   addColumn: async (title) => {
     const id = get().activeBoardId; if (!id) return;
-    const col = await api.createColumn(id, title);
-    set({ detail: withColumn(get().detail, col) });
+    set({ detail: withColumn(get().detail, await api.createColumn(id, title)) });
   },
   addCard: async (columnId, title) => {
     const id = get().activeBoardId; if (!id) return;
-    const card = await api.createCard(id, columnId, title);
-    set({ detail: withCard(get().detail, card) });
+    set({ detail: withCard(get().detail, await api.createCard(id, columnId, title)) });
   },
   updateCard: async (cardId, patch) => {
     const id = get().activeBoardId; if (!id) return;
-    const fresh = await api.updateCard(id, cardId, patch);
-    set({ detail: replaceCard(get().detail, fresh) });
+    set({ detail: replaceCard(get().detail, await api.updateCard(id, cardId, patch)) });
   },
-  moveCard: async (cardId, toColumnId) => {
+  reorderCard: async (cardId, toColumnId, beforeCardId) => {
     const d = get().detail; if (!d) return;
-    const card = d.cards.find((c) => c.id === cardId); if (!card || card.column_id === toColumnId) return;
-    const optimistic = { ...card, column_id: toColumnId };
-    set({ detail: replaceCard(d, optimistic) });
-    try { await get().updateCard(cardId, { column_id: toColumnId }); }
+    const card = d.cards.find((c) => c.id === cardId); if (!card) return;
+    const siblings = d.cards.filter((c) => c.column_id === toColumnId && c.id !== cardId).sort((a, b) => a.position - b.position);
+    const beforeIdx = beforeCardId ? siblings.findIndex((c) => c.id === beforeCardId) : -1;
+    const position = beforeIdx >= 0 ? beforeIdx : siblings.length;
+    if (card.column_id === toColumnId && card.position === position) return;
+    set({ detail: replaceCard(d, { ...card, column_id: toColumnId, position }) });
+    try { await get().updateCard(cardId, { column_id: toColumnId, position }); }
     catch (e) { set({ detail: replaceCard(get().detail, card), error: String(e) }); }
   },
   assignCard: async (cardId, assigneeId) => { await get().updateCard(cardId, { assignee_id: assigneeId }); },
-  addMember: async (email) => {
-    const id = get().activeBoardId; if (!id) return false;
-    try { await api.addBoardMember(id, email); await get().loadDetail(id); return true; }
-    catch (e) { set({ error: String(e) }); return false; }
-  },
-  removeMember: async (userId) => {
-    const id = get().activeBoardId; if (!id) return;
-    try { await api.removeBoardMember(id, userId); await get().loadDetail(id); }
-    catch (e) { set({ error: String(e) }); }
-  },
   deleteCard: async (cardId) => {
     const id = get().activeBoardId; if (!id) return;
     await api.deleteCard(id, cardId);
     set({ detail: removeCard(get().detail, cardId) });
+  },
+  addMember: async (email) => {
+    const id = get().activeBoardId; if (!id) return false;
+    try { return await addMember(id, email, () => get().loadDetail(id)); }
+    catch (e) { set({ error: String(e) }); return false; }
+  },
+  removeMember: async (userId) => {
+    const id = get().activeBoardId; if (!id) return;
+    try { await removeMember(id, userId, () => get().loadDetail(id)); }
+    catch (e) { set({ error: String(e) }); }
   },
   applyEvent: (ev) => { set({ detail: applyBoardEvent(get().detail, ev) }); },
   reset: () => set({ boards: [], activeBoardId: null, detail: null, error: null }),

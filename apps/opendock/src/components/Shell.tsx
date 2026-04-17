@@ -5,7 +5,6 @@ import { useAuth } from "@/stores/auth";
 const tools: { id: Tool; label: string }[] = [
   { id: "notes", label: "Notes" },
   { id: "boards", label: "Boards" },
-  { id: "calendar", label: "Calendar" },
 ];
 
 interface ShellProps { tool: Tool; setTool: (t: Tool) => void; mobileView: MobileView; children: ReactNode }

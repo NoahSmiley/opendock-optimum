@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		01BC4EA3F29971CCEB3DA5C6 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DD603F33F7A82C098326F8B /* APIClient.swift */; };
 		05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686D85BDB4EE25B273844E76 /* BoardDetailView.swift */; };
-		0954E5BC69C41635B8A9F839 /* Placeholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160C0E239F7C310D98D518E5 /* Placeholder.swift */; };
 		1243A352EFD1258A57BCFFC2 /* MembersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55BE51A3AF1E6F732C038B1D /* MembersSheet.swift */; };
 		158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4105E951680CBD8520EA4CCD /* NoteRow.swift */; };
 		2B1336DB67EC186687EB1B41 /* OpenAISans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */; };
@@ -51,7 +50,6 @@
 
 /* Begin PBXFileReference section */
 		1608876BBE6F3385762FB1AB /* AuthStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
-		160C0E239F7C310D98D518E5 /* Placeholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Placeholder.swift; sourceTree = "<group>"; };
 		219DF57BD62CEF8A263611AF /* ColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnView.swift; sourceTree = "<group>"; };
 		24CD7B3ACBF8892E1E4DA98A /* NoteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFormat.swift; sourceTree = "<group>"; };
 		2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Semibold.ttf"; sourceTree = "<group>"; };
@@ -142,7 +140,6 @@
 				4105E951680CBD8520EA4CCD /* NoteRow.swift */,
 				99DFB1B7DFAECBD3F0345E8E /* NotesStore.swift */,
 				E9467EA43375042861D467E8 /* OpenDockApp.swift */,
-				160C0E239F7C310D98D518E5 /* Placeholder.swift */,
 				5E6E6CD666981BCC191EF111 /* Theme.swift */,
 				5ACCF0EC41C69EFE562E50F2 /* Fonts */,
 				61171D33D836B0800DB5BE73 /* AuthService.swift */,
@@ -254,7 +251,6 @@
 				158BEF8D6A048423CECC4229 /* NoteRow.swift in Sources */,
 				CDC18E5E7ABC6B7098072AE5 /* NotesStore.swift in Sources */,
 				E02B917033884499F0C01F92 /* OpenDockApp.swift in Sources */,
-				0954E5BC69C41635B8A9F839 /* Placeholder.swift in Sources */,
 				9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */,
 				FB096BBC278EEA9E2CB9B50D /* AuthService.swift in Sources */,
 				37450D323A7CD774AD5B5FFB /* AuthStore.swift in Sources */,
