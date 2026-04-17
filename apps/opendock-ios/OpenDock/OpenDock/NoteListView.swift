@@ -44,8 +44,8 @@ struct NoteListView: View {
                         ForEach(store.filtered) { note in
                             Button { store.selectedId = note.id; path.append(note.id) } label: { NoteRow(note: note) }
                             .contextMenu {
-                                Button { store.togglePin(note.id) } label: { Label(note.pinned ? "Unpin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin") }
-                                Button { store.duplicate(note.id) } label: { Label("Duplicate", systemImage: "doc.on.doc") }
+                                Button { Task { await store.togglePin(note.id) } } label: { Label(note.pinned ? "Unpin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin") }
+                                Button { Task { await store.duplicate(note.id) } } label: { Label("Duplicate", systemImage: "doc.on.doc") }
                                 Divider()
                                 Button(role: .destructive) { deleting = note } label: { Label("Delete", systemImage: "trash") }
                             }
@@ -58,7 +58,7 @@ struct NoteListView: View {
         .background(Theme.bg).navigationBarHidden(true)
         .alert("Delete note?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Cancel", role: .cancel) { deleting = nil }
-            Button("Delete", role: .destructive) { if let d = deleting { store.delete(d.id) }; deleting = nil }
+            Button("Delete", role: .destructive) { if let d = deleting { Task { await store.delete(d.id) } }; deleting = nil }
         } message: { Text("\"\(deleting?.title.isEmpty == false ? deleting!.title : "Untitled")\" will be permanently deleted.") }
     }
 }

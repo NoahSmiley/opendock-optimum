@@ -8,8 +8,7 @@ import { useBoardDrag } from "@/hooks/useBoardDrag";
 interface BoardViewProps { onBack: () => void }
 
 export function BoardView({ onBack }: BoardViewProps) {
-  const activeBoardId = useBoards((s) => s.activeBoardId);
-  const board = useBoards((s) => s.boards.find((b) => b.id === activeBoardId));
+  const detail = useBoards((s) => s.detail);
   const addCard = useBoards((s) => s.addCard);
   const moveCard = useBoards((s) => s.moveCard);
   const deleteCard = useBoards((s) => s.deleteCard);
@@ -19,39 +18,39 @@ export function BoardView({ onBack }: BoardViewProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const onDropAt = useCallback((cardId: string, colId: string) => {
-    if (!board) return;
-    const c = board.cards.find((x) => x.id === cardId);
-    if (c && c.columnId !== colId) moveCard(board.id, cardId, colId);
-  }, [board, moveCard]);
+    if (!detail) return;
+    const c = detail.cards.find((x) => x.id === cardId);
+    if (c && c.column_id !== colId) moveCard(cardId, colId);
+  }, [detail, moveCard]);
 
   const { onPointerDown, shouldOpenOnClick } = useBoardDrag({ onDropAt, onDragStart: () => setSelectedId(null) });
   const onCardOpen = useCallback((id: string) => { if (shouldOpenOnClick()) setSelectedId(id); }, [shouldOpenOnClick]);
 
   const cardsByColumn = useMemo(() => {
     const map = new Map<string, Card[]>();
-    if (!board) return map;
-    for (const c of board.cards) { const arr = map.get(c.columnId); if (arr) arr.push(c); else map.set(c.columnId, [c]); }
-    for (const arr of map.values()) arr.sort((a, b) => a.order - b.order);
+    if (!detail) return map;
+    for (const c of detail.cards) { const arr = map.get(c.column_id); if (arr) arr.push(c); else map.set(c.column_id, [c]); }
+    for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
     return map;
-  }, [board]);
+  }, [detail]);
 
-  if (!board) return <div className="editor-area"><div className="empty">Select a board</div></div>;
+  if (!detail) return <div className="editor-area"><div className="empty">Select a board</div></div>;
 
   const create = (colId: string) => {
     if (!newTitle.trim()) return;
-    addCard(board.id, colId, newTitle.trim()); setNewTitle(""); setAddingCol(null);
+    addCard(colId, newTitle.trim()); setNewTitle(""); setAddingCol(null);
   };
 
-  const selected = selectedId ? board.cards.find((c) => c.id === selectedId) : null;
+  const selected = selectedId ? detail.cards.find((c) => c.id === selectedId) : null;
 
   return (
     <div className="editor-area">
       <div className="board-header">
         <button className="back-btn" onClick={onBack}>&larr;</button>
-        <span className="board-header-title">{board.name}</span>
+        <span className="board-header-title">{detail.board.name}</span>
       </div>
       <div className="board-columns">
-        {board.columns.map((col) => {
+        {detail.columns.map((col) => {
           const cards = cardsByColumn.get(col.id) ?? [];
           return (
             <div key={col.id} data-col={col.id} className="board-column">
@@ -76,8 +75,8 @@ export function BoardView({ onBack }: BoardViewProps) {
           );
         })}
       </div>
-      {selected && <CardDetail key={selected.id} card={selected} onUpdate={(p) => updateCard(board.id, selected.id, p)}
-        onDelete={() => deleteCard(board.id, selected.id)} onClose={() => setSelectedId(null)} />}
+      {selected && <CardDetail key={selected.id} card={selected} onUpdate={(p) => updateCard(selected.id, p)}
+        onDelete={() => deleteCard(selected.id)} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }

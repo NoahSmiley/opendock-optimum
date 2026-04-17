@@ -2,86 +2,91 @@ import Foundation
 
 @MainActor
 class BoardsStore: ObservableObject {
-    @Published private(set) var boards: [Board] = [] { didSet { recompute() } }
-    @Published private(set) var sortedBoards: [Board] = []
-    @Published private(set) var cardsByColumn: [UUID: [Card]] = [:]
-    @Published private(set) var cardById: [UUID: Card] = [:]
+    @Published private(set) var boards: [Board] = []
+    @Published private(set) var detail: BoardDetail?
     @Published var selectedId: UUID?
-    private let key = "opendock-boards"
-    private var saveTask: Task<Void, Never>?
+    @Published private(set) var loading = false
+    @Published var error: String?
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decoded = try? JSONDecoder().decode([Board].self, from: data) { boards = decoded }
-        if boards.isEmpty { boards = BoardsSeed.sample(); save() }
-        selectedId = sortedBoards.first?.id
+    var cardsByColumn: [UUID: [Card]] {
+        guard let d = detail else { return [:] }
+        var map: [UUID: [Card]] = [:]
+        for c in d.cards { map[c.columnId, default: []].append(c) }
+        for k in map.keys { map[k]?.sort { $0.position < $1.position } }
+        return map
     }
 
-    func board(_ id: UUID) -> Board? { boards.first { $0.id == id } }
-    func createBoard(name: String) {
-        let b = Board(id: UUID(), name: name, columns: BoardsSeed.defaultColumns(), cards: [])
-        boards.insert(b, at: 0); selectedId = b.id; save()
-    }
-    func deleteBoard(_ id: UUID) { boards.removeAll { $0.id == id }; if selectedId == id { selectedId = nil }; save() }
-    func renameBoard(_ id: UUID, name: String) { mutate(id) { $0.name = name } }
-    func togglePin(_ id: UUID) { mutate(id) { $0.pinned.toggle() } }
-    func deleteCard(boardId: UUID, cardId: UUID) { mutate(boardId) { $0.cards.removeAll { $0.id == cardId } } }
+    func board(_ id: UUID) -> Board? { detail?.board.id == id ? detail?.board : boards.first { $0.id == id } }
+    func columns(_ id: UUID) -> [BoardColumn] { detail?.board.id == id ? (detail?.columns ?? []) : [] }
 
-    func addCard(boardId: UUID, columnId: UUID, title: String) {
-        mutate(boardId) { b in
-            let order = b.cards.filter { $0.columnId == columnId }.count
-            b.cards.append(Card(id: UUID(), title: title, description: "", columnId: columnId, order: order, updatedAt: Date()))
-        }
+    func loadBoards() async {
+        loading = true
+        do { boards = try await BoardsAPI.list() } catch { self.error = "\(error)" }
+        loading = false
     }
 
-    func updateCard(boardId: UUID, cardId: UUID, title: String? = nil, description: String? = nil) {
-        mutateCard(boardId: boardId, cardId: cardId) { c in
-            if let t = title { c.title = t }
-            if let d = description { c.description = d }
-            c.updatedAt = Date()
-        }
+    func loadDetail(_ id: UUID) async {
+        do { detail = try await BoardsAPI.detail(id); selectedId = id } catch { self.error = "\(error)" }
     }
 
-    func moveCard(boardId: UUID, cardId: UUID, to columnId: UUID) {
-        mutateCard(boardId: boardId, cardId: cardId, { c in
-            guard c.columnId != columnId else { return }
-            c.columnId = columnId; c.order = Int.max; c.updatedAt = Date()
-        }) { b in
-            let ordered = b.cards.filter { $0.columnId == columnId }.sorted { $0.order < $1.order }
-            for (i, oc) in ordered.enumerated() { if let j = b.cards.firstIndex(where: { $0.id == oc.id }) { b.cards[j].order = i } }
-        }
+    func createBoard(name: String) async {
+        do {
+            let b = try await BoardsAPI.create(name); boards.insert(b, at: 0); selectedId = b.id
+            await loadDetail(b.id)
+        } catch { self.error = "\(error)" }
     }
 
-    private func mutate(_ id: UUID, _ fn: (inout Board) -> Void) {
-        guard let i = boards.firstIndex(where: { $0.id == id }) else { return }
-        var b = boards[i]; fn(&b); boards[i] = b; save()
+    func deleteBoard(_ id: UUID) async {
+        do {
+            try await BoardsAPI.delete(id); boards.removeAll { $0.id == id }
+            if detail?.board.id == id { detail = nil; selectedId = nil }
+        } catch { self.error = "\(error)" }
     }
 
-    private func mutateCard(boardId: UUID, cardId: UUID, _ fn: (inout Card) -> Void, _ after: ((inout Board) -> Void)? = nil) {
-        mutate(boardId) { b in
-            guard let j = b.cards.firstIndex(where: { $0.id == cardId }) else { return }
-            var c = b.cards[j]; fn(&c); b.cards[j] = c; after?(&b)
-        }
+    func togglePin(_ id: UUID) async {
+        guard let b = boards.first(where: { $0.id == id }) ?? (detail?.board.id == id ? detail?.board : nil) else { return }
+        do {
+            let fresh = try await BoardsAPI.update(id, UpdateBoardBody(name: nil, pinned: !b.pinned))
+            if let i = boards.firstIndex(where: { $0.id == id }) { boards[i] = fresh }
+            if detail?.board.id == id { detail?.board = fresh }
+        } catch { self.error = "\(error)" }
     }
 
-    private func recompute() {
-        sortedBoards = boards.sorted { a, b in
-            if a.pinned != b.pinned { return a.pinned && !b.pinned }
-            return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
-        }
-        var map: [UUID: [Card]] = [:]; var byId: [UUID: Card] = [:]
-        for b in boards { for c in b.cards { map[c.columnId, default: []].append(c); byId[c.id] = c } }
-        for k in map.keys { map[k]?.sort { $0.order < $1.order } }
-        cardsByColumn = map; cardById = byId
+    func renameBoard(_ id: UUID, name: String) async {
+        do {
+            let fresh = try await BoardsAPI.update(id, UpdateBoardBody(name: name, pinned: nil))
+            if let i = boards.firstIndex(where: { $0.id == id }) { boards[i] = fresh }
+            if detail?.board.id == id { detail?.board = fresh }
+        } catch { self.error = "\(error)" }
     }
 
-    private func save() {
-        saveTask?.cancel()
-        let snapshot = boards
-        saveTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            if Task.isCancelled { return }
-            if let data = try? JSONEncoder().encode(snapshot) { UserDefaults.standard.set(data, forKey: key) }
-        }
+    func addCard(boardId: UUID, columnId: UUID, title: String) async {
+        do {
+            let c = try await BoardsAPI.createCard(boardId, columnId: columnId, title: title)
+            detail?.cards.append(c)
+        } catch { self.error = "\(error)" }
     }
+
+    func updateCard(boardId: UUID, cardId: UUID, title: String? = nil, description: String? = nil) async {
+        do {
+            let body = UpdateCardBody(title: title, description: description, columnId: nil, position: nil, assigneeId: nil)
+            let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
+            if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) { detail?.cards[i] = fresh }
+        } catch { self.error = "\(error)" }
+    }
+
+    func moveCard(boardId: UUID, cardId: UUID, to columnId: UUID) async {
+        do {
+            let body = UpdateCardBody(title: nil, description: nil, columnId: columnId, position: nil, assigneeId: nil)
+            let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
+            if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) { detail?.cards[i] = fresh }
+        } catch { self.error = "\(error)" }
+    }
+
+    func deleteCard(boardId: UUID, cardId: UUID) async {
+        do { try await BoardsAPI.deleteCard(boardId, cardId: cardId); detail?.cards.removeAll { $0.id == cardId } }
+        catch { self.error = "\(error)" }
+    }
+
+    func reset() { boards = []; detail = nil; selectedId = nil; error = nil }
 }

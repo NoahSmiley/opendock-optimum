@@ -34,6 +34,6 @@ struct NewNoteSheet: View {
 
     private func create() {
         let t = title.trimmingCharacters(in: .whitespaces); guard !t.isEmpty else { return }
-        store.create(title: t); if let id = store.selectedId { onCreated(id) }; dismiss()
+        Task { await store.create(title: t); if let id = store.selectedId { onCreated(id) }; dismiss() }
     }
 }

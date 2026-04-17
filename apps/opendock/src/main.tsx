@@ -7,6 +7,7 @@ import "@/styles/editor.css";
 import "@/styles/boards.css";
 import "@/styles/overlays.css";
 import "@/styles/responsive.css";
+import "@/styles/login.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

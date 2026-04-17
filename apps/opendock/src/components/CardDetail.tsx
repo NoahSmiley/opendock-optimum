@@ -31,7 +31,7 @@ export function CardDetail({ card, onUpdate, onDelete, onClose }: CardDetailProp
           onBlur={() => { if (title !== card.title) onUpdate({ title }); }} placeholder="Card title" />
         <textarea className="card-detail-body" value={description} onChange={(e) => setDescription(e.target.value)}
           onBlur={() => { if (description !== card.description) onUpdate({ description }); }} placeholder="Add a description..." />
-        <div className="card-detail-meta">Updated {new Date(card.updatedAt).toLocaleString()}</div>
+        <div className="card-detail-meta">Updated {new Date(card.updated_at).toLocaleString()}</div>
       </div>
       {confirming && <ConfirmDialog title="Delete card?" message={`"${card.title}" will be permanently deleted.`}
         confirmLabel="Delete" danger onConfirm={() => { onDelete(); onClose(); }} onCancel={() => setConfirming(false)} />}
