@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import * as api from "@/api/boards";
-import { removeCard, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
+import { applyBoardEvent, removeCard, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
 import type { Board, BoardDetail } from "@/types";
+import type { LiveEvent } from "@/api/live";
 
 interface BoardsState {
   boards: Board[];
@@ -23,6 +24,7 @@ interface BoardsState {
   deleteCard: (cardId: string) => Promise<void>;
   addMember: (email: string) => Promise<boolean>;
   removeMember: (userId: string) => Promise<void>;
+  applyEvent: (ev: LiveEvent) => void;
   reset: () => void;
 }
 
@@ -71,7 +73,14 @@ export const useBoards = create<BoardsState>((set, get) => ({
     const fresh = await api.updateCard(id, cardId, patch);
     set({ detail: replaceCard(get().detail, fresh) });
   },
-  moveCard: async (cardId, toColumnId) => { await get().updateCard(cardId, { column_id: toColumnId }); },
+  moveCard: async (cardId, toColumnId) => {
+    const d = get().detail; if (!d) return;
+    const card = d.cards.find((c) => c.id === cardId); if (!card || card.column_id === toColumnId) return;
+    const optimistic = { ...card, column_id: toColumnId };
+    set({ detail: replaceCard(d, optimistic) });
+    try { await get().updateCard(cardId, { column_id: toColumnId }); }
+    catch (e) { set({ detail: replaceCard(get().detail, card), error: String(e) }); }
+  },
   assignCard: async (cardId, assigneeId) => { await get().updateCard(cardId, { assignee_id: assigneeId }); },
   addMember: async (email) => {
     const id = get().activeBoardId; if (!id) return false;
@@ -88,5 +97,6 @@ export const useBoards = create<BoardsState>((set, get) => ({
     await api.deleteCard(id, cardId);
     set({ detail: removeCard(get().detail, cardId) });
   },
+  applyEvent: (ev) => { set({ detail: applyBoardEvent(get().detail, ev) }); },
   reset: () => set({ boards: [], activeBoardId: null, detail: null, error: null }),
 }));

@@ -35,7 +35,7 @@ struct ContentView: View {
             }
             .tabItem { Label("Boards", systemImage: "square.grid.2x2") }.tag(1)
 
-            Placeholder("Calendar").tabItem { Label("Calendar", systemImage: "calendar") }.tag(2)
+            ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }.tag(2)
         }
         .tint(Theme.active)
         .onAppear { Theme.setupGlobal() }

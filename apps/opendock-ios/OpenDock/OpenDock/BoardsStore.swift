@@ -83,6 +83,11 @@ class BoardsStore: ObservableObject {
         switch event {
         case .boardShareAdded, .boardShareRemoved:
             Task { await self.loadBoards() }
+        case .cardUpserted(let bid, _, let card) where detail?.board.id == bid:
+            if let i = detail?.cards.firstIndex(where: { $0.id == card.id }) { detail?.cards[i] = card }
+            else { detail?.cards.append(card) }
+        case .cardDeleted(let bid, let cid, _) where detail?.board.id == bid:
+            detail?.cards.removeAll { $0.id == cid }
         default: break
         }
     }

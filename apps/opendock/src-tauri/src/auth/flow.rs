@@ -1,12 +1,6 @@
 use crate::auth::state::AuthData;
 use crate::auth::{API_URL, ATHION_URL};
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize)]
-struct InitiateResponse { code: String }
-
-#[derive(Deserialize)]
-struct PollResponse { status: String, token: Option<String> }
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct MeResponse {
@@ -15,50 +9,33 @@ pub struct MeResponse {
     pub display_name: Option<String>,
 }
 
-#[derive(Serialize)]
-pub struct InitiateResult { pub code: String, pub url: String }
+#[derive(Deserialize)]
+struct LoginUser { id: String, email: String, #[serde(rename = "displayName")] display_name: Option<String> }
 
-#[derive(Serialize)]
-pub struct PollResult {
-    pub status: String,
-    pub data: Option<AuthData>,
-}
+#[derive(Deserialize)]
+struct LoginResponse { token: String, user: LoginUser }
 
-pub async fn initiate() -> Result<InitiateResult, String> {
+#[derive(Deserialize)]
+struct ErrorResponse { error: String }
+
+pub async fn login(email: &str, password: &str) -> Result<AuthData, String> {
     let client = reqwest::Client::new();
-    let resp = client.post(format!("{ATHION_URL}/api/auth/ide/initiate"))
+    let resp = client.post(format!("{ATHION_URL}/api/auth/login"))
+        .json(&serde_json::json!({ "email": email, "password": password }))
         .send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
-        return Err(format!("initiate failed: {}", resp.status()));
+        let status = resp.status();
+        if let Ok(body) = resp.json::<ErrorResponse>().await {
+            return Err(body.error);
+        }
+        return Err(format!("login failed: {status}"));
     }
-    let body: InitiateResponse = resp.json().await.map_err(|e| e.to_string())?;
-    let url = format!("{ATHION_URL}/auth/ide-login?code={}&app=opendock", body.code);
-    let _ = open::that(&url);
-    Ok(InitiateResult { code: body.code, url })
-}
-
-pub async fn poll(code: &str) -> Result<PollResult, String> {
-    let client = reqwest::Client::new();
-    let resp = client.post(format!("{ATHION_URL}/api/auth/ide/poll"))
-        .json(&serde_json::json!({ "code": code }))
-        .send().await.map_err(|e| e.to_string())?;
-    if resp.status().as_u16() == 410 {
-        return Ok(PollResult { status: "expired".into(), data: None });
-    }
-    let body: PollResponse = resp.json().await.map_err(|e| e.to_string())?;
-    if body.status != "complete" {
-        return Ok(PollResult { status: body.status, data: None });
-    }
-    let token = body.token.ok_or("no token in complete response")?;
-    let me = fetch_me(&client, &token).await?;
-    Ok(PollResult {
-        status: "complete".into(),
-        data: Some(AuthData {
-            token: Some(token),
-            user_id: Some(me.id),
-            email: Some(me.email),
-            display_name: me.display_name,
-        }),
+    let body: LoginResponse = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(AuthData {
+        token: Some(body.token),
+        user_id: Some(body.user.id),
+        email: Some(body.user.email),
+        display_name: body.user.display_name,
     })
 }
 

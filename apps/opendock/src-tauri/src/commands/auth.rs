@@ -1,21 +1,14 @@
-use crate::auth::flow::{self, InitiateResult, PollResult};
+use crate::auth::flow;
 use crate::auth::keyring;
 use crate::auth::state::{AuthData, AuthState};
 use tauri::State;
 
 #[tauri::command]
-pub async fn auth_initiate() -> Result<InitiateResult, String> {
-    flow::initiate().await
-}
-
-#[tauri::command]
-pub async fn auth_poll(state: State<'_, AuthState>, code: String) -> Result<PollResult, String> {
-    let result = flow::poll(&code).await?;
-    if let Some(ref data) = result.data {
-        if let Some(ref t) = data.token { keyring::store(t)?; }
-        state.set(data.clone()).await;
-    }
-    Ok(result)
+pub async fn auth_login(state: State<'_, AuthState>, email: String, password: String) -> Result<AuthData, String> {
+    let data = flow::login(&email, &password).await?;
+    if let Some(ref t) = data.token { keyring::store(t)?; }
+    state.set(data.clone()).await;
+    Ok(data)
 }
 
 #[tauri::command]

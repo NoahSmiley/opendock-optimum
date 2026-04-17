@@ -10,7 +10,6 @@ struct NoteListView: View {
         VStack(spacing: 0) {
             header
             searchBar
-            Rectangle().fill(Theme.border).frame(height: 0.5)
             if store.filtered.isEmpty { emptyState } else { list }
         }
         .background(Theme.bg).navigationBarHidden(true)
@@ -57,12 +56,14 @@ struct NoteListView: View {
     private var list: some View {
         List {
             ForEach(store.filtered) { note in
-                Button { store.selectedId = note.id; path.append(note.id) } label: { NoteRow(note: note) }
+                Button { store.selectedId = note.id; path.append(note.id) } label: {
+                    NoteRow(note: note).contentShape(Rectangle())
+                }
                     .buttonStyle(.plain)
                     .listRowBackground(Theme.bg).listRowSeparatorTint(Theme.border)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) { deleting = note } label: { Label("Delete", systemImage: "trash") }
+                        Button { deleting = note } label: { Label("Delete", systemImage: "trash") }.tint(Theme.error)
                         Button { Task { await store.duplicate(note.id) } } label: { Label("Duplicate", systemImage: "doc.on.doc") }.tint(Theme.muted)
                     }
                     .swipeActions(edge: .leading) {

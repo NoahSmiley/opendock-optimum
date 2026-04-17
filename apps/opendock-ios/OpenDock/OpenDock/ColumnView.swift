@@ -23,7 +23,6 @@ struct ColumnView: View {
                 Button(action: onAdd) { Image(systemName: "plus").font(.system(size: 13, weight: .light)).foregroundColor(Theme.faint) }
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
-            Rectangle().fill(Theme.border).frame(height: 0.5)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 6) {
@@ -43,12 +42,12 @@ struct ColumnView: View {
                             }
                         }
                         .padding(.horizontal, 14).padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.elevated))
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.input))
                         .contentShape(Rectangle()).onTapGesture { onOpen(card.id) }
                         .draggable(card.id.uuidString) {
                             Text(card.title).font(.custom(Theme.fontName, size: 14)).foregroundColor(Theme.text)
                                 .padding(.horizontal, 14).padding(.vertical, 12)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.elevated))
+                                .background(RoundedRectangle(cornerRadius: 8).fill(Theme.input))
                                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
                         }
                     }
@@ -68,8 +67,9 @@ struct ColumnView: View {
                 Task { await store.moveCard(boardId: boardId, cardId: cid, to: col.id) }; return true
             } isTargeted: { isTargeted = $0 }
         }
-        .frame(width: 300).frame(maxHeight: .infinity, alignment: .top)
-        .background(isTargeted ? Theme.elevated : Color.clear)
-        .overlay(Rectangle().frame(width: 0.5).foregroundColor(Theme.border), alignment: .trailing)
+        .frame(width: 288).frame(maxHeight: .infinity, alignment: .top)
+        .background(RoundedRectangle(cornerRadius: 12).fill(isTargeted ? Theme.input : Theme.elevated))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderStrong, lineWidth: 0.5))
+        .padding(.horizontal, 6).padding(.vertical, 12)
     }
 }

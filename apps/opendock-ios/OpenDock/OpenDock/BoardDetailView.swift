@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct BoardDetailView: View {
     @EnvironmentObject var store: BoardsStore
+    @EnvironmentObject var auth: AuthStore
     let boardId: UUID
     @State private var newCardTitle = ""
     @State private var adding = false
@@ -11,6 +12,7 @@ struct BoardDetailView: View {
     @State private var addingColumn = false
     @State private var newColumnTitle = ""
     @State private var showingMembers = false
+    @State private var socket: LiveSocket?
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -38,7 +40,8 @@ struct BoardDetailView: View {
                 Button { addingColumn = true } label: { Image(systemName: "plus.rectangle.on.rectangle").font(.system(size: 15)).foregroundColor(Theme.muted) }
             }
         }
-        .task(id: boardId) { await store.loadDetail(boardId) }
+        .task(id: boardId) { await store.loadDetail(boardId); startSocket() }
+        .onDisappear { socket?.stop(); socket = nil }
         .sheet(item: Binding(get: { openCardId.map { IDWrap(id: $0) } }, set: { openCardId = $0?.id })) { w in
             CardDetailSheet(boardId: boardId, cardId: w.id).environmentObject(store)
         }
@@ -65,5 +68,15 @@ struct BoardDetailView: View {
         newColumnTitle = ""
         guard !t.isEmpty else { return }
         Task { await store.addColumn(boardId: boardId, title: t) }
+    }
+
+    private func startSocket() {
+        guard let token = auth.token, socket == nil else { return }
+        socket = LiveSocket(scope: .board, id: boardId, token: token) { [store, uid = auth.userId] ev in
+            if case .cardUpserted(_, let actor, _) = ev, actor == uid { return }
+            if case .cardDeleted(_, _, let actor) = ev, actor == uid { return }
+            store.apply(event: ev)
+        }
+        socket?.start()
     }
 }

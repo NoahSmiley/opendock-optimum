@@ -5,32 +5,24 @@ enum AuthEndpoints {
     static let api = URL(string: "https://opendock-api.athion.me")!
 }
 
-struct InitiateResponse: Decodable { let code: String }
-struct PollResponse: Decodable { let status: String; let token: String? }
 struct MeResponse: Decodable { let id: UUID; let email: String; let displayName: String? }
+struct LoginUser: Decodable { let id: UUID; let email: String; let displayName: String? }
+struct LoginResponse: Decodable { let token: String; let user: LoginUser }
+struct ErrorResponse: Decodable { let error: String }
 
 enum AuthService {
-    static func initiate() async throws -> (code: String, url: URL) {
-        let url = AuthEndpoints.athion.appendingPathComponent("api/auth/ide/initiate")
-        var req = URLRequest(url: url); req.httpMethod = "POST"
-        let (data, _) = try await URLSession.shared.data(for: req)
-        let body = try decoder().decode(InitiateResponse.self, from: data)
-        let loginURL = AuthEndpoints.athion.appendingPathComponent("auth/ide-login")
-        var comps = URLComponents(url: loginURL, resolvingAgainstBaseURL: false)!
-        comps.queryItems = [URLQueryItem(name: "code", value: body.code), URLQueryItem(name: "app", value: "opendock")]
-        return (body.code, comps.url!)
-    }
-
-    static func poll(code: String) async throws -> PollResponse {
-        let url = AuthEndpoints.athion.appendingPathComponent("api/auth/ide/poll")
+    static func login(email: String, password: String) async throws -> LoginResponse {
+        let url = AuthEndpoints.athion.appendingPathComponent("api/auth/login")
         var req = URLRequest(url: url); req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONSerialization.data(withJSONObject: ["code": code])
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["email": email, "password": password])
         let (data, resp) = try await URLSession.shared.data(for: req)
-        if let http = resp as? HTTPURLResponse, http.statusCode == 410 {
-            return PollResponse(status: "expired", token: nil)
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        if !(200..<300).contains(status) {
+            if let err = try? decoder().decode(ErrorResponse.self, from: data) { throw APIError(message: err.error, status: status) }
+            throw APIError(message: "Login failed", status: status)
         }
-        return try decoder().decode(PollResponse.self, from: data)
+        return try decoder().decode(LoginResponse.self, from: data)
     }
 
     static func fetchMe(token: String) async throws -> MeResponse {
