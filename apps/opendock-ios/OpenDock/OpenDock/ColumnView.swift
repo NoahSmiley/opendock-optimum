@@ -13,6 +13,7 @@ struct ColumnView: View {
     let onCancel: () -> Void
     let onOpen: (UUID) -> Void
     @State private var isTargeted = false
+    @State private var hoverBeforeId: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -33,12 +34,18 @@ struct ColumnView: View {
                             .onSubmit(onSubmit).submitLabel(.done)
                             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Cancel", action: onCancel); Button("Add", action: onSubmit).bold() } }
                     }
-                    ForEach(cards) { card in
+                    ForEach(Array(cards.enumerated()), id: \.element.id) { idx, card in
                         CardRowView(card: card, members: store.detail?.members ?? [], onOpen: onOpen)
+                            .offset(y: shiftOffset(for: idx))
                             .dropDestination(for: String.self) { ids, _ in
+                                withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
                                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
                                 Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: card.id) }
                                 return true
+                            } isTargeted: { hovering in
+                                if hovering {
+                                    withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = card.id }
+                                }
                             }
                     }
                     if cards.isEmpty && !adding {
@@ -53,14 +60,23 @@ struct ColumnView: View {
                 .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
             }
             .dropDestination(for: String.self) { ids, _ in
+                withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
                 Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: nil) }
                 return true
-            } isTargeted: { isTargeted = $0 }
+            } isTargeted: { hovering in
+                isTargeted = hovering
+                if !hovering { withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil } }
+            }
         }
         .frame(width: 288).frame(maxHeight: .infinity, alignment: .top)
         .background(RoundedRectangle(cornerRadius: 12).fill(isTargeted ? Theme.input : Theme.elevated))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderStrong, lineWidth: 0.5))
         .padding(.horizontal, 6).padding(.vertical, 12)
+    }
+
+    private func shiftOffset(for idx: Int) -> CGFloat {
+        guard let beforeId = hoverBeforeId, let hoverIdx = cards.firstIndex(where: { $0.id == beforeId }) else { return 0 }
+        return idx > hoverIdx ? 48 : 0
     }
 }
