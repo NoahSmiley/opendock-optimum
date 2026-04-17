@@ -14,6 +14,7 @@ pub fn run() {
             commands::auth::auth_poll,
             commands::auth::auth_status,
             commands::auth::auth_logout,
+            commands::auth::auth_token,
             commands::api::api_get,
             commands::api::api_post,
             commands::api::api_patch,
