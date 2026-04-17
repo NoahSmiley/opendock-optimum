@@ -60,6 +60,13 @@ class BoardsStore: ObservableObject {
         } catch { self.error = "\(error)" }
     }
 
+    func addColumn(boardId: UUID, title: String) async {
+        do {
+            let c = try await BoardsAPI.createColumn(boardId, title: title)
+            if detail?.board.id == boardId { detail?.columns.append(c) }
+        } catch { self.error = "\(error)" }
+    }
+
     func addCard(boardId: UUID, columnId: UUID, title: String) async {
         do {
             let c = try await BoardsAPI.createCard(boardId, columnId: columnId, title: title)

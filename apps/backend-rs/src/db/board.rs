@@ -25,6 +25,11 @@ pub async fn create(pool: &PgPool, owner_id: Uuid, input: CreateBoard) -> ApiRes
     .fetch_one(pool).await?;
     sqlx::query("INSERT INTO board_members (board_id, user_id, role) VALUES ($1, $2, 'owner')")
         .bind(id).bind(owner_id).execute(pool).await?;
+    for (pos, title) in ["To Do", "In Progress", "Done"].iter().enumerate() {
+        sqlx::query("INSERT INTO board_columns (id, board_id, title, position) VALUES ($1, $2, $3, $4)")
+            .bind(Uuid::new_v4()).bind(id).bind(title).bind(pos as i32)
+            .execute(pool).await?;
+    }
     Ok(row)
 }
 

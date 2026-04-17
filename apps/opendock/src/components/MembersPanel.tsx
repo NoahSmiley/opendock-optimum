@@ -9,9 +9,14 @@ export function MembersPanel({ noteId, ownerId, currentUserId, onClose }: Member
   const [members, setMembers] = useState<NoteMember[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserSummary[]>([]);
+  const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
   const isOwner = currentUserId === ownerId;
+  const memberIds = new Set(members.map((m) => m.user_id));
+  const filteredResults = results.filter((u) => !memberIds.has(u.id));
+  const looksLikeEmail = query.includes("@") && query.includes(".");
+  const showInviteHint = searched && filteredResults.length === 0 && looksLikeEmail;
 
   const load = useCallback(async () => {
     try { setMembers(await fetchNoteMembers(noteId)); } catch (e) { setError(String(e)); }
@@ -22,15 +27,15 @@ export function MembersPanel({ noteId, ownerId, currentUserId, onClose }: Member
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     const q = query.trim();
-    if (q.length < 2) { setResults([]); return; }
+    if (q.length < 2) { setResults([]); setSearched(false); return; }
     timer.current = window.setTimeout(async () => {
-      try { setResults(await searchUsers(q)); } catch { /* silent */ }
+      try { setResults(await searchUsers(q)); setSearched(true); } catch { /* silent */ }
     }, 250);
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
   const add = async (email: string) => {
-    try { await addNoteMember(noteId, email); setQuery(""); setResults([]); await load(); }
+    try { await addNoteMember(noteId, email); setQuery(""); setResults([]); setSearched(false); await load(); }
     catch (e) { setError(String(e)); }
   };
 
@@ -44,12 +49,13 @@ export function MembersPanel({ noteId, ownerId, currentUserId, onClose }: Member
       {isOwner && (
         <div className="members-add">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Add by email" autoCapitalize="off" autoCorrect="off" />
-          {results.map((u) => (
+          {filteredResults.map((u) => (
             <button key={u.id} className="members-result" onClick={() => add(u.email)}>
               <span className="members-name">{u.display_name || u.email}</span>
               {u.display_name && <span className="members-email">{u.email}</span>}
             </button>
           ))}
+          {showInviteHint && <div className="members-hint">No match. They need to sign in at athion.me first, then try again.</div>}
         </div>
       )}
       <div className="members-list">
