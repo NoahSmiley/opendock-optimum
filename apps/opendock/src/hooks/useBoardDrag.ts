@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
-interface DragState { id: string; ghost: HTMLElement; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean }
+interface DragState { id: string; ghost: HTMLElement; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean; height: number }
 
 interface UseBoardDragArgs {
   onDropAt: (cardId: string, colId: string, beforeCardId: string | null) => void;
@@ -20,10 +20,20 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
     dropCol.current = colId;
   }, []);
 
-  const setDropIndicator = useCallback((beforeId: string | null) => {
-    if (dropBefore.current === beforeId) return;
-    document.querySelectorAll(".drop-before").forEach((n) => n.classList.remove("drop-before"));
-    if (beforeId) document.querySelector(`[data-card="${beforeId}"]`)?.classList.add("drop-before");
+  const setDropIndicator = useCallback((colId: string | null, beforeId: string | null, shiftPx: number) => {
+    if (dropBefore.current === beforeId && dropCol.current === colId) return;
+    document.querySelectorAll<HTMLElement>(".card-shift").forEach((n) => { n.classList.remove("card-shift"); n.style.transform = ""; });
+    if (colId && beforeId) {
+      const col = document.querySelector(`[data-col="${colId}"]`);
+      if (col) {
+        const cards = Array.from(col.querySelectorAll<HTMLElement>("[data-card]"));
+        const start = cards.findIndex((c) => c.dataset.card === beforeId);
+        if (start >= 0) for (let i = start; i < cards.length; i++) {
+          if (cards[i].classList.contains("dragging-source")) continue;
+          cards[i].classList.add("card-shift"); cards[i].style.transform = `translateY(${shiftPx}px)`;
+        }
+      }
+    }
     dropBefore.current = beforeId;
   }, []);
 
@@ -31,7 +41,7 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
     if (e.button !== 0) return;
     const el = e.currentTarget as HTMLElement;
     const rect = el.getBoundingClientRect();
-    drag.current = { id, ghost: el.cloneNode(true) as HTMLElement, startX: e.clientX, startY: e.clientY, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, moved: false };
+    drag.current = { id, ghost: el.cloneNode(true) as HTMLElement, startX: e.clientX, startY: e.clientY, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, moved: false, height: rect.height + 6 };
     const g = drag.current.ghost;
     g.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;pointer-events:none;z-index:9999;opacity:0.85;border:1px solid var(--a-border-strong);`;
   }, []);
@@ -55,8 +65,8 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       if (col) {
         const cards = Array.from(col.querySelectorAll<HTMLElement>("[data-card]")).filter((c) => c.dataset.card !== d.id);
         const before = cards.find((c) => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
-        setDropIndicator(before?.dataset.card ?? null);
-      } else setDropIndicator(null);
+        setDropIndicator(col.getAttribute("data-col"), before?.dataset.card ?? null, d.height);
+      } else setDropIndicator(null, null, 0);
     };
     const up = () => {
       const d = drag.current; if (!d) return;
@@ -68,7 +78,7 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
         if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
       }
-      setDropHighlight(null); setDropIndicator(null);
+      setDropHighlight(null); setDropIndicator(null, null, 0);
       drag.current = null;
     };
     window.addEventListener("pointermove", move);
