@@ -38,7 +38,7 @@ struct ColumnView: View {
                         CardRowView(card: card, members: store.detail?.members ?? [], onOpen: onOpen)
                             .offset(y: shiftOffset(for: idx))
                             .dropDestination(for: String.self) { ids, _ in
-                                withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil; store.draggingCardId = nil }
+                                withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
                                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
                                 Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: card.id) }
                                 return true
@@ -60,7 +60,7 @@ struct ColumnView: View {
                 .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
             }
             .dropDestination(for: String.self) { ids, _ in
-                withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil; store.draggingCardId = nil }
+                withAnimation(.easeOut(duration: 0.18)) { hoverBeforeId = nil }
                 guard let s = ids.first, let cid = UUID(uuidString: s) else { return false }
                 Task { await store.reorderCard(boardId: boardId, cardId: cid, to: col.id, before: nil) }
                 return true
