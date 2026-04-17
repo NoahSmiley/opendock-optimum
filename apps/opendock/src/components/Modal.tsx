@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 
-interface Props { onClose: () => void; onCreate: (title: string) => void }
+interface NewNoteModalProps { onClose: () => void; onCreate: (title: string) => void }
 
-export function NewNoteModal({ onClose, onCreate }: Props) {
+export function NewNoteModal({ onClose, onCreate }: NewNoteModalProps) {
   const [title, setTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -1,8 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useNotes, extractTags } from "@/stores/notes";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNotes } from "@/stores/notes";
+import { extractTags } from "@/lib/tags";
+import { wordCount } from "@/lib/notes";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
-export function Editor({ onBack }: { onBack: () => void }) {
+interface EditorProps { onBack: () => void }
+
+export function Editor({ onBack }: EditorProps) {
   const notes = useNotes((s) => s.notes);
   const activeId = useNotes((s) => s.activeId);
   const update = useNotes((s) => s.update);
@@ -10,21 +15,21 @@ export function Editor({ onBack }: { onBack: () => void }) {
   const togglePin = useNotes((s) => s.togglePin);
   const [saved, setSaved] = useState(true);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<number | null>(null);
 
   const note = notes.find((n) => n.id === activeId);
-  const save = useCallback(() => setSaved(true), []);
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   const onChange = useCallback((content: string) => {
     if (!note) return;
     setSaved(false);
     update(note.id, { content });
     if (timer.current) clearTimeout(timer.current);
-    timer.current = window.setTimeout(save, 1000);
-  }, [note, update, save]);
-
-  useEffect(() => { setSaved(true); }, [activeId]);
+    timer.current = window.setTimeout(() => setSaved(true), 1000);
+  }, [note, update]);
 
   const insert = useCallback((text: string) => {
     const el = ref.current;
@@ -35,10 +40,10 @@ export function Editor({ onBack }: { onBack: () => void }) {
     setSaved(false);
   }, [note, update]);
 
-  if (!note) return <div className="editor-area"><div className="empty">Select a note or create one</div></div>;
+  const tags = useMemo(() => note ? extractTags(note.content) : [], [note]);
+  const words = useMemo(() => note ? wordCount(note.content) : 0, [note]);
 
-  const tags = extractTags(note.content);
-  const words = note.content.split(/\s+/).filter(Boolean).length;
+  if (!note) return <div className="editor-area"><div className="empty">Select a note or create one</div></div>;
 
   const editorMenu: MenuItem[] = [
     { label: "Insert heading", action: () => insert("## ") },
@@ -54,7 +59,7 @@ export function Editor({ onBack }: { onBack: () => void }) {
         <input value={note.title} onChange={(e) => update(note.id, { title: e.target.value })} placeholder="Untitled" />
         <div className="actions">
           <button onClick={() => togglePin(note.id)}>{note.pinned ? "unpin" : "pin"}</button>
-          <button className="danger" onClick={() => { remove(note.id); onBack(); }}>delete</button>
+          <button className="danger" onClick={() => setConfirmingDelete(true)}>delete</button>
         </div>
       </div>
       {tags.length > 0 && <div className="editor-tags">{tags.map((t) => <span key={t} className="editor-tag">{t}</span>)}</div>}
@@ -67,6 +72,8 @@ export function Editor({ onBack }: { onBack: () => void }) {
         <span className={saved ? "" : "save-unsaved"}>{saved ? "saved" : "editing"}</span>
       </div>
       {menu && <ContextMenu x={menu.x} y={menu.y} items={editorMenu} onClose={() => setMenu(null)} />}
+      {confirmingDelete && <ConfirmDialog title="Delete note?" message={`"${note.title || "Untitled"}" will be permanently deleted.`}
+        confirmLabel="Delete" danger onConfirm={() => { remove(note.id); setConfirmingDelete(false); onBack(); }} onCancel={() => setConfirmingDelete(false)} />}
     </div>
   );
 }

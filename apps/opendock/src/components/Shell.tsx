@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Tool } from "@/App";
+import type { Tool, MobileView } from "@/types";
 
 const tools: { id: Tool; label: string }[] = [
   { id: "notes", label: "Notes" },
@@ -7,13 +7,12 @@ const tools: { id: Tool; label: string }[] = [
   { id: "calendar", label: "Calendar" },
 ];
 
-interface Props { tool: Tool; setTool: (t: Tool) => void; mobileView: "list" | "detail"; children: ReactNode }
+interface ShellProps { tool: Tool; setTool: (t: Tool) => void; mobileView: MobileView; children: ReactNode }
 
-export function Shell({ tool, setTool, mobileView, children }: Props) {
+export function Shell({ tool, setTool, mobileView, children }: ShellProps) {
   return (
     <div className="shell" data-mobile-view={mobileView}>
       <nav className="nav-rail">
-        <div className="nav-brand">OpenDock</div>
         <div className="nav-tools">
           {tools.map((t) => <button key={t.id} className={`nav-tool${tool === t.id ? " active" : ""}`} onClick={() => setTool(t.id)}>{t.label}</button>)}
         </div>

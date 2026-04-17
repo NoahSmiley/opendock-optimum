@@ -10,11 +10,14 @@ enum Theme {
     static let ghost = Color(red: 0.200, green: 0.200, blue: 0.200)
     static let active = Color.white
     static let border = Color(red: 0.102, green: 0.102, blue: 0.102)
+    static let borderStrong = Color(red: 0.165, green: 0.165, blue: 0.165)
+    static let selectionBg = Color(red: 0.267, green: 0.267, blue: 0.267)
     static let error = Color(red: 0.8, green: 0.267, blue: 0.267)
 
     static let fontName = "OpenAISans-Regular"
     static let fontMedium = "OpenAISans-Medium"
     static let fontSemibold = "OpenAISans-Semibold"
+    static let fontMono = "Menlo"
 
     static func setupGlobal() {
         let tab = UITabBarAppearance()

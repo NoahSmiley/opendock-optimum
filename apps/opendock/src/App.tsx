@@ -7,13 +7,13 @@ import { BoardView } from "@/components/BoardView";
 import { NewNoteModal } from "@/components/Modal";
 import { useNotes } from "@/stores/notes";
 import { useBoards } from "@/stores/boards";
-
-export type Tool = "notes" | "boards" | "calendar";
+import type { Tool, MobileView } from "@/types";
 
 export function App() {
   const [tool, setTool] = useState<Tool>("notes");
-  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
+  const [mobileView, setMobileView] = useState<MobileView>("list");
   const [showModal, setShowModal] = useState(false);
+  const activeNoteId = useNotes((s) => s.activeId);
   const setActiveNote = useNotes((s) => s.setActive);
   const createNote = useNotes((s) => s.createWithTitle);
   const setActiveBoard = useBoards((s) => s.setActiveBoard);
@@ -27,7 +27,7 @@ export function App() {
       {tool === "notes" && (
         <>
           <NotesList onSelect={selectNote} onNew={() => setShowModal(true)} />
-          <Editor onBack={back} />
+          <Editor key={activeNoteId ?? "empty"} onBack={back} />
           {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={(t) => { createNote(t); setMobileView("detail"); }} />}
         </>
       )}

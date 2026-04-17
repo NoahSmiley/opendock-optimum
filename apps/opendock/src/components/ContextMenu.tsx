@@ -1,24 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 export interface MenuItem { label: string; shortcut?: string; action: () => void; danger?: boolean; divider?: boolean }
 
-interface Props { x: number; y: number; items: MenuItem[]; onClose: () => void }
+interface ContextMenuProps { x: number; y: number; items: MenuItem[]; onClose: () => void }
 
-export function ContextMenu({ x, y, items, onClose }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-
+export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   useEffect(() => {
     const handle = () => onClose();
     document.addEventListener("click", handle);
     return () => document.removeEventListener("click", handle);
   }, [onClose]);
 
-  // Keep on screen
   const finalX = Math.min(x, window.innerWidth - 188);
   const finalY = Math.min(y, window.innerHeight - items.length * 32 - 8);
 
   return (
-    <div ref={ref} className="context-menu" style={{ left: finalX, top: finalY }}>
+    <div className="context-menu" style={{ left: finalX, top: finalY }}>
       {items.map((item, i) => item.divider ? (
         <div key={i} className="context-menu-divider" />
       ) : (

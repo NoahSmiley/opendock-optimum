@@ -1,0 +1,20 @@
+/* @athion/style — base tokens, fonts, reset */
+@font-face { font-family: "OpenAI Sans"; src: url("/fonts/OpenAISans-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "OpenAI Sans"; src: url("/fonts/OpenAISans-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "OpenAI Sans"; src: url("/fonts/OpenAISans-Semibold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  --a-bg: #060606; --a-bg-elevated: #0a0a0a; --a-bg-input: #111;
+  --a-text: #c8c8c8; --a-text-muted: #828282; --a-text-faint: #555; --a-text-ghost: #333; --a-text-active: #fff;
+  --a-border: #1a1a1a; --a-border-strong: #2a2a2a; --a-error: #c44; --a-selection-bg: #444;
+  --a-font: "OpenAI Sans", system-ui, sans-serif; --a-mono: "SF Mono", Menlo, "Courier New", monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; overflow: hidden; }
+body { background: var(--a-bg); color: var(--a-text); font: 14px/1.5 var(--a-font); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--a-selection-bg); }
+button { font: inherit; background: none; border: none; color: var(--a-text); cursor: pointer; }
+
+.empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--a-text-ghost); font-size: 13px; }
+.back-btn { display: none; font-size: 16px; color: var(--a-text-muted); margin-right: 4px; }

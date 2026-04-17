@@ -1,14 +1,39 @@
-import { useState } from "react";
-import { useBoards, type Card } from "@/stores/boards";
+import { useCallback, useMemo, useState } from "react";
+import { useBoards } from "@/stores/boards";
+import type { Card } from "@/types";
+import { CardDetail } from "@/components/CardDetail";
+import { BoardCard } from "@/components/BoardCard";
+import { useBoardDrag } from "@/hooks/useBoardDrag";
 
-export function BoardView({ onBack }: { onBack: () => void }) {
-  const board = useBoards((s) => s.activeBoard());
+interface BoardViewProps { onBack: () => void }
+
+export function BoardView({ onBack }: BoardViewProps) {
+  const activeBoardId = useBoards((s) => s.activeBoardId);
+  const board = useBoards((s) => s.boards.find((b) => b.id === activeBoardId));
   const addCard = useBoards((s) => s.addCard);
   const moveCard = useBoards((s) => s.moveCard);
   const deleteCard = useBoards((s) => s.deleteCard);
   const updateCard = useBoards((s) => s.updateCard);
   const [addingCol, setAddingCol] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const onDropAt = useCallback((cardId: string, colId: string) => {
+    if (!board) return;
+    const c = board.cards.find((x) => x.id === cardId);
+    if (c && c.columnId !== colId) moveCard(board.id, cardId, colId);
+  }, [board, moveCard]);
+
+  const { onPointerDown, shouldOpenOnClick } = useBoardDrag({ onDropAt, onDragStart: () => setSelectedId(null) });
+  const onCardOpen = useCallback((id: string) => { if (shouldOpenOnClick()) setSelectedId(id); }, [shouldOpenOnClick]);
+
+  const cardsByColumn = useMemo(() => {
+    const map = new Map<string, Card[]>();
+    if (!board) return map;
+    for (const c of board.cards) { const arr = map.get(c.columnId); if (arr) arr.push(c); else map.set(c.columnId, [c]); }
+    for (const arr of map.values()) arr.sort((a, b) => a.order - b.order);
+    return map;
+  }, [board]);
 
   if (!board) return <div className="editor-area"><div className="empty">Select a board</div></div>;
 
@@ -17,65 +42,42 @@ export function BoardView({ onBack }: { onBack: () => void }) {
     addCard(board.id, colId, newTitle.trim()); setNewTitle(""); setAddingCol(null);
   };
 
+  const selected = selectedId ? board.cards.find((c) => c.id === selectedId) : null;
+
   return (
     <div className="editor-area">
-      <div className="editor-top">
+      <div className="board-header">
         <button className="back-btn" onClick={onBack}>&larr;</button>
-        <span style={{ font: "600 20px var(--a-font)", color: "var(--a-text-active)" }}>{board.name}</span>
+        <span className="board-header-title">{board.name}</span>
       </div>
       <div className="board-columns">
         {board.columns.map((col) => {
-          const cards = board.cards.filter((c) => c.columnId === col.id).sort((a, b) => a.order - b.order);
+          const cards = cardsByColumn.get(col.id) ?? [];
           return (
-            <div key={col.id} className="board-column">
+            <div key={col.id} data-col={col.id} className="board-column">
               <div className="board-column-header">
                 <span>{col.title}</span>
                 <span className="board-column-count">{cards.length}</span>
                 <button className="board-column-add" onClick={() => { setAddingCol(col.id); setNewTitle(""); }}>+</button>
               </div>
-              {addingCol === col.id && (
-                <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Card title" autoFocus
-                  onKeyDown={(e) => { if (e.key === "Enter") create(col.id); if (e.key === "Escape") setAddingCol(null); }}
-                  className="board-card-input" />
-              )}
-              {cards.map((card) => (
-                <BoardCard key={card.id} card={card} columns={board.columns}
-                  onMove={(toCol) => moveCard(board.id, card.id, toCol)}
-                  onDelete={() => deleteCard(board.id, card.id)}
-                  onUpdate={(p) => updateCard(board.id, card.id, p)} />
-              ))}
+              <div className="board-column-body">
+                {addingCol === col.id && (
+                  <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Card title" autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") create(col.id); if (e.key === "Escape") setAddingCol(null); }}
+                    className="board-card-input" />
+                )}
+                {cards.length === 0 && addingCol !== col.id && <div className="board-empty">No cards</div>}
+                {cards.map((card) => (
+                  <BoardCard key={card.id} card={card} selected={selectedId === card.id}
+                    onOpen={onCardOpen} onPointerDown={onPointerDown} />
+                ))}
+              </div>
             </div>
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function BoardCard({ card, columns, onMove, onDelete, onUpdate }: {
-  card: Card; columns: { id: string; title: string }[];
-  onMove: (colId: string) => void; onDelete: () => void;
-  onUpdate: (p: Partial<Pick<Card, "title" | "description">>) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(card.title);
-
-  return (
-    <div className="board-card" onContextMenu={(e) => { e.preventDefault(); onDelete(); }}>
-      {editing ? (
-        <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus className="board-card-input"
-          onBlur={() => { onUpdate({ title }); setEditing(false); }}
-          onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ title }); setEditing(false); } if (e.key === "Escape") setEditing(false); }} />
-      ) : (
-        <div onDoubleClick={() => setEditing(true)}>
-          <div className="board-card-title">{card.title}</div>
-          <div className="board-card-actions">
-            {columns.filter((c) => c.id !== card.columnId).map((c) => (
-              <button key={c.id} onClick={() => onMove(c.id)}>&rarr; {c.title}</button>
-            ))}
-          </div>
-        </div>
-      )}
+      {selected && <CardDetail key={selected.id} card={selected} onUpdate={(p) => updateCard(board.id, selected.id, p)}
+        onDelete={() => deleteCard(board.id, selected.id)} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }

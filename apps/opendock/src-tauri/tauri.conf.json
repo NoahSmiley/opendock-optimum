@@ -4,7 +4,7 @@
   "identifier": "com.opendock.app",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://192.168.0.67:5173",
+    "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm run dev",
     "beforeBuildCommand": "pnpm run build"
   },
@@ -16,7 +16,8 @@
         "height": 800,
         "minWidth": 940,
         "minHeight": 560,
-        "decorations": true
+        "decorations": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {

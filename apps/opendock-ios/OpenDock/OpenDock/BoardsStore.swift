@@ -1,80 +1,87 @@
 import Foundation
 
-struct Card: Identifiable, Codable, Equatable {
-    let id: UUID
-    var title: String
-    var description: String
-    var columnId: UUID
-    var order: Int
-    var updatedAt: Date
-}
-
-struct BoardColumn: Identifiable, Codable, Equatable {
-    let id: UUID
-    var title: String
-    var order: Int
-}
-
-struct Board: Identifiable, Codable, Equatable {
-    let id: UUID
-    var name: String
-    var columns: [BoardColumn]
-    var cards: [Card]
-
-    func cardsIn(_ columnId: UUID) -> [Card] {
-        cards.filter { $0.columnId == columnId }.sorted { $0.order < $1.order }
-    }
-}
-
 @MainActor
 class BoardsStore: ObservableObject {
-    @Published var boards: [Board] = []
+    @Published private(set) var boards: [Board] = [] { didSet { recompute() } }
+    @Published private(set) var sortedBoards: [Board] = []
+    @Published private(set) var cardsByColumn: [UUID: [Card]] = [:]
+    @Published private(set) var cardById: [UUID: Card] = [:]
     @Published var selectedId: UUID?
     private let key = "opendock-boards"
+    private var saveTask: Task<Void, Never>?
 
     init() {
         if let data = UserDefaults.standard.data(forKey: key),
            let decoded = try? JSONDecoder().decode([Board].self, from: data) { boards = decoded }
-        if boards.isEmpty { seedSample() }
+        if boards.isEmpty { boards = BoardsSeed.sample(); save() }
+        selectedId = sortedBoards.first?.id
     }
 
-    private func seedSample() {
-        let cols = ["To Do", "In Progress", "Done"].enumerated().map { BoardColumn(id: UUID(), title: $1, order: $0) }
-        var b = Board(id: UUID(), name: "Project Alpha", columns: cols, cards: [])
-        b.cards = [
-            Card(id: UUID(), title: "Design system review", description: "", columnId: cols[0].id, order: 0, updatedAt: Date()),
-            Card(id: UUID(), title: "Set up CI pipeline", description: "", columnId: cols[0].id, order: 1, updatedAt: Date()),
-            Card(id: UUID(), title: "Build notes feature", description: "", columnId: cols[1].id, order: 0, updatedAt: Date()),
-            Card(id: UUID(), title: "Ship v0.1", description: "", columnId: cols[2].id, order: 0, updatedAt: Date()),
-        ]
-        boards = [b]; save()
-    }
-
-    var selected: Board? { boards.first { $0.id == selectedId } }
-
+    func board(_ id: UUID) -> Board? { boards.first { $0.id == id } }
     func createBoard(name: String) {
-        let cols = ["To Do", "In Progress", "Done"].enumerated().map { BoardColumn(id: UUID(), title: $1, order: $0) }
-        let b = Board(id: UUID(), name: name, columns: cols, cards: []); boards.insert(b, at: 0); selectedId = b.id; save()
+        let b = Board(id: UUID(), name: name, columns: BoardsSeed.defaultColumns(), cards: [])
+        boards.insert(b, at: 0); selectedId = b.id; save()
     }
-
     func deleteBoard(_ id: UUID) { boards.removeAll { $0.id == id }; if selectedId == id { selectedId = nil }; save() }
+    func renameBoard(_ id: UUID, name: String) { mutate(id) { $0.name = name } }
+    func togglePin(_ id: UUID) { mutate(id) { $0.pinned.toggle() } }
+    func deleteCard(boardId: UUID, cardId: UUID) { mutate(boardId) { $0.cards.removeAll { $0.id == cardId } } }
 
     func addCard(boardId: UUID, columnId: UUID, title: String) {
-        guard let i = boards.firstIndex(where: { $0.id == boardId }) else { return }
-        let order = boards[i].cardsIn(columnId).count
-        boards[i].cards.append(Card(id: UUID(), title: title, description: "", columnId: columnId, order: order, updatedAt: Date())); save()
+        mutate(boardId) { b in
+            let order = b.cards.filter { $0.columnId == columnId }.count
+            b.cards.append(Card(id: UUID(), title: title, description: "", columnId: columnId, order: order, updatedAt: Date()))
+        }
+    }
+
+    func updateCard(boardId: UUID, cardId: UUID, title: String? = nil, description: String? = nil) {
+        mutateCard(boardId: boardId, cardId: cardId) { c in
+            if let t = title { c.title = t }
+            if let d = description { c.description = d }
+            c.updatedAt = Date()
+        }
     }
 
     func moveCard(boardId: UUID, cardId: UUID, to columnId: UUID) {
-        guard let i = boards.firstIndex(where: { $0.id == boardId }),
-              let j = boards[i].cards.firstIndex(where: { $0.id == cardId }) else { return }
-        boards[i].cards[j].columnId = columnId; boards[i].cards[j].updatedAt = Date(); save()
+        mutateCard(boardId: boardId, cardId: cardId, { c in
+            guard c.columnId != columnId else { return }
+            c.columnId = columnId; c.order = Int.max; c.updatedAt = Date()
+        }) { b in
+            let ordered = b.cards.filter { $0.columnId == columnId }.sorted { $0.order < $1.order }
+            for (i, oc) in ordered.enumerated() { if let j = b.cards.firstIndex(where: { $0.id == oc.id }) { b.cards[j].order = i } }
+        }
     }
 
-    func deleteCard(boardId: UUID, cardId: UUID) {
-        guard let i = boards.firstIndex(where: { $0.id == boardId }) else { return }
-        boards[i].cards.removeAll { $0.id == cardId }; save()
+    private func mutate(_ id: UUID, _ fn: (inout Board) -> Void) {
+        guard let i = boards.firstIndex(where: { $0.id == id }) else { return }
+        var b = boards[i]; fn(&b); boards[i] = b; save()
     }
 
-    private func save() { if let data = try? JSONEncoder().encode(boards) { UserDefaults.standard.set(data, forKey: key) } }
+    private func mutateCard(boardId: UUID, cardId: UUID, _ fn: (inout Card) -> Void, _ after: ((inout Board) -> Void)? = nil) {
+        mutate(boardId) { b in
+            guard let j = b.cards.firstIndex(where: { $0.id == cardId }) else { return }
+            var c = b.cards[j]; fn(&c); b.cards[j] = c; after?(&b)
+        }
+    }
+
+    private func recompute() {
+        sortedBoards = boards.sorted { a, b in
+            if a.pinned != b.pinned { return a.pinned && !b.pinned }
+            return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+        }
+        var map: [UUID: [Card]] = [:]; var byId: [UUID: Card] = [:]
+        for b in boards { for c in b.cards { map[c.columnId, default: []].append(c); byId[c.id] = c } }
+        for k in map.keys { map[k]?.sort { $0.order < $1.order } }
+        cardsByColumn = map; cardById = byId
+    }
+
+    private func save() {
+        saveTask?.cancel()
+        let snapshot = boards
+        saveTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            if Task.isCancelled { return }
+            if let data = try? JSONEncoder().encode(snapshot) { UserDefaults.standard.set(data, forKey: key) }
+        }
+    }
 }

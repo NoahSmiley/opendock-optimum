@@ -1,70 +1,26 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct BoardDetailView: View {
     @EnvironmentObject var store: BoardsStore
     let boardId: UUID
-    @State private var selectedColumn: UUID?
     @State private var newCardTitle = ""
+    @State private var adding = false
+    @State private var addingCol: UUID?
+    @State private var openCardId: UUID?
 
-    private var board: Board? { store.boards.first { $0.id == boardId } }
+    private var board: Board? { store.board(boardId) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            if let board {
-                // Column picker
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 0) {
-                        ForEach(board.columns) { col in
-                            Button { selectedColumn = col.id } label: {
-                                Text(col.title).font(.custom(active(col.id) ? Theme.fontSemibold : Theme.fontName, size: 14))
-                                    .foregroundColor(active(col.id) ? Theme.active : Theme.faint)
-                                    .padding(.horizontal, 16).padding(.vertical, 10)
-                            }
-                        }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 0) {
+                if let board {
+                    ForEach(board.columns) { col in
+                        ColumnView(col: col, cards: store.cardsByColumn[col.id] ?? [], boardId: boardId,
+                            adding: adding && addingCol == col.id, newCardTitle: $newCardTitle,
+                            onAdd: { addingCol = col.id; adding = true }, onSubmit: { submit(colId: col.id) },
+                            onCancel: { adding = false; newCardTitle = "" }, onOpen: { openCardId = $0 })
                     }
-                }
-                .padding(.horizontal, 4)
-
-                Rectangle().fill(Theme.border).frame(height: 0.5)
-
-                // Add card
-                HStack {
-                    TextField("New card", text: $newCardTitle).font(.custom(Theme.fontName, size: 15)).foregroundColor(Theme.text)
-                        .onSubmit { addCard() }
-                    if !newCardTitle.isEmpty {
-                        Button("Add") { addCard() }.font(.custom(Theme.fontSemibold, size: 13)).foregroundColor(Theme.active)
-                    }
-                }
-                .padding(.horizontal, 20).padding(.vertical, 10)
-
-                Rectangle().fill(Theme.border).frame(height: 0.5)
-
-                // Cards in selected column
-                let colId = selectedColumn ?? board.columns.first?.id ?? UUID()
-                let cards = board.cardsIn(colId)
-
-                if cards.isEmpty {
-                    Spacer()
-                    Text("No cards").font(.custom(Theme.fontName, size: 13)).foregroundColor(Theme.ghost)
-                    Spacer()
-                } else {
-                    List {
-                        ForEach(cards) { card in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(card.title).font(.custom(Theme.fontMedium, size: 15)).foregroundColor(Theme.text)
-                            }
-                            .listRowBackground(Theme.bg).listRowSeparatorTint(Theme.border)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { store.deleteCard(boardId: boardId, cardId: card.id) } label: { Label("Delete", systemImage: "trash") }
-                            }
-                            .swipeActions(edge: .leading) {
-                                ForEach(board.columns.filter { $0.id != colId }) { target in
-                                    Button { store.moveCard(boardId: boardId, cardId: card.id, to: target.id) } label: { Text(target.title) }.tint(Theme.faint)
-                                }
-                            }
-                        }
-                    }
-                    .listStyle(.plain).scrollContentBackground(.hidden)
                 }
             }
         }
@@ -73,13 +29,13 @@ struct BoardDetailView: View {
         .toolbar {
             ToolbarItem(placement: .principal) { Text(board?.name ?? "Board").font(.custom(Theme.fontSemibold, size: 17)).foregroundColor(Theme.active) }
         }
-        .onAppear { if selectedColumn == nil { selectedColumn = board?.columns.first?.id } }
+        .sheet(item: Binding(get: { openCardId.map { IDWrap(id: $0) } }, set: { openCardId = $0?.id })) { w in
+            CardDetailSheet(boardId: boardId, cardId: w.id).environmentObject(store)
+        }
     }
 
-    private func active(_ id: UUID) -> Bool { selectedColumn == id || (selectedColumn == nil && board?.columns.first?.id == id) }
-
-    private func addCard() {
-        guard !newCardTitle.isEmpty, let colId = selectedColumn ?? board?.columns.first?.id else { return }
-        store.addCard(boardId: boardId, columnId: colId, title: newCardTitle); newCardTitle = ""
+    private func submit(colId: UUID) {
+        guard !newCardTitle.isEmpty else { return }
+        store.addCard(boardId: boardId, columnId: colId, title: newCardTitle); newCardTitle = ""; adding = false
     }
 }

@@ -4,6 +4,7 @@ struct NoteListView: View {
     @EnvironmentObject var store: NotesStore
     @Binding var path: NavigationPath
     @Binding var showNewNote: Bool
+    @State private var deleting: Note?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,7 +47,7 @@ struct NoteListView: View {
                                 Button { store.togglePin(note.id) } label: { Label(note.pinned ? "Unpin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin") }
                                 Button { store.duplicate(note.id) } label: { Label("Duplicate", systemImage: "doc.on.doc") }
                                 Divider()
-                                Button(role: .destructive) { store.delete(note.id) } label: { Label("Delete", systemImage: "trash") }
+                                Button(role: .destructive) { deleting = note } label: { Label("Delete", systemImage: "trash") }
                             }
                             Rectangle().fill(Theme.border).frame(height: 0.5).padding(.horizontal, 20)
                         }
@@ -55,5 +56,9 @@ struct NoteListView: View {
             }
         }
         .background(Theme.bg).navigationBarHidden(true)
+        .alert("Delete note?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+            Button("Cancel", role: .cancel) { deleting = nil }
+            Button("Delete", role: .destructive) { if let d = deleting { store.delete(d.id) }; deleting = nil }
+        } message: { Text("\"\(deleting?.title.isEmpty == false ? deleting!.title : "Untitled")\" will be permanently deleted.") }
     }
 }
