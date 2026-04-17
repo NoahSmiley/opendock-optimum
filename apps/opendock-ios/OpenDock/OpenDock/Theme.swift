@@ -19,7 +19,7 @@ enum Theme {
     static let fontSemibold = "OpenAISans-Semibold"
     static let fontMono = "Menlo"
 
-    static func setupGlobal() {
+    @MainActor static func setupGlobal() {
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
         tab.backgroundColor = UIColor(bg)

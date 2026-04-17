@@ -1,4 +1,4 @@
-export type Tool = "notes" | "boards" | "calendar";
+export type Tool = "notes" | "boards";
 export type MobileView = "list" | "detail";
 
 export interface AuthData {

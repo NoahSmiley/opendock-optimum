@@ -4,6 +4,7 @@ import { useAuth } from "@/stores/auth";
 import { useLiveNote } from "@/hooks/useLiveNote";
 import { extractTags } from "@/lib/tags";
 import { wordCount } from "@/lib/notes";
+import { renderMarkdown } from "@/lib/markdown";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { MembersPanel } from "@/components/MembersPanel";
@@ -22,6 +23,7 @@ export function Editor({ onBack }: EditorProps) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [showingMembers, setShowingMembers] = useState(false);
+  const [preview, setPreview] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<number | null>(null);
 
@@ -64,6 +66,7 @@ export function Editor({ onBack }: EditorProps) {
         <button className="back-btn" onClick={onBack}>&larr;</button>
         <input value={note.title} onChange={(e) => update(note.id, { title: e.target.value })} placeholder="Untitled" />
         <div className="actions">
+          <button onClick={() => setPreview((p) => !p)}>{preview ? "edit" : "preview"}</button>
           <button onClick={() => setShowingMembers(true)}>share</button>
           <button onClick={() => togglePin(note.id)}>{note.pinned ? "unpin" : "pin"}</button>
           <button className="danger" onClick={() => setConfirmingDelete(true)}>delete</button>
@@ -71,7 +74,9 @@ export function Editor({ onBack }: EditorProps) {
       </div>
       {tags.length > 0 && <div className="editor-tags">{tags.map((t) => <span key={t} className="editor-tag">{t}</span>)}</div>}
       <div className="editor-body">
-        <textarea ref={ref} value={note.content} onChange={(e) => onChange(e.target.value)} onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }} placeholder="Start writing..." />
+        {preview
+          ? <div className="editor-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }} />
+          : <textarea ref={ref} value={note.content} onChange={(e) => onChange(e.target.value)} onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }} placeholder="Start writing..." />}
       </div>
       <div className="editor-footer">
         <span>{words}w</span>

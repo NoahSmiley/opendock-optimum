@@ -55,7 +55,6 @@ export function App() {
         </>
       )}
       {tool === "boards" && (<><BoardsList onSelect={selectBoard} /><BoardView onBack={back} /></>)}
-      {tool === "calendar" && <div className="empty">Calendar — coming soon</div>}
     </Shell>
   );
 }

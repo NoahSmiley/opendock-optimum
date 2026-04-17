@@ -1,0 +1,42 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tauri:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: dtolnay/rust-toolchain@stable
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck Tauri frontend
+        run: cd apps/opendock && pnpm tsc -b
+      - name: Cargo check Tauri backend
+        run: cd apps/opendock/src-tauri && cargo check --locked
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build iOS for simulator
+        run: |
+          cd apps/opendock-ios/OpenDock
+          set -o pipefail
+          xcodebuild -project OpenDock.xcodeproj -scheme OpenDock \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build
+
+  backend-rs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cargo check backend
+        run: cd apps/backend-rs && cargo check --locked

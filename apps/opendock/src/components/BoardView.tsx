@@ -14,7 +14,7 @@ export function BoardView({ onBack }: BoardViewProps) {
   const detail = useBoards((s) => s.detail);
   const addCard = useBoards((s) => s.addCard);
   const addColumn = useBoards((s) => s.addColumn);
-  const moveCard = useBoards((s) => s.moveCard);
+  const reorderCard = useBoards((s) => s.reorderCard);
   const deleteCard = useBoards((s) => s.deleteCard);
   const updateCard = useBoards((s) => s.updateCard);
   const assignCard = useBoards((s) => s.assignCard);
@@ -25,11 +25,9 @@ export function BoardView({ onBack }: BoardViewProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showingMembers, setShowingMembers] = useState(false);
 
-  const onDropAt = useCallback((cardId: string, colId: string) => {
-    if (!detail) return;
-    const c = detail.cards.find((x) => x.id === cardId);
-    if (c && c.column_id !== colId) moveCard(cardId, colId);
-  }, [detail, moveCard]);
+  const onDropAt = useCallback((cardId: string, colId: string, beforeId: string | null) => {
+    reorderCard(cardId, colId, beforeId);
+  }, [reorderCard]);
 
   const { onPointerDown, shouldOpenOnClick } = useBoardDrag({ onDropAt, onDragStart: () => setSelectedId(null) });
   const onCardOpen = useCallback((id: string) => { if (shouldOpenOnClick()) setSelectedId(id); }, [shouldOpenOnClick]);
