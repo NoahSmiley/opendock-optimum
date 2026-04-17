@@ -5,6 +5,7 @@ import { CardDetail } from "@/components/CardDetail";
 import { BoardCard } from "@/components/BoardCard";
 import { useBoardDrag } from "@/hooks/useBoardDrag";
 import { useAuth } from "@/stores/auth";
+import { useLiveBoard } from "@/hooks/useLiveBoard";
 import { BoardMembersPanel } from "@/components/BoardMembersPanel";
 
 interface BoardViewProps { onBack: () => void }
@@ -18,6 +19,7 @@ export function BoardView({ onBack }: BoardViewProps) {
   const updateCard = useBoards((s) => s.updateCard);
   const assignCard = useBoards((s) => s.assignCard);
   const currentUserId = useAuth((s) => s.data.user_id ?? null);
+  useLiveBoard(detail?.board.id ?? null);
   const [addingCol, setAddingCol] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -54,8 +56,10 @@ export function BoardView({ onBack }: BoardViewProps) {
       <div className="board-header">
         <button className="back-btn" onClick={onBack}>&larr;</button>
         <span className="board-header-title">{detail.board.name}</span>
-        <button className="board-add-col" onClick={() => setShowingMembers(true)}>share</button>
-        <button className="board-add-col" onClick={() => { const t = window.prompt("Column title")?.trim(); if (t) addColumn(t); }}>+ column</button>
+        <div className="board-header-actions">
+          <button className="board-header-btn" onClick={() => setShowingMembers(true)}>Share</button>
+          <button className="board-header-btn" onClick={() => { const t = window.prompt("Column title")?.trim(); if (t) addColumn(t); }}>+ Column</button>
+        </div>
       </div>
       <div className="board-columns">
         {detail.columns.map((col) => {

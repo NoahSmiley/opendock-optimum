@@ -1,22 +1,33 @@
+import { useState } from "react";
 import { useAuth } from "@/stores/auth";
 
 export function LoginScreen() {
   const pending = useAuth((s) => s.pending);
   const error = useAuth((s) => s.error);
-  const startLogin = useAuth((s) => s.startLogin);
+  const login = useAuth((s) => s.login);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    login(email.trim(), password);
+  };
 
   return (
     <div className="login-screen">
-      <div className="login-card">
+      <form className="login-card" onSubmit={submit}>
         <div className="login-brand">OpenDock</div>
-        <p className="login-hint">
-          {pending ? "Waiting for you to sign in at athion.me..." : "Sign in with your Athion account to continue."}
-        </p>
+        <p className="login-hint">Sign in with your Athion account.</p>
+        <input type="email" className="login-input" placeholder="Email" autoComplete="email" autoFocus
+          value={email} onChange={(e) => setEmail(e.target.value)} disabled={pending} />
+        <input type="password" className="login-input" placeholder="Password" autoComplete="current-password"
+          value={password} onChange={(e) => setPassword(e.target.value)} disabled={pending} />
         {error && <p className="login-error">{error}</p>}
-        <button className="login-button" onClick={() => startLogin()} disabled={pending}>
-          {pending ? "Waiting..." : "Sign in"}
+        <button type="submit" className="login-button" disabled={pending || !email.trim() || !password}>
+          {pending ? "Signing in..." : "Sign in"}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

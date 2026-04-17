@@ -5,11 +5,12 @@ import type { AuthData } from "@/types";
 interface AuthStatus { data: AuthData; loading: boolean; pending: boolean; error: string | null }
 interface AuthActions {
   refresh: () => Promise<void>;
-  startLogin: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  clearError: () => void;
 }
 
-export const useAuth = create<AuthStatus & AuthActions>((set, get) => ({
+export const useAuth = create<AuthStatus & AuthActions>((set) => ({
   data: {},
   loading: true,
   pending: false,
@@ -19,27 +20,16 @@ export const useAuth = create<AuthStatus & AuthActions>((set, get) => ({
     try {
       const data = await invoke<AuthData>("auth_status");
       set({ data, loading: false, error: null });
-    } catch (e) {
-      set({ data: {}, loading: false, error: String(e) });
+    } catch {
+      set({ data: {}, loading: false, error: null });
     }
   },
 
-  startLogin: async () => {
+  login: async (email, password) => {
     set({ pending: true, error: null });
     try {
-      const { code } = await invoke<{ code: string; url: string }>("auth_initiate");
-      const poll = async (): Promise<void> => {
-        const result = await invoke<{ status: string; data: AuthData | null }>("auth_poll", { code });
-        if (result.status === "complete" && result.data) {
-          set({ data: result.data, pending: false });
-          return;
-        }
-        if (result.status === "expired") { throw new Error("Login link expired"); }
-        if (!get().pending) return;
-        await new Promise((r) => setTimeout(r, 1500));
-        return poll();
-      };
-      await poll();
+      const data = await invoke<AuthData>("auth_login", { email, password });
+      set({ data, pending: false });
     } catch (e) {
       set({ pending: false, error: String(e) });
     }
@@ -49,4 +39,6 @@ export const useAuth = create<AuthStatus & AuthActions>((set, get) => ({
     await invoke("auth_logout");
     set({ data: {}, pending: false, error: null });
   },
+
+  clearError: () => set({ error: null }),
 }));

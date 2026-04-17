@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 @MainActor
 class AuthStore: ObservableObject {
@@ -18,7 +17,7 @@ class AuthStore: ObservableObject {
         if let saved = KeychainService.load() {
             do {
                 let me = try await AuthService.fetchMe(token: saved)
-                apply(token: saved, me: me)
+                apply(token: saved, id: me.id, email: me.email, displayName: me.displayName)
             } catch {
                 KeychainService.clear(); clear()
             }
@@ -26,28 +25,21 @@ class AuthStore: ObservableObject {
         loading = false
     }
 
-    func startLogin() async {
+    func login(email: String, password: String) async {
         pending = true; error = nil
         do {
-            let (code, url) = try await AuthService.initiate()
-            await MainActor.run { UIApplication.shared.open(url) }
-            while pending {
-                let result = try await AuthService.poll(code: code)
-                if result.status == "complete", let token = result.token {
-                    KeychainService.store(token)
-                    let me = try await AuthService.fetchMe(token: token)
-                    apply(token: token, me: me); pending = false; return
-                }
-                if result.status == "expired" { throw NSError(domain: "auth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Login link expired"]) }
-                try await Task.sleep(nanoseconds: 1_500_000_000)
-            }
-        } catch { self.error = error.localizedDescription; pending = false }
+            let resp = try await AuthService.login(email: email, password: password)
+            KeychainService.store(resp.token)
+            apply(token: resp.token, id: resp.user.id, email: resp.user.email, displayName: resp.user.displayName)
+        } catch let e as APIError { self.error = e.message }
+        catch { self.error = error.localizedDescription }
+        pending = false
     }
 
     func logout() { KeychainService.clear(); clear() }
 
-    private func apply(token: String, me: MeResponse) {
-        self.token = token; self.userId = me.id; self.email = me.email; self.displayName = me.displayName
+    private func apply(token: String, id: UUID, email: String, displayName: String?) {
+        self.token = token; self.userId = id; self.email = email; self.displayName = displayName
     }
     private func clear() { token = nil; userId = nil; email = nil; displayName = nil }
 }

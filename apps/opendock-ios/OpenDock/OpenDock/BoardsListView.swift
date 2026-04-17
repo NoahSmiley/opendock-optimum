@@ -19,7 +19,6 @@ struct BoardsListView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Rectangle().fill(Theme.border).frame(height: 0.5)
             if store.boards.isEmpty && !adding { emptyState } else { list }
         }
         .background(Theme.bg).navigationBarHidden(true)
@@ -70,7 +69,7 @@ struct BoardsListView: View {
                     .listRowBackground(Theme.bg).listRowSeparatorTint(Theme.border)
                     .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 0))
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) { deleting = board } label: { Label("Delete", systemImage: "trash") }
+                        Button { deleting = board } label: { Label("Delete", systemImage: "trash") }.tint(Theme.error)
                         Button { renameText = board.name; renaming = board.id } label: { Label("Rename", systemImage: "pencil") }.tint(Theme.muted)
                     }
                     .swipeActions(edge: .leading) {

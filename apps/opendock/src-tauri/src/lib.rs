@@ -10,8 +10,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(AuthState::new())
         .invoke_handler(tauri::generate_handler![
-            commands::auth::auth_initiate,
-            commands::auth::auth_poll,
+            commands::auth::auth_login,
             commands::auth::auth_status,
             commands::auth::auth_logout,
             commands::auth::auth_token,

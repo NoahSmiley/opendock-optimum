@@ -1,8 +1,9 @@
 /* @athion/style — boards: header, columns, cards, detail */
 .board-header { padding: 20px 28px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--a-border); user-select: none; }
 .board-header-title { font: 600 20px var(--a-font); color: var(--a-text-active); }
-.board-add-col { margin-left: auto; background: none; border: 1px solid var(--a-border); color: var(--a-text-muted); padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-.board-add-col:hover { color: var(--a-text); border-color: var(--a-border-strong); }
+.board-header-actions { margin-left: auto; display: flex; gap: 8px; }
+.board-header-btn { background: none; border: 1px solid var(--a-border); color: var(--a-text-muted); padding: 6px 12px; border-radius: 6px; font: 12px var(--a-font); cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.board-header-btn:hover { color: var(--a-text); border-color: var(--a-border-strong); }
 .board-columns { display: flex; flex: 1; overflow-x: auto; user-select: none; -webkit-user-select: none; }
 .board-columns input { user-select: text; -webkit-user-select: text; }
 .board-column { width: 280px; min-width: 280px; display: flex; flex-direction: column; border-right: 1px solid var(--a-border); }
