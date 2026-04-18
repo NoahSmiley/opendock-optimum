@@ -25,7 +25,6 @@ interface BoardsState {
   addMember: (email: string) => Promise<boolean>;
   removeMember: (userId: string) => Promise<void>;
   applyEvent: (ev: LiveEvent) => void;
-  reset: () => void;
 }
 
 export const useBoards = create<BoardsState>((set, get) => ({
@@ -95,5 +94,4 @@ export const useBoards = create<BoardsState>((set, get) => ({
     catch (e) { set({ error: String(e) }); }
   },
   applyEvent: (ev) => { set({ detail: applyBoardEvent(get().detail, ev) }); },
-  reset: () => set({ boards: [], activeBoardId: null, detail: null, error: null }),
 }));

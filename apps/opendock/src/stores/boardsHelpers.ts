@@ -29,8 +29,7 @@ export function removeCard(d: BoardDetail | null, id: string): BoardDetail | nul
   return d ? { ...d, cards: d.cards.filter((c) => c.id !== id) } : d;
 }
 
-export function upsertCard(d: BoardDetail | null, c: Card): BoardDetail | null {
-  if (!d) return d;
+function upsertCard(d: BoardDetail, c: Card): BoardDetail {
   const i = d.cards.findIndex((x) => x.id === c.id);
   return { ...d, cards: i >= 0 ? d.cards.map((x, k) => k === i ? c : x) : [...d.cards, c] };
 }
