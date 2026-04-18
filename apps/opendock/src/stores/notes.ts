@@ -18,7 +18,6 @@ interface NotesState {
   togglePin: (id: string) => Promise<void>;
   duplicate: (id: string) => Promise<void>;
   applyEvent: (ev: LiveEvent) => void;
-  reset: () => void;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -92,6 +91,4 @@ export const useNotes = create<NotesState>((set, get) => ({
       set({ notes: get().notes.filter((n) => n.id !== ev.note_id), activeId: get().activeId === ev.note_id ? null : get().activeId });
     }
   },
-
-  reset: () => set({ notes: [], activeId: null, search: "", error: null }),
 }));

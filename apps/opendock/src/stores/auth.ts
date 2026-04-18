@@ -7,7 +7,6 @@ interface AuthActions {
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  clearError: () => void;
 }
 
 export const useAuth = create<AuthStatus & AuthActions>((set) => ({
@@ -39,6 +38,4 @@ export const useAuth = create<AuthStatus & AuthActions>((set) => ({
     await invoke("auth_logout");
     set({ data: {}, pending: false, error: null });
   },
-
-  clearError: () => set({ error: null }),
 }));

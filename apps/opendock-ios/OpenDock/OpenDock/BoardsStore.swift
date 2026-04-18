@@ -16,9 +16,6 @@ class BoardsStore: ObservableObject {
         return map
     }
 
-    func board(_ id: UUID) -> Board? { detail?.board.id == id ? detail?.board : boards.first { $0.id == id } }
-    func columns(_ id: UUID) -> [BoardColumn] { detail?.board.id == id ? (detail?.columns ?? []) : [] }
-
     func loadBoards() async {
         loading = true
         do { boards = try await BoardsAPI.list() } catch { self.error = "\(error)" }
