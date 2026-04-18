@@ -54,7 +54,20 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
         d.moved = true;
         onDragStart?.();
         document.body.appendChild(d.ghost);
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.add("dragging-source");
+        const source = document.querySelector(`[data-card="${d.id}"]`) as HTMLElement | null;
+        const col = source?.closest("[data-col]");
+        const siblings = col ? Array.from(col.querySelectorAll<HTMLElement>("[data-card]")).filter((c) => c !== source) : [];
+        const before = siblings.map((c) => ({ el: c, top: c.getBoundingClientRect().top }));
+        source?.classList.add("dragging-source");
+        for (const { el, top } of before) {
+          const delta = top - el.getBoundingClientRect().top;
+          if (delta === 0) continue;
+          el.style.transition = "none";
+          el.style.transform = `translateY(${delta}px)`;
+        }
+        requestAnimationFrame(() => {
+          for (const { el } of before) { el.style.transition = ""; el.style.transform = ""; }
+        });
         document.body.style.cursor = "grabbing";
       }
       d.ghost.style.left = `${e.clientX - d.offsetX}px`;
@@ -72,13 +85,19 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       const d = drag.current; if (!d) return;
       if (d.moved) {
         d.ghost.remove();
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         document.body.style.cursor = "";
+        const allCards = Array.from(document.querySelectorAll<HTMLElement>("[data-card]"));
+        for (const c of allCards) { c.style.transition = "none"; c.style.transform = ""; c.classList.remove("card-shift"); }
+        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         const target = dropCol.current;
         if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          for (const c of allCards) c.style.transition = "";
+        }));
       }
-      setDropHighlight(null); setDropIndicator(null, null, 0);
+      setDropHighlight(null);
+      dropBefore.current = null;
       drag.current = null;
     };
     window.addEventListener("pointermove", move);

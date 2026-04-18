@@ -41,10 +41,15 @@ export function applyBoardEvent(d: BoardDetail | null, ev: LiveEvent): BoardDeta
   return d;
 }
 
-export function computeReorderPosition(d: BoardDetail, cardId: string, toColumnId: string, beforeCardId: string | null): number | null {
+export function applyReorderLocally(d: BoardDetail, cardId: string, toColumnId: string, beforeCardId: string | null): { detail: BoardDetail; position: number } | null {
   const card = d.cards.find((c) => c.id === cardId); if (!card) return null;
   const siblings = d.cards.filter((c) => c.column_id === toColumnId && c.id !== cardId).sort((a, b) => a.position - b.position);
   const idx = beforeCardId ? siblings.findIndex((c) => c.id === beforeCardId) : -1;
   const position = idx >= 0 ? idx : siblings.length;
-  return card.column_id === toColumnId && card.position === position ? null : position;
+  if (card.column_id === toColumnId && card.position === position) return null;
+  const moved = { ...card, column_id: toColumnId, position };
+  const reordered = [...siblings.slice(0, position), moved, ...siblings.slice(position)];
+  const renumbered = new Map(reordered.map((c, i) => [c.id, { ...c, position: i }]));
+  const cards = d.cards.map((c) => renumbered.get(c.id) ?? c);
+  return { detail: { ...d, cards }, position };
 }

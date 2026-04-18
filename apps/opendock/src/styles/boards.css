@@ -15,7 +15,7 @@
 .board-column-body { flex: 1; padding: 10px 12px 12px; overflow-y: auto; }
 .board-column.drop-target { background: rgba(255,255,255,0.015); }
 .board-column.drop-target .board-column-body { outline: 1px dashed var(--a-text-ghost); outline-offset: -6px; }
-.board-card { padding: 12px 14px; background: var(--a-bg-elevated); margin-bottom: 4px; cursor: grab; outline: none !important; user-select: none; touch-action: none; transition: transform 0.15s ease-out; }
+.board-card { padding: 12px 14px; background: var(--a-bg-elevated); margin-bottom: 4px; cursor: grab; outline: none !important; user-select: none; touch-action: none; transition: transform 0.18s ease-out; }
 .board-card.selected { background: var(--a-bg-input); }
 .board-card.dragging-source { display: none; }
 .board-card:focus, .board-card:focus-visible, .board-card:focus-within, .board-card:active { outline: none !important; }
