@@ -16,15 +16,24 @@ extension BoardsStore {
         } catch { self.error = "\(error)" }
     }
 
-    func reorderCard(boardId: UUID, cardId: UUID, to columnId: UUID, before beforeId: UUID?) async {
-        guard let d = detail, let card = d.cards.first(where: { $0.id == cardId }) else { return }
-        let siblings = d.cards.filter { $0.columnId == columnId && $0.id != cardId }.sorted { $0.position < $1.position }
-        let idx = beforeId.flatMap { id in siblings.firstIndex { $0.id == id } }
-        let position = idx ?? siblings.count
-        if card.columnId == columnId && card.position == position { return }
-        if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) {
-            detail?.cards[i].columnId = columnId; detail?.cards[i].position = position
+    func applyReorderLocally(cardId: UUID, to columnId: UUID, before beforeId: UUID?) -> Int? {
+        guard let d = detail, let card = d.cards.first(where: { $0.id == cardId }) else { return nil }
+        var siblings = d.cards.filter { $0.columnId == columnId && $0.id != cardId }.sorted { $0.position < $1.position }
+        let idx = beforeId.flatMap { id in siblings.firstIndex { $0.id == id } } ?? siblings.count
+        if card.columnId == columnId && card.position == idx { return nil }
+        var moved = card; moved.columnId = columnId; moved.position = idx
+        siblings.insert(moved, at: idx)
+        for (i, s) in siblings.enumerated() {
+            if let j = detail?.cards.firstIndex(where: { $0.id == s.id }) {
+                detail?.cards[j].position = i
+                if s.id == cardId { detail?.cards[j].columnId = columnId }
+            }
         }
+        return idx
+    }
+
+    func reorderCard(boardId: UUID, cardId: UUID, to columnId: UUID, before beforeId: UUID?) async {
+        guard let position = applyReorderLocally(cardId: cardId, to: columnId, before: beforeId) else { return }
         do {
             let body = UpdateCardBody(title: nil, description: nil, columnId: columnId, position: position)
             let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
