@@ -21,8 +21,8 @@ struct ColumnView: View {
             .background(GeometryReader { geo in
                 Color.clear.preference(key: ColumnFramesKey.self, value: [col.id: geo.frame(in: .named("board"))])
             })
-            .background(RoundedRectangle(cornerRadius: 12).fill(isTargeted ? Theme.input : Theme.elevated))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.borderStrong, lineWidth: 0.5))
+            .background(RoundedRectangle(cornerRadius: 12).fill(isTargeted ? Theme.elevated.opacity(0.7) : Theme.elevated))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isTargeted ? Theme.active.opacity(0.3) : Theme.borderStrong, lineWidth: isTargeted ? 1 : 0.5))
             .padding(.horizontal, 6).padding(.vertical, 12)
     }
 

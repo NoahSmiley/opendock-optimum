@@ -2,6 +2,8 @@ import SwiftUI
 
 struct DragOverlay: View {
     @ObservedObject var coord: DragCoordinator
+    @State private var location: CGPoint = .zero
+
     var body: some View {
         if let a = coord.active {
             HStack(spacing: 8) {
@@ -14,9 +16,9 @@ struct DragOverlay: View {
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.active.opacity(0.5), lineWidth: 1))
             .shadow(color: .black.opacity(0.7), radius: 14, x: 0, y: 6)
             .scaleEffect(1.03)
-            .position(x: coord.location.x, y: coord.location.y)
+            .position(x: location.x, y: location.y)
             .allowsHitTesting(false)
-            .transition(.scale(scale: 0.9).combined(with: .opacity))
+            .onReceive(coord.locationSubject) { location = $0 }
         }
     }
 }
