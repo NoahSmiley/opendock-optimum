@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as api from "@/api/boards";
-import { addMember, applyBoardEvent, removeCard, removeMember, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
+import { addMember, applyBoardEvent, computeReorderPosition, removeCard, removeMember, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
 import type { Board, BoardDetail } from "@/types";
 import type { LiveEvent } from "@/api/live";
 
@@ -73,10 +73,7 @@ export const useBoards = create<BoardsState>((set, get) => ({
   reorderCard: async (cardId, toColumnId, beforeCardId) => {
     const d = get().detail; if (!d) return;
     const card = d.cards.find((c) => c.id === cardId); if (!card) return;
-    const siblings = d.cards.filter((c) => c.column_id === toColumnId && c.id !== cardId).sort((a, b) => a.position - b.position);
-    const beforeIdx = beforeCardId ? siblings.findIndex((c) => c.id === beforeCardId) : -1;
-    const position = beforeIdx >= 0 ? beforeIdx : siblings.length;
-    if (card.column_id === toColumnId && card.position === position) return;
+    const position = computeReorderPosition(d, cardId, toColumnId, beforeCardId); if (position === null) return;
     set({ detail: replaceCard(d, { ...card, column_id: toColumnId, position }) });
     try { await get().updateCard(cardId, { column_id: toColumnId, position }); }
     catch (e) { set({ detail: replaceCard(get().detail, card), error: String(e) }); }

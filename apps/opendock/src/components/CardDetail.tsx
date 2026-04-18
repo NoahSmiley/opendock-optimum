@@ -17,17 +17,26 @@ export function CardDetail({ card, members, onUpdate, onAssign, onDelete, onClos
   const [confirming, setConfirming] = useState(false);
   const assignee = members.find((m) => m.user_id === card.assignee_id);
 
+  const flush = () => {
+    const patch: Partial<Pick<Card, "title" | "description">> = {};
+    if (title !== card.title) patch.title = title;
+    if (description !== card.description) patch.description = description;
+    if (Object.keys(patch).length) onUpdate(patch);
+  };
+
+  const close = () => { flush(); onClose(); };
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !confirming) onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !confirming) close(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, confirming]);
+  });
 
   return (
     <>
       <div className="card-detail">
         <div className="card-detail-top">
-          <button className="card-detail-close" onClick={onClose} aria-label="Close">&times;</button>
+          <button className="card-detail-close" onClick={close} aria-label="Close">&times;</button>
           <button className="card-detail-delete" onClick={() => setConfirming(true)}>Delete</button>
         </div>
         <input className="card-detail-title" value={title} onChange={(e) => setTitle(e.target.value)}

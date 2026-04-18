@@ -1,5 +1,5 @@
 use crate::auth::extract::AuthUser;
-use crate::db::{board, card, column};
+use crate::db::{board, board_members, card, column};
 use crate::dto::board::{AddBoardMember, Board, BoardDetail, BoardMember, CreateBoard, UpdateBoard};
 use crate::error::{ApiError, ApiResult};
 use crate::live::events::{LiveEvent, Room};
@@ -36,7 +36,7 @@ async fn detail(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>)
         board: b,
         columns: column::list_for_board(&s.pool, id).await?,
         cards: card::list_for_board(&s.pool, id).await?,
-        members: board::members(&s.pool, id).await?,
+        members: board_members::list(&s.pool, id).await?,
     }))
 }
 
@@ -55,20 +55,20 @@ async fn remove(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>)
 
 async fn list_members(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>) -> ApiResult<Json<Vec<BoardMember>>> {
     if !board::is_member(&s.pool, id, user.0.id).await? { return Err(ApiError::NotFound); }
-    Ok(Json(board::members(&s.pool, id).await?))
+    Ok(Json(board_members::list(&s.pool, id).await?))
 }
 
 async fn add_member(State(s): State<AppState>, u: AuthUser, Path(id): Path<Uuid>, Json(body): Json<AddBoardMember>) -> ApiResult<StatusCode> {
-    let target = board::resolve_member_id(&s.pool, body.user_id, body.email.as_deref()).await?;
-    board::add_member(&s.pool, id, u.0.id, target).await?;
-    let ids = board::member_ids(&s.pool, id).await?;
+    let target = board_members::resolve_id(&s.pool, body.user_id, body.email.as_deref()).await?;
+    board_members::add(&s.pool, id, u.0.id, target).await?;
+    let ids = board_members::ids(&s.pool, id).await?;
     notify_board_share(&s, id, u.0.id, target, true, &ids);
     Ok(StatusCode::NO_CONTENT)
 }
 
 async fn remove_member(State(s): State<AppState>, u: AuthUser, Path((id, user_id)): Path<(Uuid, Uuid)>) -> ApiResult<StatusCode> {
-    board::remove_member(&s.pool, id, u.0.id, user_id).await?;
-    let ids = board::member_ids(&s.pool, id).await?;
+    board_members::remove(&s.pool, id, u.0.id, user_id).await?;
+    let ids = board_members::ids(&s.pool, id).await?;
     notify_board_share(&s, id, u.0.id, user_id, false, &ids);
     Ok(StatusCode::NO_CONTENT)
 }
