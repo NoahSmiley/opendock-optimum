@@ -19,7 +19,7 @@ struct CardDetailSheet: View {
                 TextField("Card title", text: $title)
                     .font(.custom(Theme.fontSemibold, size: 20)).foregroundColor(Theme.active)
                     .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 8)
-                    .onChange(of: title) { _, v in schedule(title: v, description: nil) }
+                    .onChange(of: title) { _, _ in schedule() }
                 AssigneeRow(members: members, assignee: card?.assigneeId) { newId in
                     Task { await store.assignCard(boardId: boardId, cardId: cardId, to: newId) }
                 }
@@ -28,7 +28,7 @@ struct CardDetailSheet: View {
                     .font(.custom(Theme.fontName, size: 15)).foregroundColor(Theme.text)
                     .scrollContentBackground(.hidden).background(Theme.bg)
                     .padding(.horizontal, 16).padding(.top, 8)
-                    .onChange(of: description) { _, v in schedule(title: nil, description: v) }
+                    .onChange(of: description) { _, _ in schedule() }
                 if let c = card {
                     Text("Updated \(c.updatedAt.formatted(date: .abbreviated, time: .shortened))")
                         .font(.custom(Theme.fontName, size: 11)).foregroundColor(Theme.ghost)
@@ -37,7 +37,7 @@ struct CardDetailSheet: View {
             }
             .background(Theme.bg)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() }.foregroundColor(Theme.active) }
+                ToolbarItem(placement: .topBarLeading) { Button("Done") { flushAndDismiss() }.foregroundColor(Theme.active) }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .destructive) { confirmingDelete = true } label: { Image(systemName: "trash") }
                 }
@@ -51,13 +51,21 @@ struct CardDetailSheet: View {
         .onAppear { if let c = card { title = c.title; description = c.description } }
     }
 
-    private func schedule(title: String?, description: String?) {
+    private func schedule() {
         saveTask?.cancel()
         saveTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 400_000_000)
             if Task.isCancelled { return }
             await store.updateCard(boardId: boardId, cardId: cardId, title: title, description: description)
         }
+    }
+
+    private func flushAndDismiss() {
+        saveTask?.cancel()
+        if let c = card, c.title != title || c.description != description {
+            Task { await store.updateCard(boardId: boardId, cardId: cardId, title: title, description: description) }
+        }
+        dismiss()
     }
 }
 

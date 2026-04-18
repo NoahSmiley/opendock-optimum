@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNotes } from "@/stores/notes";
+import { useNotes, flushPendingNoteSave } from "@/stores/notes";
 import { useAuth } from "@/stores/auth";
 import { useLiveNote } from "@/hooks/useLiveNote";
 import { extractTags } from "@/lib/tags";
@@ -63,7 +63,7 @@ export function Editor({ onBack }: EditorProps) {
   return (
     <div className="editor-area">
       <div className="editor-top">
-        <button className="back-btn" onClick={onBack}>&larr;</button>
+        <button className="back-btn" onClick={() => { flushPendingNoteSave(); onBack(); }}>&larr;</button>
         <input value={note.title} onChange={(e) => update(note.id, { title: e.target.value })} placeholder="Untitled" />
         <div className="actions">
           <button onClick={() => setPreview((p) => !p)}>{preview ? "edit" : "preview"}</button>

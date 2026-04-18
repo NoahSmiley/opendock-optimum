@@ -33,12 +33,16 @@ extension BoardsStore {
     }
 
     func reorderCard(boardId: UUID, cardId: UUID, to columnId: UUID, before beforeId: UUID?) async {
+        let snapshot = detail?.cards
         guard let position = applyReorderLocally(cardId: cardId, to: columnId, before: beforeId) else { return }
         do {
             let body = UpdateCardBody(title: nil, description: nil, columnId: columnId, position: position)
             let fresh = try await BoardsAPI.updateCard(boardId, cardId: cardId, body: body)
             if let i = detail?.cards.firstIndex(where: { $0.id == cardId }) { detail?.cards[i] = fresh }
-        } catch { self.error = "\(error)" }
+        } catch {
+            if let snap = snapshot { detail?.cards = snap }
+            self.error = "\(error)"
+        }
     }
 
     func assignCard(boardId: UUID, cardId: UUID, to userId: UUID?) async {

@@ -20,14 +20,14 @@ struct NoteEditorView: View {
             TextField("Untitled", text: $title)
                 .font(.custom(Theme.fontSemibold, size: 24)).foregroundColor(Theme.active)
                 .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 2)
-                .onChange(of: title) { _, v in schedulePatch(title: v, content: nil) }
+                .onChange(of: title) { _, _ in schedulePatch() }
 
             Rectangle().fill(Theme.border).frame(height: 0.5).padding(.horizontal, 20).padding(.top, 8)
 
             TextEditor(text: $content)
                 .font(.custom(Theme.fontMono, size: 14)).foregroundColor(Theme.text)
                 .scrollContentBackground(.hidden).padding(.horizontal, 16).padding(.top, 8)
-                .onChange(of: content) { _, v in schedulePatch(title: nil, content: v) }
+                .onChange(of: content) { _, _ in schedulePatch() }
 
             HStack(spacing: 8) {
                 Text("\(NoteFormat.wordCount(content)) words"); Text("·"); Text(dirty ? "editing" : "saved"); Spacer()
@@ -39,7 +39,7 @@ struct NoteEditorView: View {
         .toolbarBackground(Theme.bg, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
         .toolbar { NoteEditorToolbar(noteId: noteId, note: note, confirmingDelete: $confirmingDelete, showingMembers: $showingMembers) }
         .onAppear { sync(); startSocket() }
-        .onDisappear { socket?.stop(); socket = nil }
+        .onDisappear { flushPending(); socket?.stop(); socket = nil }
         .onChange(of: note) { _, _ in applyRemoteIfNotDirty() }
         .alert("Delete note?", isPresented: $confirmingDelete) {
             Button("Cancel", role: .cancel) {}
@@ -66,7 +66,7 @@ struct NoteEditorView: View {
         socket?.start()
     }
 
-    private func schedulePatch(title: String?, content: String?) {
+    private func schedulePatch() {
         dirty = true
         saveTask?.cancel()
         saveTask = Task { @MainActor in
@@ -75,5 +75,11 @@ struct NoteEditorView: View {
             await store.update(noteId, title: title, content: content)
             dirty = false
         }
+    }
+
+    private func flushPending() {
+        guard dirty else { return }
+        saveTask?.cancel()
+        Task { await store.update(noteId, title: title, content: content) }
     }
 }

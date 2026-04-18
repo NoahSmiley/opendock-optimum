@@ -22,12 +22,19 @@ interface NotesState {
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingSave: (() => Promise<void>) | null = null;
 function debouncedUpdate(id: string, patch: Partial<Pick<Note, "title" | "content" | "pinned">>, apply: (n: Note) => void, onError: (e: string) => void) {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
+  pendingSave = async () => {
     try { const fresh = await api.updateNote(id, patch); apply(fresh); }
     catch (e) { onError(String(e)); }
-  }, 250);
+    finally { pendingSave = null; }
+  };
+  saveTimer = setTimeout(() => { pendingSave?.(); }, 250);
+}
+export async function flushPendingNoteSave() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  await pendingSave?.();
 }
 
 export const useNotes = create<NotesState>((set, get) => ({
@@ -53,7 +60,9 @@ export const useNotes = create<NotesState>((set, get) => ({
 
   update: (id, patch) => new Promise<void>((resolve) => {
     set({ notes: get().notes.map((n) => n.id === id ? { ...n, ...patch } : n) });
-    debouncedUpdate(id, patch,
+    const merged = get().notes.find((n) => n.id === id);
+    if (!merged) return resolve();
+    debouncedUpdate(id, { title: merged.title, content: merged.content },
       (fresh) => { set({ notes: get().notes.map((n) => n.id === id ? fresh : n) }); resolve(); },
       (e) => { set({ error: e }); resolve(); });
   }),
@@ -77,14 +86,10 @@ export const useNotes = create<NotesState>((set, get) => ({
 
   applyEvent: (ev) => {
     if (ev.kind === "note_updated") {
-      const { notes } = get();
-      const i = notes.findIndex((n) => n.id === ev.patch.id);
-      set({ notes: i >= 0 ? notes.map((n, k) => k === i ? ev.patch : n) : [ev.patch, ...notes] });
+      const i = get().notes.findIndex((n) => n.id === ev.patch.id);
+      set({ notes: i >= 0 ? get().notes.map((n, k) => k === i ? ev.patch : n) : [ev.patch, ...get().notes] });
     } else if (ev.kind === "note_deleted") {
-      set({
-        notes: get().notes.filter((n) => n.id !== ev.note_id),
-        activeId: get().activeId === ev.note_id ? null : get().activeId,
-      });
+      set({ notes: get().notes.filter((n) => n.id !== ev.note_id), activeId: get().activeId === ev.note_id ? null : get().activeId });
     }
   },
 

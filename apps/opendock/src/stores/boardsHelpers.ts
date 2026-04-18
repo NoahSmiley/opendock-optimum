@@ -41,3 +41,11 @@ export function applyBoardEvent(d: BoardDetail | null, ev: LiveEvent): BoardDeta
   if (ev.kind === "card_deleted" && ev.board_id === d.board.id) return removeCard(d, ev.card_id);
   return d;
 }
+
+export function computeReorderPosition(d: BoardDetail, cardId: string, toColumnId: string, beforeCardId: string | null): number | null {
+  const card = d.cards.find((c) => c.id === cardId); if (!card) return null;
+  const siblings = d.cards.filter((c) => c.column_id === toColumnId && c.id !== cardId).sort((a, b) => a.position - b.position);
+  const idx = beforeCardId ? siblings.findIndex((c) => c.id === beforeCardId) : -1;
+  const position = idx >= 0 ? idx : siblings.length;
+  return card.column_id === toColumnId && card.position === position ? null : position;
+}
