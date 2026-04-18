@@ -18,6 +18,7 @@ struct CardRowView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
         .background(RoundedRectangle(cornerRadius: 8).fill(Theme.input))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
         .opacity(beingDragged ? 0 : 1)
         .background(GeometryReader { geo in
             Color.clear
