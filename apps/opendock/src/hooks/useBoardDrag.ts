@@ -54,7 +54,20 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
         d.moved = true;
         onDragStart?.();
         document.body.appendChild(d.ghost);
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.add("dragging-source");
+        const source = document.querySelector(`[data-card="${d.id}"]`) as HTMLElement | null;
+        const col = source?.closest("[data-col]");
+        const siblings = col ? Array.from(col.querySelectorAll<HTMLElement>("[data-card]")).filter((c) => c !== source) : [];
+        const before = siblings.map((c) => ({ el: c, top: c.getBoundingClientRect().top }));
+        source?.classList.add("dragging-source");
+        for (const { el, top } of before) {
+          const delta = top - el.getBoundingClientRect().top;
+          if (delta === 0) continue;
+          el.style.transition = "none";
+          el.style.transform = `translateY(${delta}px)`;
+        }
+        requestAnimationFrame(() => {
+          for (const { el } of before) { el.style.transition = ""; el.style.transform = ""; }
+        });
         document.body.style.cursor = "grabbing";
       }
       d.ghost.style.left = `${e.clientX - d.offsetX}px`;
