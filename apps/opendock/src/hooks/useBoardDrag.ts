@@ -85,13 +85,19 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       const d = drag.current; if (!d) return;
       if (d.moved) {
         d.ghost.remove();
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         document.body.style.cursor = "";
+        const allCards = Array.from(document.querySelectorAll<HTMLElement>("[data-card]"));
+        for (const c of allCards) { c.style.transition = "none"; c.style.transform = ""; c.classList.remove("card-shift"); }
+        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         const target = dropCol.current;
         if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          for (const c of allCards) c.style.transition = "";
+        }));
       }
-      setDropHighlight(null); setDropIndicator(null, null, 0);
+      setDropHighlight(null);
+      dropBefore.current = null;
       drag.current = null;
     };
     window.addEventListener("pointermove", move);
