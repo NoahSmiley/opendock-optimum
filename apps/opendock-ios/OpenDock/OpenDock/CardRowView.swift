@@ -19,7 +19,9 @@ struct CardRowView: View {
         .padding(.horizontal, 14).padding(.vertical, 12)
         .background(RoundedRectangle(cornerRadius: 8).fill(Theme.input))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.borderStrong, lineWidth: 0.5))
+        .frame(height: beingDragged ? 0 : nil, alignment: .top)
         .opacity(beingDragged ? 0 : 1)
+        .clipped()
         .background(GeometryReader { geo in
             Color.clear
                 .preference(key: CardFramesKey.self, value: [card.id: geo.frame(in: .named("board"))])

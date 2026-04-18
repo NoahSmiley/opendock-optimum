@@ -70,8 +70,12 @@ struct ColumnView: View {
     }
 
     private func shiftOffset(for idx: Int) -> CGFloat {
-        guard coord.active != nil, coord.targetColumn == col.id, let beforeId = coord.targetBefore,
-              let hoverIdx = cards.firstIndex(where: { $0.id == beforeId }) else { return 0 }
+        guard let active = coord.active, coord.targetColumn == col.id else { return 0 }
+        let sourceIdx = cards.firstIndex(where: { $0.id == active.cardId })
+        guard let beforeId = coord.targetBefore, let hoverIdx = cards.firstIndex(where: { $0.id == beforeId }) else { return 0 }
+        if let s = sourceIdx, hoverIdx <= s {
+            return (hoverIdx <= idx && idx < s) ? 52 : 0
+        }
         return idx >= hoverIdx ? 52 : 0
     }
 }
