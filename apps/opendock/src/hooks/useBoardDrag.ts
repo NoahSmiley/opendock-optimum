@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { applyShift, clearShifts, commitDropReset, flipSiblingsOnCollapse } from "@/hooks/boardDragDom";
 
 interface DragState { id: string; ghost: HTMLElement; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean; height: number }
 
@@ -22,18 +23,8 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
 
   const setDropIndicator = useCallback((colId: string | null, beforeId: string | null, shiftPx: number) => {
     if (dropBefore.current === beforeId && dropCol.current === colId) return;
-    document.querySelectorAll<HTMLElement>(".card-shift").forEach((n) => { n.classList.remove("card-shift"); n.style.transform = ""; });
-    if (colId && beforeId) {
-      const col = document.querySelector(`[data-col="${colId}"]`);
-      if (col) {
-        const cards = Array.from(col.querySelectorAll<HTMLElement>("[data-card]"));
-        const start = cards.findIndex((c) => c.dataset.card === beforeId);
-        if (start >= 0) for (let i = start; i < cards.length; i++) {
-          if (cards[i].classList.contains("dragging-source")) continue;
-          cards[i].classList.add("card-shift"); cards[i].style.transform = `translateY(${shiftPx}px)`;
-        }
-      }
-    }
+    clearShifts();
+    if (colId && beforeId) applyShift(colId, beforeId, shiftPx);
     dropBefore.current = beforeId;
   }, []);
 
@@ -54,7 +45,7 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
         d.moved = true;
         onDragStart?.();
         document.body.appendChild(d.ghost);
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.add("dragging-source");
+        flipSiblingsOnCollapse(d.id);
         document.body.style.cursor = "grabbing";
       }
       d.ghost.style.left = `${e.clientX - d.offsetX}px`;
@@ -72,13 +63,14 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       const d = drag.current; if (!d) return;
       if (d.moved) {
         d.ghost.remove();
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         document.body.style.cursor = "";
+        commitDropReset(d.id);
         const target = dropCol.current;
         if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
       }
-      setDropHighlight(null); setDropIndicator(null, null, 0);
+      setDropHighlight(null);
+      dropBefore.current = null;
       drag.current = null;
     };
     window.addEventListener("pointermove", move);

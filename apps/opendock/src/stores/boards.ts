@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as api from "@/api/boards";
-import { addMember, applyBoardEvent, computeReorderPosition, removeCard, removeMember, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
+import { addMember, applyBoardEvent, applyReorderLocally, removeCard, removeMember, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
 import type { Board, BoardDetail } from "@/types";
 import type { LiveEvent } from "@/api/live";
 
@@ -71,11 +71,10 @@ export const useBoards = create<BoardsState>((set, get) => ({
   },
   reorderCard: async (cardId, toColumnId, beforeCardId) => {
     const d = get().detail; if (!d) return;
-    const card = d.cards.find((c) => c.id === cardId); if (!card) return;
-    const position = computeReorderPosition(d, cardId, toColumnId, beforeCardId); if (position === null) return;
-    set({ detail: replaceCard(d, { ...card, column_id: toColumnId, position }) });
-    try { await get().updateCard(cardId, { column_id: toColumnId, position }); }
-    catch (e) { set({ detail: replaceCard(get().detail, card), error: String(e) }); }
+    const applied = applyReorderLocally(d, cardId, toColumnId, beforeCardId); if (!applied) return;
+    set({ detail: applied.detail });
+    try { await api.updateCard(d.board.id, cardId, { column_id: toColumnId, position: applied.position }); }
+    catch (e) { set({ detail: d, error: String(e) }); }
   },
   assignCard: async (cardId, assigneeId) => { await get().updateCard(cardId, { assignee_id: assigneeId }); },
   deleteCard: async (cardId) => {
