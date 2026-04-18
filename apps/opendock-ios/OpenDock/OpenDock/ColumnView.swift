@@ -43,14 +43,15 @@ struct ColumnView: View {
                 ForEach(Array(cards.enumerated()), id: \.element.id) { idx, card in
                     CardRowView(card: card, columnId: col.id, members: store.detail?.members ?? [], onOpen: onOpen)
                         .offset(y: shiftOffset(for: idx))
-                        .animation(.easeOut(duration: 0.18), value: coord.targetBefore)
-                        .animation(.easeOut(duration: 0.18), value: coord.targetColumn)
                 }
                 if cards.isEmpty { emptyState }
                 Color.clear.frame(minHeight: 60)
             }
             .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 16)
             .frame(maxWidth: .infinity, minHeight: 400, alignment: .top)
+            .animation(coord.active != nil ? .easeOut(duration: 0.18) : nil, value: coord.targetBefore)
+            .animation(coord.active != nil ? .easeOut(duration: 0.18) : nil, value: coord.targetColumn)
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: cards.map(\.id))
         }
     }
 
@@ -69,8 +70,8 @@ struct ColumnView: View {
     }
 
     private func shiftOffset(for idx: Int) -> CGFloat {
-        guard coord.targetColumn == col.id, let beforeId = coord.targetBefore,
+        guard coord.active != nil, coord.targetColumn == col.id, let beforeId = coord.targetBefore,
               let hoverIdx = cards.firstIndex(where: { $0.id == beforeId }) else { return 0 }
-        return idx >= hoverIdx ? 48 : 0
+        return idx >= hoverIdx ? 52 : 0
     }
 }
