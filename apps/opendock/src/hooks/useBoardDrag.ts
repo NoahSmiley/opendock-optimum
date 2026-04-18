@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { applyShift, clearShifts, commitDropReset, flipSiblingsOnCollapse } from "@/hooks/boardDragDom";
 
 interface DragState { id: string; ghost: HTMLElement; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean; height: number }
 
@@ -22,18 +23,8 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
 
   const setDropIndicator = useCallback((colId: string | null, beforeId: string | null, shiftPx: number) => {
     if (dropBefore.current === beforeId && dropCol.current === colId) return;
-    document.querySelectorAll<HTMLElement>(".card-shift").forEach((n) => { n.classList.remove("card-shift"); n.style.transform = ""; });
-    if (colId && beforeId) {
-      const col = document.querySelector(`[data-col="${colId}"]`);
-      if (col) {
-        const cards = Array.from(col.querySelectorAll<HTMLElement>("[data-card]"));
-        const start = cards.findIndex((c) => c.dataset.card === beforeId);
-        if (start >= 0) for (let i = start; i < cards.length; i++) {
-          if (cards[i].classList.contains("dragging-source")) continue;
-          cards[i].classList.add("card-shift"); cards[i].style.transform = `translateY(${shiftPx}px)`;
-        }
-      }
-    }
+    clearShifts();
+    if (colId && beforeId) applyShift(colId, beforeId, shiftPx);
     dropBefore.current = beforeId;
   }, []);
 
@@ -54,20 +45,7 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
         d.moved = true;
         onDragStart?.();
         document.body.appendChild(d.ghost);
-        const source = document.querySelector(`[data-card="${d.id}"]`) as HTMLElement | null;
-        const col = source?.closest("[data-col]");
-        const siblings = col ? Array.from(col.querySelectorAll<HTMLElement>("[data-card]")).filter((c) => c !== source) : [];
-        const before = siblings.map((c) => ({ el: c, top: c.getBoundingClientRect().top }));
-        source?.classList.add("dragging-source");
-        for (const { el, top } of before) {
-          const delta = top - el.getBoundingClientRect().top;
-          if (delta === 0) continue;
-          el.style.transition = "none";
-          el.style.transform = `translateY(${delta}px)`;
-        }
-        requestAnimationFrame(() => {
-          for (const { el } of before) { el.style.transition = ""; el.style.transform = ""; }
-        });
+        flipSiblingsOnCollapse(d.id);
         document.body.style.cursor = "grabbing";
       }
       d.ghost.style.left = `${e.clientX - d.offsetX}px`;
@@ -86,15 +64,10 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       if (d.moved) {
         d.ghost.remove();
         document.body.style.cursor = "";
-        const allCards = Array.from(document.querySelectorAll<HTMLElement>("[data-card]"));
-        for (const c of allCards) { c.style.transition = "none"; c.style.transform = ""; c.classList.remove("card-shift"); }
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
+        commitDropReset(d.id);
         const target = dropCol.current;
         if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          for (const c of allCards) c.style.transition = "";
-        }));
       }
       setDropHighlight(null);
       dropBefore.current = null;
