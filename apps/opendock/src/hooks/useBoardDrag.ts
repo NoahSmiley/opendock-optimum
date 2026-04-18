@@ -72,11 +72,13 @@ export function useBoardDrag({ onDropAt, onDragStart }: UseBoardDragArgs) {
       const d = drag.current; if (!d) return;
       if (d.moved) {
         d.ghost.remove();
-        document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
         document.body.style.cursor = "";
         const target = dropCol.current;
         if (target) onDropAt(d.id, target, dropBefore.current);
         justDragged.current = Date.now();
+        setTimeout(() => {
+          document.querySelector(`[data-card="${d.id}"]`)?.classList.remove("dragging-source");
+        }, 50);
       }
       setDropHighlight(null); setDropIndicator(null, null, 0);
       drag.current = null;
