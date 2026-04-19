@@ -29,14 +29,21 @@ export function BoardMembersPanel({ ownerId, currentUserId, onClose }: Props) {
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const add = async (email: string) => {
     const ok = await addMember(email);
     if (ok) { setQuery(""); setResults([]); setSearched(false); }
   };
 
   return (
-    <div className="members-panel">
-      <div className="members-header"><h3>Board members</h3><button onClick={onClose}>×</button></div>
+    <div className="members-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="members-panel" onClick={(e) => e.stopPropagation()}>
+      <div className="members-header"><h3>Board members</h3><button className="members-close" onClick={onClose} aria-label="Close">×</button></div>
       {isOwner && (
         <div className="members-add">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Add by email" autoCapitalize="off" autoCorrect="off" />
@@ -57,6 +64,7 @@ export function BoardMembersPanel({ ownerId, currentUserId, onClose }: Props) {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }

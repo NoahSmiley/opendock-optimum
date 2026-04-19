@@ -43,10 +43,7 @@ export function NotesList({ onSelect, onNew }: NotesListProps) {
   return (
     <div className="tool-list">
       <div className="tool-list-header">
-        <div>
-          <div className="tool-list-brand">OpenDock</div>
-          <div className="tool-list-title">Notes</div>
-        </div>
+        <div className="tool-list-title">Notes</div>
         <button className="tool-list-add" onClick={onNew}>+</button>
       </div>
       <div className="tool-list-search">
