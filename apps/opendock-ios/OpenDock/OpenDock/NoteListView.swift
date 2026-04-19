@@ -21,10 +21,7 @@ struct NoteListView: View {
 
     private var header: some View {
         HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("OpenDock").font(.custom(Theme.fontMedium, size: 13)).foregroundColor(Theme.faint).tracking(0.5)
-                Text("Notes").font(.custom(Theme.fontSemibold, size: 28)).foregroundColor(Theme.active)
-            }
+            Text("Notes").font(.custom(Theme.fontSemibold, size: 28)).foregroundColor(Theme.active)
             Spacer()
             Button { onCreateNew() } label: { Image(systemName: "plus").font(.system(size: 22, weight: .light)).foregroundColor(Theme.muted) }.padding(.bottom, 4)
         }
