@@ -72,6 +72,12 @@ pub struct CreateColumn {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct UpdateColumn {
+    pub title: Option<String>,
+    pub position: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct CreateCard {
     pub column_id: Uuid,
     pub title: String,

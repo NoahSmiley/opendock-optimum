@@ -1,3 +1,4 @@
+.members-backdrop { position: fixed; inset: 0; z-index: 140; }
 .members-panel {
   position: fixed; top: 60px; right: 16px; width: 320px; max-height: 70vh;
   background: var(--a-bg); border: 1px solid var(--a-border-strong); border-radius: 8px;
@@ -7,6 +8,8 @@
 .members-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--a-border); }
 .members-header h3 { margin: 0; font-size: 13px; color: var(--a-text-active); font-weight: 600; }
 .members-header button { background: none; border: 0; color: var(--a-text-ghost); cursor: pointer; font-size: 18px; }
+.members-close { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; line-height: 1; border-radius: 4px; }
+.members-close:hover { background: var(--a-bg-elevated); color: var(--a-text); }
 .members-add { padding: 10px 14px; border-bottom: 1px solid var(--a-border); display: flex; flex-direction: column; gap: 4px; }
 .members-add input {
   background: var(--a-bg-input); border: 1px solid var(--a-border); color: var(--a-text);

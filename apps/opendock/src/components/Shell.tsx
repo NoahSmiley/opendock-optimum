@@ -12,7 +12,6 @@ interface ShellProps { tool: Tool; setTool: (t: Tool) => void; mobileView: Mobil
 export function Shell({ tool, setTool, mobileView, children }: ShellProps) {
   const displayName = useAuth((s) => s.data.display_name);
   const email = useAuth((s) => s.data.email);
-  const logout = useAuth((s) => s.logout);
   const label = displayName || email || "";
   const initial = label.charAt(0).toUpperCase() || "?";
 
@@ -22,11 +21,9 @@ export function Shell({ tool, setTool, mobileView, children }: ShellProps) {
         <div className="nav-tools">
           {tools.map((t) => <button key={t.id} className={`nav-tool${tool === t.id ? " active" : ""}`} onClick={() => setTool(t.id)}>{t.label}</button>)}
         </div>
-        <div className="nav-user">
+        <button className={`nav-user${tool === "profile" ? " active" : ""}`} onClick={() => setTool("profile")} title={label || "Profile"}>
           <div className="nav-user-avatar">{initial}</div>
-          <div className="nav-user-label" title={email}>{label}</div>
-          <button className="nav-user-logout" onClick={logout} title="Sign out">↪</button>
-        </div>
+        </button>
       </nav>
       <nav className="tab-bar">
         {tools.map((t) => <button key={t.id} className={`tab${tool === t.id ? " active" : ""}`} onClick={() => setTool(t.id)}>{t.label}</button>)}

@@ -1,5 +1,5 @@
 {
-  "productName": "OpenDock",
+  "productName": "Opendock",
   "version": "0.1.0",
   "identifier": "com.opendock.app",
   "build": {
@@ -11,12 +11,15 @@
   "app": {
     "windows": [
       {
-        "title": "OpenDock",
+        "title": "",
         "width": 1280,
         "height": 800,
         "minWidth": 940,
         "minHeight": 560,
         "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 16, "y": 18 },
         "dragDropEnabled": false
       }
     ],

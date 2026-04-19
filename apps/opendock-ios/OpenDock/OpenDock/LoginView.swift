@@ -10,7 +10,7 @@ struct LoginView: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            Text("OpenDock").font(.custom(Theme.fontSemibold, size: 22)).foregroundColor(Theme.active)
+            Text("Opendock").font(.custom(Theme.fontSemibold, size: 22)).foregroundColor(Theme.active)
             Text("Sign in with your Athion account.")
                 .font(.custom(Theme.fontName, size: 13)).foregroundColor(Theme.muted)
                 .padding(.top, 8).padding(.bottom, 24)

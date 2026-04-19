@@ -1,4 +1,4 @@
-use crate::dto::board::{Column, CreateColumn};
+use crate::dto::board::{Column, CreateColumn, UpdateColumn};
 use crate::error::ApiResult;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -37,4 +37,24 @@ pub async fn delete(pool: &PgPool, id: Uuid, board_id: Uuid) -> ApiResult<()> {
     sqlx::query("DELETE FROM board_columns WHERE id = $1 AND board_id = $2")
         .bind(id).bind(board_id).execute(pool).await?;
     Ok(())
+}
+
+pub async fn update(pool: &PgPool, id: Uuid, board_id: Uuid, input: UpdateColumn) -> ApiResult<Column> {
+    let mut tx = pool.begin().await?;
+    if let Some(pos) = input.position {
+        sqlx::query("UPDATE board_columns SET position = position + 1000 WHERE board_id = $1 AND position >= $2 AND id != $3")
+            .bind(board_id).bind(pos).bind(id).execute(&mut *tx).await?;
+        sqlx::query("UPDATE board_columns SET position = $1 WHERE id = $2 AND board_id = $3")
+            .bind(pos).bind(id).bind(board_id).execute(&mut *tx).await?;
+        sqlx::query("WITH renumbered AS (SELECT id, ROW_NUMBER() OVER (ORDER BY position) - 1 AS new_pos FROM board_columns WHERE board_id = $1 AND id != $2) UPDATE board_columns c SET position = r.new_pos FROM renumbered r WHERE c.id = r.id")
+            .bind(board_id).bind(id).execute(&mut *tx).await?;
+    }
+    if let Some(title) = input.title {
+        sqlx::query("UPDATE board_columns SET title = $1 WHERE id = $2 AND board_id = $3")
+            .bind(title).bind(id).bind(board_id).execute(&mut *tx).await?;
+    }
+    let row = sqlx::query_as::<_, Column>("SELECT * FROM board_columns WHERE id = $1 AND board_id = $2")
+        .bind(id).bind(board_id).fetch_one(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(row)
 }

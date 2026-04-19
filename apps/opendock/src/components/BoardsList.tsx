@@ -33,10 +33,7 @@ export function BoardsList({ onSelect }: BoardsListProps) {
   return (
     <div className="tool-list">
       <div className="tool-list-header">
-        <div>
-          <div className="tool-list-brand">OpenDock</div>
-          <div className="tool-list-title">Boards</div>
-        </div>
+        <div className="tool-list-title">Boards</div>
         <button className="tool-list-add" onClick={() => setAdding(true)}>+</button>
       </div>
       <div className="tool-list-items">

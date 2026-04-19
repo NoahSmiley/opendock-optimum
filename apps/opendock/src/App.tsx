@@ -4,6 +4,7 @@ import { NotesList } from "@/components/NotesList";
 import { Editor } from "@/components/Editor";
 import { BoardsList } from "@/components/BoardsList";
 import { BoardView } from "@/components/BoardView";
+import { ProfileView } from "@/components/ProfileView";
 import { NewNoteModal } from "@/components/Modal";
 import { LoginScreen } from "@/components/LoginScreen";
 import { useAuth } from "@/stores/auth";
@@ -54,7 +55,8 @@ export function App() {
           {showModal && <NewNoteModal onClose={() => setShowModal(false)} onCreate={(t) => { createNote(t); setMobileView("detail"); }} />}
         </>
       )}
-      {tool === "boards" && (<><BoardsList onSelect={selectBoard} /><BoardView onBack={back} /></>)}
+      {tool === "boards" && (<><BoardsList onSelect={selectBoard} /><BoardView /></>)}
+      {tool === "profile" && <ProfileView />}
     </Shell>
   );
 }

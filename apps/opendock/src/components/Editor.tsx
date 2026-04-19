@@ -8,6 +8,7 @@ import { renderMarkdown } from "@/lib/markdown";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { MembersPanel } from "@/components/MembersPanel";
+import { RichEditor } from "@/components/notes/RichEditor";
 
 interface EditorProps { onBack: () => void }
 
@@ -76,7 +77,7 @@ export function Editor({ onBack }: EditorProps) {
       <div className="editor-body">
         {preview
           ? <div className="editor-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }} />
-          : <textarea ref={ref} value={note.content} onChange={(e) => onChange(e.target.value)} onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }} placeholder="Start writing..." />}
+          : <RichEditor value={note.content} onChange={onChange} />}
       </div>
       <div className="editor-footer">
         <span>{words}w</span>

@@ -17,7 +17,7 @@ export function LoginScreen() {
   return (
     <div className="login-screen">
       <form className="login-card" onSubmit={submit}>
-        <div className="login-brand">OpenDock</div>
+        <div className="login-brand">Opendock</div>
         <p className="login-hint">Sign in with your Athion account.</p>
         <input type="email" className="login-input" placeholder="Email" autoComplete="email" autoFocus
           value={email} onChange={(e) => setEmail(e.target.value)} disabled={pending} />

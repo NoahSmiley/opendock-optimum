@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as api from "@/api/boards";
-import { addMember, applyBoardEvent, applyReorderLocally, removeCard, removeMember, replaceCard, withCard, withColumn } from "@/stores/boardsHelpers";
+import { addMember, applyBoardEvent, applyColumnReorderLocally, applyReorderLocally, removeCard, removeColumn, removeMember, replaceCard, replaceColumn, withCard, withColumn } from "@/stores/boardsHelpers";
 import type { Board, BoardDetail } from "@/types";
 import type { LiveEvent } from "@/api/live";
 
@@ -17,6 +17,9 @@ interface BoardsState {
   deleteBoard: (id: string) => Promise<void>;
   renameBoard: (id: string, name: string) => Promise<void>;
   addColumn: (title: string) => Promise<void>;
+  renameColumn: (columnId: string, title: string) => Promise<void>;
+  deleteColumn: (columnId: string) => Promise<void>;
+  reorderColumn: (columnId: string, beforeColumnId: string | null) => Promise<void>;
   addCard: (columnId: string, title: string) => Promise<void>;
   updateCard: (cardId: string, patch: api.CardPatch) => Promise<void>;
   reorderCard: (cardId: string, toColumnId: string, beforeCardId: string | null) => Promise<void>;
@@ -60,6 +63,22 @@ export const useBoards = create<BoardsState>((set, get) => ({
   addColumn: async (title) => {
     const id = get().activeBoardId; if (!id) return;
     set({ detail: withColumn(get().detail, await api.createColumn(id, title)) });
+  },
+  renameColumn: async (columnId, title) => {
+    const id = get().activeBoardId; if (!id) return;
+    set({ detail: replaceColumn(get().detail, await api.updateColumn(id, columnId, { title })) });
+  },
+  deleteColumn: async (columnId) => {
+    const id = get().activeBoardId; if (!id) return;
+    await api.deleteColumn(id, columnId);
+    set({ detail: removeColumn(get().detail, columnId) });
+  },
+  reorderColumn: async (columnId, beforeColumnId) => {
+    const d = get().detail; if (!d) return;
+    const applied = applyColumnReorderLocally(d, columnId, beforeColumnId); if (!applied) return;
+    set({ detail: applied.detail });
+    try { await api.updateColumn(d.board.id, columnId, { position: applied.position }); }
+    catch (e) { set({ detail: d, error: String(e) }); }
   },
   addCard: async (columnId, title) => {
     const id = get().activeBoardId; if (!id) return;

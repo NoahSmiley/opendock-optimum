@@ -10,6 +10,15 @@ export const deleteBoard = (id: string) => apiDelete(`/boards/${id}`);
 
 export const createColumn = (boardId: string, title: string) =>
   apiPost<Column>(`/boards/${boardId}/columns`, { title });
+export const updateColumn = (boardId: string, columnId: string, patch: ColumnPatch) =>
+  apiPatch<Column>(`/boards/${boardId}/columns/${columnId}`, patch);
+export const deleteColumn = (boardId: string, columnId: string) =>
+  apiDelete(`/boards/${boardId}/columns/${columnId}`);
+
+export interface ColumnPatch {
+  title?: string;
+  position?: number;
+}
 
 export const createCard = (boardId: string, columnId: string, title: string) =>
   apiPost<Card>(`/boards/${boardId}/cards`, { column_id: columnId, title });

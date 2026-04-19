@@ -42,3 +42,9 @@ apps/opendock/src-tauri/target/
 # Backend data & uploads
 apps/backend-rs/data/
 apps/backend-rs/uploads/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Claude Code IDE
+.claude/
