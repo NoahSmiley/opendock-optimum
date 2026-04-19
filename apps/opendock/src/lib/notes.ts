@@ -10,7 +10,19 @@ export function timeAgo(ts: string | number): string {
 }
 
 export function notePreview(content: string): string {
-  return content.split("\n").filter((l) => l.trim() && !l.startsWith("#")).slice(0, 1).join("").slice(0, 80);
+  const htmlStripped = content
+    .replace(/<span class="check-box"[^>]*>\s*<\/span>/gi, "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, " ")
+    .replace(/<[^>]+>/g, "");
+  const decoded = htmlStripped
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  return decoded.replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
 export function wordCount(content: string): number {
