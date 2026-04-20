@@ -16,6 +16,7 @@ interface BoardsState {
   createBoard: (name: string) => Promise<void>;
   deleteBoard: (id: string) => Promise<void>;
   renameBoard: (id: string, name: string) => Promise<void>;
+  togglePinBoard: (id: string) => Promise<void>;
   addColumn: (title: string) => Promise<void>;
   renameColumn: (columnId: string, title: string) => Promise<void>;
   deleteColumn: (columnId: string) => Promise<void>;
@@ -59,6 +60,22 @@ export const useBoards = create<BoardsState>((set, get) => ({
   renameBoard: async (id, name) => {
     const fresh = await api.updateBoard(id, { name }); const d = get().detail;
     set({ boards: get().boards.map((b) => b.id === id ? fresh : b), detail: d && d.board.id === id ? { ...d, board: fresh } : d });
+  },
+  togglePinBoard: async (id) => {
+    const existing = get().boards.find((b) => b.id === id);
+    if (!existing) return;
+    const nextPinned = !existing.pinned;
+    set({ boards: get().boards.map((b) => b.id === id ? { ...b, pinned: nextPinned } : b) });
+    try {
+      const fresh = await api.updateBoard(id, { pinned: nextPinned });
+      const d = get().detail;
+      set({
+        boards: get().boards.map((b) => b.id === id ? fresh : b),
+        detail: d && d.board.id === id ? { ...d, board: fresh } : d,
+      });
+    } catch (e) {
+      set({ boards: get().boards.map((b) => b.id === id ? existing : b), error: String(e) });
+    }
   },
   addColumn: async (title) => {
     const id = get().activeBoardId; if (!id) return;

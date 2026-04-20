@@ -17,6 +17,7 @@ export function Shell({ tool, setTool, mobileView, children }: ShellProps) {
 
   return (
     <div className="shell" data-mobile-view={mobileView}>
+      <div className="window-drag" />
       <nav className="nav-rail">
         <div className="nav-tools">
           {tools.map((t) => <button key={t.id} className={`nav-tool${tool === t.id ? " active" : ""}`} onClick={() => setTool(t.id)}>{t.label}</button>)}
