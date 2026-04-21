@@ -8,17 +8,22 @@ struct BoardsListView: View {
     @State private var renaming: UUID?
     @State private var renameText = ""
     @State private var deleting: Board?
+    @State private var search = ""
 
-    var sortedBoards: [Board] {
-        store.boards.sorted { a, b in
+    var filteredBoards: [Board] {
+        let sorted = store.boards.sorted { a, b in
             if a.pinned != b.pinned { return a.pinned && !b.pinned }
             return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
         }
+        guard !search.isEmpty else { return sorted }
+        let q = search.lowercased()
+        return sorted.filter { $0.name.lowercased().contains(q) }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             header
+            searchBar
             if store.boards.isEmpty && !adding { emptyState } else { list }
         }
         .background(Theme.bg).navigationBarHidden(true)
@@ -42,6 +47,17 @@ struct BoardsListView: View {
         .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 16)
     }
 
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").font(.system(size: 14)).foregroundColor(Theme.ghost)
+            TextField("Search", text: $search).font(.custom(Theme.fontName, size: 15)).foregroundColor(Theme.text)
+            if !search.isEmpty {
+                Button { search = "" } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 14)).foregroundColor(Theme.ghost) }
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 11).background(Theme.input).cornerRadius(10).padding(.horizontal, 16).padding(.bottom, 12)
+    }
+
     private var emptyState: some View {
         VStack {
             Spacer()
@@ -59,12 +75,12 @@ struct BoardsListView: View {
                 TextField("Board name", text: $name).font(.custom(Theme.fontName, size: 16)).foregroundColor(Theme.active)
                     .onSubmit { submit() }
                     .listRowBackground(Theme.bg).listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20))
+                    .listRowInsets(EdgeInsets(top: 14, leading: 0, bottom: 14, trailing: 0)).padding(.horizontal, 20)
             }
-            ForEach(sortedBoards) { board in
+            ForEach(filteredBoards) { board in
                 BoardRow(board: board) { store.selectedId = board.id; path.append(board.id) }
                     .listRowBackground(Theme.bg).listRowSeparatorTint(Theme.border)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button { deleting = board } label: { Label("Delete", systemImage: "trash") }.tint(Theme.error)
                         Button { renameText = board.name; renaming = board.id } label: { Label("Rename", systemImage: "pencil") }.tint(Theme.muted)

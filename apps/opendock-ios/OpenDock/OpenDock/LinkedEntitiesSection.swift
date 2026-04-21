@@ -6,36 +6,46 @@ struct LinkedEntitiesSection: View {
     let label: String
     let pickKind: EntityKind
     @State private var picking = false
+    @State private var expanded = false
     @State private var error: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(label.uppercased())
-                    .font(.custom(Theme.fontSemibold, size: 11)).tracking(0.5)
-                    .foregroundColor(Theme.muted)
-                Spacer()
+        let rows = links.links(for: anchor.kind, id: anchor.id)
+        VStack(alignment: .leading, spacing: 0) {
+            Rectangle().fill(Theme.border).frame(height: 0.5)
+            HStack(spacing: 6) {
+                Button { expanded.toggle() } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 9)).foregroundColor(Theme.ghost)
+                            .frame(width: 10)
+                        Text(label.uppercased())
+                            .font(.custom(Theme.fontSemibold, size: 10)).tracking(0.5)
+                            .foregroundColor(Theme.muted)
+                        Text("(\(rows.count))")
+                            .font(.custom(Theme.fontName, size: 10)).foregroundColor(Theme.ghost)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }.buttonStyle(.plain)
                 Button { picking = true } label: {
-                    Label("Link", systemImage: "plus").font(.system(size: 12))
+                    Label("Link", systemImage: "plus").font(.system(size: 11))
                         .foregroundColor(Theme.ghost).labelStyle(.titleAndIcon)
                 }
             }
-            let rows = links.links(for: anchor.kind, id: anchor.id)
-            if rows.isEmpty {
-                Text("None linked yet.").font(.custom(Theme.fontName, size: 12)).foregroundColor(Theme.ghost)
-            } else {
-                VStack(spacing: 4) {
+            .padding(.vertical, 4)
+            if expanded && !rows.isEmpty {
+                VStack(spacing: 3) {
                     ForEach(rows) { row in LinkedRow(anchor: anchor, link: row) }
-                }
+                }.padding(.bottom, 6)
             }
             if let e = error {
-                Text(e).font(.custom(Theme.fontName, size: 11)).foregroundColor(.red)
+                Text(e).font(.custom(Theme.fontName, size: 11)).foregroundColor(.red).padding(.bottom, 6)
             }
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).stroke(Theme.border, lineWidth: 0.5))
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .task(id: anchor.id) { await links.ensure(anchor.kind, anchor.id) }
+        .padding(.horizontal, 20)
+        .task(id: anchor.id) {
+            await links.ensure(anchor.kind, anchor.id)
+            await links.refresh(anchor.kind, anchor.id)
+        }
         .sheet(isPresented: $picking) {
             LinkPickerSheet(anchor: anchor, pickKind: pickKind,
                 existing: Set(links.links(for: anchor.kind, id: anchor.id).map { $0.id })) { other in

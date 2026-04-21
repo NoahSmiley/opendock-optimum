@@ -3,10 +3,12 @@ import { LiveSocket } from "@/api/liveSocket";
 import { useBoards } from "@/stores/boards";
 import { useAuth } from "@/stores/auth";
 import { useLinks } from "@/stores/links";
+import { useMyCards } from "@/stores/myCards";
 
 export function useLiveBoard(boardId: string | null) {
   const applyEvent = useBoards((s) => s.applyEvent);
   const applyLink = useLinks((s) => s.applyEvent);
+  const refreshMyCards = useMyCards((s) => s.refresh);
   const userId = useAuth((s) => s.data.user_id);
 
   useEffect(() => {
@@ -15,8 +17,11 @@ export function useLiveBoard(boardId: string | null) {
       if ("actor_id" in ev && ev.actor_id === userId) return;
       applyEvent(ev);
       applyLink(ev);
+      if (ev.kind === "card_upserted" || ev.kind === "card_deleted") {
+        void refreshMyCards();
+      }
     });
     socket.start();
     return () => socket.stop();
-  }, [boardId, applyEvent, applyLink, userId]);
+  }, [boardId, applyEvent, applyLink, refreshMyCards, userId]);
 }

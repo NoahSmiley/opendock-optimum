@@ -83,3 +83,12 @@ export interface LinkedEntity {
   context: string | null;
   source: string;
 }
+
+/** Card summary returned by `GET /me/cards` — includes board + column context. */
+export interface MyCard {
+  id: string;
+  board_id: string;
+  board_name: string;
+  column_title: string;
+  title: string;
+}

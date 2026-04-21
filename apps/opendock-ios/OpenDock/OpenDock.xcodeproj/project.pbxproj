@@ -11,6 +11,12 @@
 		1B34962030B54957B63FB862 /* LinkedEntitiesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */; };
 		E8DEE98F663D4EE59F51E51E /* LinksStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCFD2C432B040279FAE5531 /* LinksStore.swift */; };
 		B3C200361A3942278A9088A4 /* LinksAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BFAD85BAC434E9CFE1708 /* LinksAPI.swift */; };
+		65CBBCB3AC5E4C31A01CAD39 /* EditorToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7918D6CCB394972B1564446 /* EditorToolbar.swift */; };
+		F9042CBC0345448E98DD4E23 /* MyCardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D9770529640659690F0F6 /* MyCardsStore.swift */; };
+		5204179029EE44079FF7E999 /* MentionPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26AD839298A4C5CB69F6ED8 /* MentionPopoverView.swift */; };
+		C17C0CC8D3DE47599E0A14C1 /* MentionTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 345B84368A7F43238E1613DC /* MentionTextView.swift */; };
+		6E1F8BAA870A4D83A5BBB066 /* MentionHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B3AE6863DE4A1AAF93F090 /* MentionHTML.swift */; };
+		EC64502502A24A7BA928311A /* MentionAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261834C85E474199AD2E22FA /* MentionAttachment.swift */; };
 		00CA4070B0565EE63B8B0880 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18EEF0EF5FAA465BFB3073D /* ProfileView.swift */; };
 		024D7AD288DB2C5813FE5B09 /* AssigneeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8938B4B6FCFF57D16C580C70 /* AssigneeBadge.swift */; };
 		05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686D85BDB4EE25B273844E76 /* BoardDetailView.swift */; };
@@ -61,6 +67,12 @@
 		57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedEntitiesSection.swift; sourceTree = "<group>"; };
 		FDCFD2C432B040279FAE5531 /* LinksStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksStore.swift; sourceTree = "<group>"; };
 		CC9BFAD85BAC434E9CFE1708 /* LinksAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksAPI.swift; sourceTree = "<group>"; };
+		E7918D6CCB394972B1564446 /* EditorToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbar.swift; sourceTree = "<group>"; };
+		EA2D9770529640659690F0F6 /* MyCardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyCardsStore.swift; sourceTree = "<group>"; };
+		C26AD839298A4C5CB69F6ED8 /* MentionPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionPopoverView.swift; sourceTree = "<group>"; };
+		345B84368A7F43238E1613DC /* MentionTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionTextView.swift; sourceTree = "<group>"; };
+		B8B3AE6863DE4A1AAF93F090 /* MentionHTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionHTML.swift; sourceTree = "<group>"; };
+		261834C85E474199AD2E22FA /* MentionAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionAttachment.swift; sourceTree = "<group>"; };
 		073F28A533D6FEEC44529DD3 /* MembersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersSheet.swift; sourceTree = "<group>"; };
 		0AD361D7B969F1FDB46FAE4E /* DragCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragCoordinator.swift; sourceTree = "<group>"; };
 		0E17F299E023026FD2714D61 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -148,6 +160,12 @@
 				1C8DC963E74620F0D93DD77C /* BoardMembersSheet.swift */,
 				E86B02C13582A5CD024170BF /* BoardRow.swift */,
 				1E1BA76B50D4292531F2A06A /* BoardsAPI.swift */,
+				E7918D6CCB394972B1564446 /* EditorToolbar.swift */,
+				EA2D9770529640659690F0F6 /* MyCardsStore.swift */,
+				C26AD839298A4C5CB69F6ED8 /* MentionPopoverView.swift */,
+				345B84368A7F43238E1613DC /* MentionTextView.swift */,
+				B8B3AE6863DE4A1AAF93F090 /* MentionHTML.swift */,
+				261834C85E474199AD2E22FA /* MentionAttachment.swift */,
 				83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */,
 				57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */,
 				FDCFD2C432B040279FAE5531 /* LinksStore.swift */,
@@ -270,6 +288,12 @@
 				5962C7B8CC1AC1374B927E23 /* BoardMembersSheet.swift in Sources */,
 				8C59EACBF474808AD97AA364 /* BoardRow.swift in Sources */,
 				95552A2BE0CBDFA471ADCE46 /* BoardsAPI.swift in Sources */,
+				65CBBCB3AC5E4C31A01CAD39 /* EditorToolbar.swift in Sources */,
+				F9042CBC0345448E98DD4E23 /* MyCardsStore.swift in Sources */,
+				5204179029EE44079FF7E999 /* MentionPopoverView.swift in Sources */,
+				C17C0CC8D3DE47599E0A14C1 /* MentionTextView.swift in Sources */,
+				6E1F8BAA870A4D83A5BBB066 /* MentionHTML.swift in Sources */,
+				EC64502502A24A7BA928311A /* MentionAttachment.swift in Sources */,
 				05408C6A21DC40E39CC1D81E /* LinkPickerSheet.swift in Sources */,
 				1B34962030B54957B63FB862 /* LinkedEntitiesSection.swift in Sources */,
 				E8DEE98F663D4EE59F51E51E /* LinksStore.swift in Sources */,
@@ -313,6 +337,7 @@
 		1349F8EC3C2EBA50C6D86758 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 8656625Z2P;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -376,6 +401,7 @@
 		DB55BA33A84FB62386C7A99B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 8656625Z2P;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -398,6 +424,7 @@
 		EBAF64AE4464C5544A8749EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 8656625Z2P;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -420,6 +447,7 @@
 		F5CA0214D84D03EAE0671F05 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 8656625Z2P;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
