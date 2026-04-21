@@ -21,6 +21,14 @@ import UIKit
         if lineRange.length > 0 {
             m.addAttribute(EditorAttr.block, value: block.rawValue, range: lineRange)
             if block != .checklist { m.removeAttribute(EditorAttr.checked, range: lineRange) }
+            // Paragraph style (line height, spacing) is a line-level
+            // attribute — apply it across the whole range in one shot,
+            // not only on runs with text content, so single-glyph
+            // lines (eg. a line with just a checkbox attachment)
+            // still pick it up.
+            if let ps = block.attrs(bold: false, italic: false)[.paragraphStyle] {
+                m.addAttribute(.paragraphStyle, value: ps, range: lineRange)
+            }
             m.enumerateAttributes(in: lineRange) { attrs, sub, _ in
                 if attrs[.attachment] != nil { return }
                 let f = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
@@ -43,7 +51,16 @@ import UIKit
         }
 
         if block == .checklist {
-            let box = NSAttributedString(attachment: CheckboxAttachment(checked: false))
+            // Tag the inserted attachment with the block attribute so
+            // the coordinator can detect "we are on a checklist line"
+            // when reading attributes from this character index — the
+            // attachment is often the ONLY character on a fresh
+            // checklist line, so without the tag shouldChangeTextIn
+            // has nothing to look up and the Return auto-continue
+            // silently falls through to the default insertion.
+            let box = NSMutableAttributedString(attachment: CheckboxAttachment(checked: false))
+            let boxAttrs = block.attrs(bold: false, italic: false)
+            box.addAttributes(boxAttrs, range: NSRange(location: 0, length: box.length))
             m.insert(box, at: lineStart)
             newCaret += 1
         }

@@ -78,7 +78,12 @@ enum EditorBlock: String {
         let ps = NSMutableParagraphStyle()
         switch self {
         case .ul, .ol, .checklist:
-            ps.lineHeightMultiple = 1.3
+            // `minimumLineHeight` guarantees the line is at least this tall
+            // regardless of glyph height. Paired with paragraphSpacing this
+            // gives a reliable gap between consecutive list items that
+            // `lineHeightMultiple` alone can't because the checkbox glyph
+            // is fixed at 18pt.
+            ps.minimumLineHeight = 28
             ps.paragraphSpacing = 6
         case .h1, .h2, .h3:
             ps.lineHeightMultiple = 1.2
