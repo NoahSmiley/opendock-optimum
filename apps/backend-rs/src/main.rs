@@ -9,6 +9,7 @@ mod db;
 mod dto;
 mod error;
 mod live;
+mod mention;
 mod routes;
 mod state;
 

@@ -56,7 +56,7 @@ async fn list(State(s): State<AppState>, user: AuthUser, Query(q): Query<ListQue
     Ok(Json(rows))
 }
 
-async fn publish_link_change(s: &AppState, a: EntityRef, b: EntityRef, added: bool, actor_id: Uuid) -> ApiResult<()> {
+pub async fn publish_link_change(s: &AppState, a: EntityRef, b: EntityRef, added: bool, actor_id: Uuid) -> ApiResult<()> {
     let ev = LiveEvent::EntityLinkChanged {
         a_kind: kind_str(a.kind).into(), a_id: a.id,
         b_kind: kind_str(b.kind).into(), b_id: b.id,

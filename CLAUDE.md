@@ -70,6 +70,7 @@ OpenDock is a suite of productivity tools: Boards (kanban/project planning), Not
 - No placeholder/TODO stubs shipped as features.
 - No duplicate code — if two components share logic, extract it.
 - No vibe coding — every file should be intentional, small, and single-purpose.
+- **No emojis in product UI.** Labels, buttons, pills, badges, empty-state text, icons — none of them use emoji characters. This includes both raw emoji in source (`"📝"`, `"📋"`) and emoji embedded in strings rendered to the user. Use SF Symbols / system icons / PNG/SVG assets / text labels instead. This rule applies to strings that render in Tauri or iOS. Test data, commit messages, code comments, and PR descriptions are out of scope.
 
 ## Tech Stack
 - **Desktop**: Tauri 2 (Rust shell)
