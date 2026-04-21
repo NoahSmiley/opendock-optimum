@@ -113,6 +113,7 @@ struct MentionTextView: UIViewRepresentable {
 
         /// Backspace across a pill deletes the whole attachment atomically.
         func textView(_ tv: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+            // Backspace across a mention pill deletes the whole attachment.
             if text.isEmpty, range.length == 1, range.location > 0 {
                 let s = tv.attributedText.attributedSubstring(from: NSRange(location: range.location - 1, length: 1))
                 if s.attribute(.attachment, at: 0, effectiveRange: nil) is MentionAttachment {
@@ -125,7 +126,83 @@ struct MentionTextView: UIViewRepresentable {
                     return false
                 }
             }
+            // Return on a checklist / ul / ol line auto-continues the block.
+            // Empty line + Return exits the block to a plain paragraph so
+            // users can escape. Matches the Tauri / Apple Notes behaviour.
+            if text == "\n", range.length == 0 {
+                return handleReturnInListBlock(tv, at: range.location)
+            }
             return true
+        }
+
+        /// When the caret is on a checklist/ul/ol line and the user presses
+        /// Return, either continue the list (non-empty line) or exit it
+        /// (already-empty line).
+        private func handleReturnInListBlock(_ tv: UITextView, at loc: Int) -> Bool {
+            guard loc <= tv.attributedText.length else { return true }
+            let ns = tv.text as NSString
+            // Find the current line range.
+            var lineStart = loc
+            while lineStart > 0, ns.character(at: lineStart - 1) != 0x0A { lineStart -= 1 }
+            var lineEnd = loc
+            while lineEnd < ns.length, ns.character(at: lineEnd) != 0x0A { lineEnd += 1 }
+            // Read the block type for this line.
+            guard lineStart < tv.attributedText.length,
+                  let raw = tv.attributedText.attribute(EditorAttr.block, at: lineStart, effectiveRange: nil) as? String,
+                  let block = EditorBlock(rawValue: raw),
+                  block == .checklist || block == .ul || block == .ol
+            else { return true }
+
+            // Content length excluding any leading checklist attachment.
+            var contentStart = lineStart
+            if block == .checklist, contentStart < tv.attributedText.length,
+               tv.attributedText.attribute(.attachment, at: contentStart, effectiveRange: nil) is CheckboxAttachment {
+                contentStart += 1
+            }
+            let contentLen = max(0, lineEnd - contentStart)
+
+            if contentLen == 0 {
+                // Empty list line + Return → exit list. Replace the current
+                // line with an empty paragraph.
+                let m = NSMutableAttributedString(attributedString: tv.attributedText)
+                let whole = NSRange(location: lineStart, length: lineEnd - lineStart)
+                m.replaceCharacters(in: whole, with: "")
+                tv.attributedText = m
+                tv.selectedRange = NSRange(location: lineStart, length: 0)
+                // Seed typing attributes as a plain paragraph.
+                var typing = EditorBlock.p.attrs(bold: false, italic: false)
+                typing.removeValue(forKey: .strokeWidth)
+                tv.typingAttributes = typing
+                commitToParent(tv)
+                return false
+            }
+
+            // Non-empty list line + Return → insert newline + new list head
+            // as one atomic attributed blob. Tag the full insertion range
+            // with the block attribute so it survives layout; otherwise
+            // the checkbox attachment can end up on a "p" line (which the
+            // overlay won't paint as a checklist) and the original line
+            // can lose its block tag via propagation.
+            let blockAttrs = block.attrs(bold: false, italic: false)
+            let m = NSMutableAttributedString(attributedString: tv.attributedText)
+            let inserted = NSMutableAttributedString()
+            inserted.append(NSAttributedString(string: "\n", attributes: blockAttrs))
+            if block == .checklist {
+                let boxStr = NSMutableAttributedString(attachment: CheckboxAttachment(checked: false))
+                boxStr.addAttributes(blockAttrs, range: NSRange(location: 0, length: boxStr.length))
+                inserted.append(boxStr)
+            }
+            m.insert(inserted, at: loc)
+            let caret = loc + inserted.length
+            tv.attributedText = m
+            tv.selectedRange = NSRange(location: caret, length: 0)
+            // Typing attributes inherit the block but drop any inline
+            // stroke/italic so the next keystrokes are plain body text.
+            var typing = block.attrs(bold: false, italic: false)
+            typing.removeValue(forKey: .strokeWidth)
+            tv.typingAttributes = typing
+            commitToParent(tv)
+            return false
         }
 
         func textViewDidChange(_ tv: UITextView) { commitToParent(tv); updateTrigger(tv) }

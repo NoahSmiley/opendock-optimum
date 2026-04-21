@@ -61,7 +61,32 @@ enum EditorBlock: String {
         } else {
             a[.foregroundColor] = UIColor(Theme.text)
         }
+        a[.paragraphStyle] = paragraphStyle
         return a
+    }
+
+    /// Paragraph style per block — controls vertical breathing room so
+    /// consecutive list / checklist lines aren't jammed against each
+    /// other. Mirrors Tauri's `.check-item { padding: 4px 0 }`.
+    ///
+    /// We use `lineHeightMultiple` + `paragraphSpacing` together: the
+    /// multiple adds a constant line-height bump per line (actually
+    /// visible in layout, unlike bare `paragraphSpacingBefore` which
+    /// NSLayoutManager ignores when the block is a single glyph line),
+    /// and the trailing spacing adds a final gap after each paragraph.
+    @MainActor private var paragraphStyle: NSParagraphStyle {
+        let ps = NSMutableParagraphStyle()
+        switch self {
+        case .ul, .ol, .checklist:
+            ps.lineHeightMultiple = 1.3
+            ps.paragraphSpacing = 6
+        case .h1, .h2, .h3:
+            ps.lineHeightMultiple = 1.2
+            ps.paragraphSpacing = 4
+        case .p:
+            ps.lineHeightMultiple = 1.2
+        }
+        return ps
     }
 }
 
