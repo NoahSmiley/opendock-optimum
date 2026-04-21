@@ -24,6 +24,9 @@ struct MentionTextView: UIViewRepresentable {
     @Binding var trigger: MentionTriggerState?
     let onChange: () -> Void
     let ref: TextViewRef
+    /// Called whenever the text view scrolls. CheckboxOverlay uses this
+    /// to re-layout its buttons so they track the text as it moves.
+    var onScroll: (() -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -35,7 +38,19 @@ struct MentionTextView: UIViewRepresentable {
         tv.textColor = Self.bodyColor
         tv.tintColor = Self.bodyColor
         tv.textContainerInset = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
-        tv.keyboardDismissMode = .interactive
+        // `.interactive` only dismisses when there's scrollable content;
+        // short notes had no way to dismiss the keyboard. `.onDrag` drops
+        // it on any scroll drag regardless of content length.
+        tv.keyboardDismissMode = .onDrag
+        // Autocorrect state is persisted under the same key the toolbar
+        // writes to. UserDefaults.bool default is false, so treat absent
+        // as "on" (default expected behaviour).
+        let autocorrect = UserDefaults.standard.object(forKey: "opendock.autocorrect") as? Bool ?? true
+        tv.autocorrectionType = autocorrect ? .yes : .no
+        tv.spellCheckingType = autocorrect ? .yes : .no
+        tv.smartQuotesType = autocorrect ? .yes : .no
+        tv.smartDashesType = autocorrect ? .yes : .no
+        tv.smartInsertDeleteType = autocorrect ? .yes : .no
         tv.delegate = context.coordinator
         tv.layoutManager.delegate = context.coordinator
         tv.attributedText = attributed
@@ -119,18 +134,15 @@ struct MentionTextView: UIViewRepresentable {
             updateTrigger(tv)
         }
 
-        /// Detect taps on a CheckboxAttachment and toggle its state.
-        @objc func handleTap(_ g: UITapGestureRecognizer) {
-            guard let tv = g.view as? UITextView else { return }
-            let point = g.location(in: tv)
-            let origin = CGPoint(x: point.x - tv.textContainerInset.left, y: point.y - tv.textContainerInset.top)
-            var frac: CGFloat = 0
-            let idx = tv.layoutManager.characterIndex(for: origin, in: tv.textContainer,
-                                                     fractionOfDistanceBetweenInsertionPoints: &frac)
-            guard idx >= 0, idx < tv.attributedText.length,
-                  tv.attributedText.attribute(.attachment, at: idx, effectiveRange: nil) is CheckboxAttachment else { return }
-            EditorBlockAction.toggleCheckbox(at: idx, in: tv)
-        }
+        /// Scroll forwarding — drives CheckboxOverlay's re-layout so the
+        /// real checkbox buttons track the (invisible) attachment
+        /// placeholders as the user pans the text view.
+        func scrollViewDidScroll(_ sv: UIScrollView) { parent.onScroll?() }
+
+        /// Legacy tap handler — no longer used for checkboxes (overlay
+        /// owns those taps now) but kept as a placeholder for any future
+        /// tap-based attachment behaviour.
+        @objc func handleTap(_ g: UITapGestureRecognizer) {}
 
         @MainActor private func commitToParent(_ tv: UITextView) {
             let s = tv.attributedText ?? NSAttributedString()

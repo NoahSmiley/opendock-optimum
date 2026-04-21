@@ -28,11 +28,9 @@ enum EditorDecode {
         for run in parseInline(b.html) {
             switch run {
             case .text(let t, let marks):
-                var a: [NSAttributedString.Key: Any] = [:]
+                var a = b.block.attrs(bold: marks.bold, italic: marks.italic)
                 if marks.strike { a[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
                 if marks.underline { a[.underlineStyle] = NSUnderlineStyle.single.rawValue }
-                a[.font] = b.block.font(bold: marks.bold, italic: marks.italic)
-                a[.foregroundColor] = UIColor(Theme.text)
                 line.append(NSAttributedString(string: t, attributes: a))
             case .mention(let k, let id, let title):
                 line.append(NSAttributedString(attachment: MentionAttachment(kind: k, targetId: id, title: title)))

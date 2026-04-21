@@ -24,17 +24,21 @@ import UIKit
             m.enumerateAttributes(in: lineRange) { attrs, sub, _ in
                 if attrs[.attachment] != nil { return }
                 let f = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
+                let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
                 // Custom fonts (Inter Semibold) don't register .traitBold in
-                // their symbolic traits — we have to recognise them by face
-                // name instead, otherwise block transitions silently strip
-                // inline bold from every custom-font run.
-                let bold = f.fontDescriptor.symbolicTraits.contains(.traitBold)
+                // their symbolic traits — we detect by strokeWidth (our
+                // synthetic-bold signal) + fallback face-name, otherwise
+                // block transitions silently strip inline bold.
+                let bold = hasStroke
+                    || f.fontDescriptor.symbolicTraits.contains(.traitBold)
                     || f.fontName.lowercased().contains("semibold")
                     || f.fontName.lowercased().contains("bold")
                 let italic = f.fontDescriptor.symbolicTraits.contains(.traitItalic)
                     || f.fontName.lowercased().contains("italic")
                     || f.fontName.lowercased().contains("oblique")
-                m.addAttribute(.font, value: block.font(bold: bold, italic: italic), range: sub)
+                let new = block.attrs(bold: bold, italic: italic)
+                for (k, v) in new { m.addAttribute(k, value: v, range: sub) }
+                if !bold { m.removeAttribute(.strokeWidth, range: sub) }
             }
         }
 
@@ -47,8 +51,9 @@ import UIKit
         tv.attributedText = m
         tv.selectedRange = NSRange(location: min(newCaret, m.length), length: 0)
         var typing = tv.typingAttributes
-        typing[.font] = block.font(bold: false, italic: false)
-        typing[EditorAttr.block] = block.rawValue
+        let seed = block.attrs(bold: false, italic: false)
+        for (k, v) in seed { typing[k] = v }
+        typing.removeValue(forKey: .strokeWidth)
         tv.typingAttributes = typing
         tv.delegate?.textViewDidChange?(tv)
     }

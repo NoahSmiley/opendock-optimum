@@ -6,7 +6,9 @@ import UIKit
 enum EditorBlock: String {
     case p, h1, h2, h3, ul, ol, checklist
 
-    /// Font to stamp on body text in this block.
+    /// Font to stamp on body text in this block. Sizes mirror the Tauri
+    /// `.rich-editor` CSS: H1 22 / H2 18 / H3 16, body bumped to 16 for
+    /// comfortable reading on mobile (was 15, user flagged as too small).
     @MainActor func font(bold: Bool, italic: Bool) -> UIFont {
         let size: CGFloat
         let semibold: Bool
@@ -14,7 +16,7 @@ enum EditorBlock: String {
         case .h1: size = 22; semibold = true
         case .h2: size = 18; semibold = true
         case .h3: size = 16; semibold = true
-        default: size = 15; semibold = false
+        default: size = 16; semibold = false
         }
         let face = (semibold || bold) ? Theme.fontSemibold : Theme.fontName
         var f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: (semibold || bold) ? .semibold : .regular)
@@ -34,6 +36,32 @@ enum EditorBlock: String {
             }
         }
         return f
+    }
+
+    /// Full attribute set for body text in this block with the given
+    /// inline marks. Inline bold is rendered with a negative strokeWidth
+    /// (synthetic bold — the OpenAI Sans family only ships Regular /
+    /// Medium / Semibold, so Semibold alone is too subtle) AND a brighter
+    /// foreground to mirror Tauri's `strong { font-weight:700; color:
+    /// var(--a-text-active); }`. Headings already use Semibold by block
+    /// and inherit `Theme.active` via the toolbar/decode paths.
+    @MainActor func attrs(bold: Bool, italic: Bool) -> [NSAttributedString.Key: Any] {
+        var a: [NSAttributedString.Key: Any] = [
+            .font: font(bold: bold, italic: italic),
+            EditorAttr.block: rawValue,
+        ]
+        let isHeading = self == .h1 || self == .h2 || self == .h3
+        if bold {
+            // -3 is a middleweight synthetic bold: heavier than Semibold
+            // alone, doesn't smear, matches browser bold-face weight.
+            a[.strokeWidth] = -3.0
+            a[.foregroundColor] = UIColor(Theme.active)
+        } else if isHeading {
+            a[.foregroundColor] = UIColor(Theme.active)
+        } else {
+            a[.foregroundColor] = UIColor(Theme.text)
+        }
+        return a
     }
 }
 

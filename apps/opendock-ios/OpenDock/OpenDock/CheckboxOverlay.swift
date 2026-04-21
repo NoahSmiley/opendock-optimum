@@ -1,0 +1,137 @@
+import SwiftUI
+import UIKit
+
+/// SwiftUI overlay that paints one real `CheckboxButton` over every
+/// `CheckboxAttachment` in the UITextView. Needed because NSTextAttachment
+/// images are static — to match the Tauri checkbox (green fill, centered
+/// tick, scale-pop + ring-ripple on toggle) we need real views.
+///
+/// The overlay is a sibling of the UITextView in NoteEditorView, not a
+/// child; it reads positions via layoutManager, translates them through
+/// the text view's scroll offset + content inset, and renders buttons at
+/// the computed rects. Positions recompute on every attributed change.
+@MainActor struct CheckboxOverlay: View {
+    let textView: () -> UITextView?
+    /// Bumped whenever the text view's attributedText changes so SwiftUI
+    /// re-runs the position lookup. Bound to NoteEditorView's `attributed`.
+    let revision: Int
+    /// Bumped on scroll so boxes track the text as the user pans.
+    let scrollRevision: Int
+
+    var body: some View {
+        GeometryReader { _ in
+            ZStack(alignment: .topLeading) {
+                Color.clear
+                ForEach(checkboxes(), id: \.index) { box in
+                    CheckboxButton(checked: box.checked) {
+                        if let tv = textView() {
+                            EditorBlockAction.toggleCheckbox(at: box.index, in: tv)
+                        }
+                    }
+                    .position(x: box.rect.midX, y: box.rect.midY)
+                }
+            }
+        }
+        .allowsHitTesting(true)
+    }
+
+    private struct Box { let index: Int; let rect: CGRect; let checked: Bool }
+
+    private func checkboxes() -> [Box] {
+        _ = revision; _ = scrollRevision   // re-evaluate on either bump
+        guard let tv = textView() else { return [] }
+        let text = tv.attributedText ?? NSAttributedString()
+        var out: [Box] = []
+        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { v, range, _ in
+            guard let att = v as? CheckboxAttachment else { return }
+            let glyphRange = tv.layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            var rect = tv.layoutManager.boundingRect(forGlyphRange: glyphRange, in: tv.textContainer)
+            // Offset by the textContainerInset so we land on the visible
+            // coordinate system, not the layout manager's.
+            rect.origin.x += tv.textContainerInset.left
+            rect.origin.y += tv.textContainerInset.top
+            // Account for scroll. Without this the box drifts off-screen
+            // when the user scrolls long notes.
+            rect.origin.y -= tv.contentOffset.y
+            rect.origin.x -= tv.contentOffset.x
+            // The attachment reserves 26pt; the actual box is 18pt —
+            // sit it on the left side of that reservation.
+            rect.size = CGSize(width: 18, height: 18)
+            out.append(Box(index: range.location, rect: rect, checked: att.checked))
+        }
+        return out
+    }
+}
+
+/// One interactive checkbox. Green fill + white check when on, bordered
+/// square when off. Toggle fires a scale-pop + green ring-ripple that
+/// mirrors Tauri's `@keyframes check-pop` + `check-ring`.
+@MainActor struct CheckboxButton: View {
+    let checked: Bool
+    let onToggle: () -> Void
+
+    @State private var pop: CGFloat = 1
+    @State private var ringScale: CGFloat = 0
+    @State private var ringOpacity: Double = 0
+
+    private let green = Color(red: 0x22/255.0, green: 0xc5/255.0, blue: 0x5e/255.0)
+
+    var body: some View {
+        Button(action: { trigger() }) {
+            ZStack {
+                // Ring ripple — green halo expanding behind the box.
+                Circle()
+                    .fill(green)
+                    .opacity(ringOpacity)
+                    .scaleEffect(ringScale)
+                    .frame(width: 18, height: 18)
+                    .allowsHitTesting(false)
+
+                // The box itself.
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(checked ? green : Color.clear)
+                    .frame(width: 18, height: 18)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(checked ? green : Theme.faint, lineWidth: 1.5)
+                    )
+                    .overlay(checkmark.opacity(checked ? 1 : 0))
+                    .scaleEffect(pop)
+            }
+            .frame(width: 26, height: 26)   // larger hit target
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var checkmark: some View {
+        // 45°-rotated L with white strokes — matches the CSS
+        // `::after { border-width: 0 2px 2px 0 }` construction.
+        Path { p in
+            p.move(to: CGPoint(x: 4, y: 9))
+            p.addLine(to: CGPoint(x: 7.5, y: 12.5))
+            p.addLine(to: CGPoint(x: 14, y: 5.5))
+        }
+        .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+        .frame(width: 18, height: 18)
+    }
+
+    private func trigger() {
+        onToggle()
+        // Box pop: 1 → 1.2 → 1 over 0.4s with spring ease.
+        withAnimation(.interpolatingSpring(mass: 0.6, stiffness: 320, damping: 14, initialVelocity: 6)) {
+            pop = 1.2
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.interpolatingSpring(mass: 0.5, stiffness: 280, damping: 18)) {
+                pop = 1
+            }
+        }
+        // Ring ripple: starts at center fully-coloured, expands + fades.
+        ringScale = 0; ringOpacity = 0.5
+        withAnimation(.easeOut(duration: 0.6)) {
+            ringScale = 2.5
+            ringOpacity = 0
+        }
+    }
+}

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		40E01B5EF540498983ADAABF /* CheckboxAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95EBAADE0C704E5398B0A5E7 /* CheckboxAttachment.swift */; };
+		92235BC8028FC5A0900AE19F /* CheckboxOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2BBB5D2C01C896063B8183D /* CheckboxOverlay.swift */; };
 		238096D3BC86471A95FFDFF4 /* EditorBlockAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E09504163649E99C7FA757 /* EditorBlockAction.swift */; };
 		95314AE464A54822B05B516E /* EditorDecode.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB169CF9F2F44C48461959F /* EditorDecode.swift */; };
 		5316E74CCA5F4A5CBF0FD349 /* EditorEncode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2945A1810AA4D7D855AA77A /* EditorEncode.swift */; };
@@ -68,6 +69,7 @@
 
 /* Begin PBXFileReference section */
 		95EBAADE0C704E5398B0A5E7 /* CheckboxAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxAttachment.swift; sourceTree = "<group>"; };
+		B2BBB5D2C01C896063B8183D /* CheckboxOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxOverlay.swift; sourceTree = "<group>"; };
 		B5E09504163649E99C7FA757 /* EditorBlockAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorBlockAction.swift; sourceTree = "<group>"; };
 		ADB169CF9F2F44C48461959F /* EditorDecode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorDecode.swift; sourceTree = "<group>"; };
 		D2945A1810AA4D7D855AA77A /* EditorEncode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEncode.swift; sourceTree = "<group>"; };
@@ -169,6 +171,7 @@
 				E86B02C13582A5CD024170BF /* BoardRow.swift */,
 				1E1BA76B50D4292531F2A06A /* BoardsAPI.swift */,
 				95EBAADE0C704E5398B0A5E7 /* CheckboxAttachment.swift */,
+				B2BBB5D2C01C896063B8183D /* CheckboxOverlay.swift */,
 				B5E09504163649E99C7FA757 /* EditorBlockAction.swift */,
 				ADB169CF9F2F44C48461959F /* EditorDecode.swift */,
 				D2945A1810AA4D7D855AA77A /* EditorEncode.swift */,
@@ -301,6 +304,7 @@
 				8C59EACBF474808AD97AA364 /* BoardRow.swift in Sources */,
 				95552A2BE0CBDFA471ADCE46 /* BoardsAPI.swift in Sources */,
 				40E01B5EF540498983ADAABF /* CheckboxAttachment.swift in Sources */,
+				92235BC8028FC5A0900AE19F /* CheckboxOverlay.swift in Sources */,
 				238096D3BC86471A95FFDFF4 /* EditorBlockAction.swift in Sources */,
 				95314AE464A54822B05B516E /* EditorDecode.swift in Sources */,
 				5316E74CCA5F4A5CBF0FD349 /* EditorEncode.swift in Sources */,

@@ -18,6 +18,9 @@ struct NoteEditorView: View {
     @State private var socket: LiveSocket?
     @State private var loadedContentFor: UUID?
     @StateObject private var tvRef = TextViewRef()
+    /// Bumped whenever the text view scrolls. CheckboxOverlay watches
+    /// this to re-layout its buttons in sync.
+    @State private var scrollRevision: Int = 0
 
     private var note: Note? { store.notes.first { $0.id == noteId } }
 
@@ -29,9 +32,24 @@ struct NoteEditorView: View {
                     .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 2)
                     .onChange(of: title) { _, _ in schedulePatch() }
                 Rectangle().fill(Theme.border).frame(height: 0.5).padding(.horizontal, 20).padding(.top, 8)
-                MentionTextView(attributed: $attributed, trigger: $trigger, onChange: schedulePatch, ref: tvRef)
+                ZStack(alignment: .topLeading) {
+                    MentionTextView(
+                        attributed: $attributed,
+                        trigger: $trigger,
+                        onChange: schedulePatch,
+                        ref: tvRef,
+                        onScroll: { scrollRevision &+= 1 }
+                    )
                     .padding(.horizontal, 4).padding(.top, 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    CheckboxOverlay(
+                        textView: { tvRef.textView },
+                        revision: attributed.hash,
+                        scrollRevision: scrollRevision
+                    )
+                    .padding(.horizontal, 4).padding(.top, 4)
+                    .allowsHitTesting(true)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 EditorToolbarView(textView: { tvRef.textView })
                 LinkedEntitiesSection(anchor: EntityRef(kind: .note, id: noteId), label: "Linked cards", pickKind: .card)
                 HStack(spacing: 8) {

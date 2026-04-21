@@ -50,11 +50,14 @@ enum EditorEncode {
             let raw = line.attributedSubstring(from: r).string
             let font = attrs[.font] as? UIFont
             // Custom fonts (Inter Semibold) don't register .traitBold, so
-            // fall back to face-name inspection — matches the toolbar and
-            // block-action paths and keeps save round-trips honest.
+            // fall back to face-name + our synthetic-bold strokeWidth
+            // signal. Keeps save round-trips honest across all bold
+            // sources (toolbar, block-transition, decode).
             let fname = font?.fontName.lowercased() ?? ""
-            let bold = (font?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false)
-                || fname.contains("semibold") || fname.contains("bold")
+            let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
+            let bold = hasStroke
+                || (font?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false)
+                || fname.contains("bold")
             let italic = (font?.fontDescriptor.symbolicTraits.contains(.traitItalic) ?? false)
                 || fname.contains("italic") || fname.contains("oblique")
             let underline = (attrs[.underlineStyle] as? Int ?? 0) != 0
