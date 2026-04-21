@@ -19,6 +19,38 @@ struct MentionTriggerState: Equatable {
     weak var textView: UITextView?
 }
 
+/// UITextView subclass that returns a caret rect scaled to the current
+/// font's intrinsic height rather than the full line height. Without
+/// this the caret matches the full typographic line (inflated by
+/// lineHeightMultiple and any attachment bounds on that line), so a
+/// 16-18pt font ends up with a ~24pt caret that looks disproportionately
+/// tall vs the glyphs.
+final class TightCaretTextView: UITextView {
+    override func caretRect(for position: UITextPosition) -> CGRect {
+        let r = super.caretRect(for: position)
+        // Anchor the caret at the font baseline and give it the font's
+        // ascender + 2pt descender. That matches how text visually
+        // occupies the line and keeps the caret from running past the
+        // cap / descender in either direction.
+        let loc = offset(from: beginningOfDocument, to: position)
+        let font: UIFont
+        if loc > 0, loc <= attributedText.length {
+            font = (attributedText.attribute(.font, at: loc - 1, effectiveRange: nil) as? UIFont)
+                ?? (typingAttributes[.font] as? UIFont)
+                ?? UIFont.systemFont(ofSize: 18)
+        } else {
+            font = (typingAttributes[.font] as? UIFont) ?? UIFont.systemFont(ofSize: 18)
+        }
+        let targetHeight = font.ascender + abs(font.descender) + 2
+        guard targetHeight < r.height else { return r }
+        // Keep the caret's bottom where UIKit put it (on the baseline +
+        // descender) and shrink upward so we don't push into the line
+        // below.
+        let dy = r.height - targetHeight
+        return CGRect(x: r.origin.x, y: r.origin.y + dy, width: r.width, height: targetHeight)
+    }
+}
+
 struct MentionTextView: UIViewRepresentable {
     @Binding var attributed: NSAttributedString
     @Binding var trigger: MentionTriggerState?
@@ -33,7 +65,7 @@ struct MentionTextView: UIViewRepresentable {
     @MainActor static let bodyColor: UIColor = UIColor(Theme.text)
 
     func makeUIView(context: Context) -> UITextView {
-        let tv = UITextView()
+        let tv = TightCaretTextView()
         tv.backgroundColor = .clear
         tv.textColor = Self.bodyColor
         tv.tintColor = Self.bodyColor
@@ -56,7 +88,13 @@ struct MentionTextView: UIViewRepresentable {
         tv.attributedText = attributed
         applyTypingAttributes(tv)
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
-        tap.cancelsTouchesInView = false
+        // Cancel touches in-view so a tap landing on a checkbox doesn't
+        // also plant the UITextView caret at that location — otherwise
+        // the caret flashes on/next to the box for a frame before the
+        // toggle animation runs. The coordinator's shouldReceive
+        // callback only accepts the touch when it's over a checkbox
+        // glyph, so non-checkbox taps still reach UITextView normally.
+        tap.cancelsTouchesInView = true
         tap.delegate = context.coordinator
         tv.addGestureRecognizer(tap)
         context.coordinator.lastAssignedRevision = attributed.hash
@@ -119,6 +157,30 @@ struct MentionTextView: UIViewRepresentable {
         init(_ parent: MentionTextView) { self.parent = parent }
 
         func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+
+        /// Only accept taps that land on a CheckboxAttachment's glyph —
+        /// other taps (for caret placement, selection, etc.) pass
+        /// through to the UITextView's own handling. Prevents the
+        /// caret-flash that happens when UITextView sets the caret at
+        /// the tap location before our handler runs.
+        func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            guard let tv = g.view as? UITextView else { return false }
+            let point = touch.location(in: tv)
+            return hitsCheckbox(at: point, in: tv)
+        }
+
+        private func hitsCheckbox(at point: CGPoint, in tv: UITextView) -> Bool {
+            let origin = CGPoint(x: point.x - tv.textContainerInset.left,
+                                 y: point.y - tv.textContainerInset.top)
+            var frac: CGFloat = 0
+            let idx = tv.layoutManager.characterIndex(
+                for: origin,
+                in: tv.textContainer,
+                fractionOfDistanceBetweenInsertionPoints: &frac
+            )
+            guard idx >= 0, idx < tv.attributedText.length else { return false }
+            return tv.attributedText.attribute(.attachment, at: idx, effectiveRange: nil) is CheckboxAttachment
+        }
 
         /// Backspace across a pill deletes the whole attachment atomically.
         func textView(_ tv: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {

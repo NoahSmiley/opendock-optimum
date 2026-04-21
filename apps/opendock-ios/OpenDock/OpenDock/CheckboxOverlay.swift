@@ -64,18 +64,18 @@ import UIKit
             // Offset by the textContainerInset so we land on the visible
             // coordinate system, not the layout manager's.
             var rect = usedRect
-            rect.origin.x += tv.textContainerInset.left
             rect.origin.y += tv.textContainerInset.top
-            // Account for scroll. Without this the box drifts off-screen
-            // when the user scrolls long notes.
             rect.origin.y -= tv.contentOffset.y
             rect.origin.x -= tv.contentOffset.x
+            // Force the box's left edge to match the text's left margin
+            // exactly. The glyph rect for the attachment can have tiny
+            // sub-pixel inset that reads visually as the checkbox being
+            // indented a couple of points past the body-text column;
+            // anchoring to `textContainerInset.left` keeps both aligned.
+            let boxX = tv.textContainerInset.left
             // Centre an 18pt box within the used-rect's vertical span.
-            // usedRect is the actual glyph ink + descender so centering
-            // on its middle aligns the box with the text's visual middle
-            // instead of drifting above or below the baseline.
             let boxY = rect.origin.y + (rect.height - 18) / 2
-            let boxRect = CGRect(x: rect.origin.x, y: boxY, width: 18, height: 18)
+            let boxRect = CGRect(x: boxX, y: boxY, width: 18, height: 18)
             out.append(Box(index: range.location, rect: boxRect, checked: att.checked))
         }
         return out
