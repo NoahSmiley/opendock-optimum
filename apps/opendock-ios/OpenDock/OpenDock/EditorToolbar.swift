@@ -115,9 +115,11 @@ import UIKit
             var attrs = tv.typingAttributes
             let new = attrsByFlipping(trait, in: attrs)
             for (k, v) in new { attrs[k] = v }
-            // strokeWidth must be actively removed when unbolding;
-            // otherwise the typing attribute sticks forever.
+            // strokeWidth / obliqueness must be actively removed when
+            // unbolding or un-italicising; otherwise the typing
+            // attribute sticks forever.
             if new[.strokeWidth] == nil { attrs.removeValue(forKey: .strokeWidth) }
+            if new[.obliqueness] == nil { attrs.removeValue(forKey: .obliqueness) }
             tv.typingAttributes = attrs
             return
         }
@@ -126,6 +128,7 @@ import UIKit
             let new = attrsByFlipping(trait, in: sub)
             for (k, v) in new { m.addAttribute(k, value: v, range: range) }
             if new[.strokeWidth] == nil { m.removeAttribute(.strokeWidth, range: range) }
+            if new[.obliqueness] == nil { m.removeAttribute(.obliqueness, range: range) }
         }
         tv.attributedText = m
         tv.selectedRange = r
@@ -144,10 +147,12 @@ import UIKit
         // strokeWidth < 0 is the canonical bold signal we set; fall back
         // to face-name + symbolicTraits for runs created elsewhere.
         let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
+        let hasObliqueness = (attrs[.obliqueness] as? CGFloat ?? 0) > 0
         let isBold = hasStroke
             || curTraits.contains(.traitBold)
             || lname.contains("semibold") || lname.contains("bold")
-        let isItalic = curTraits.contains(.traitItalic)
+        let isItalic = hasObliqueness
+            || curTraits.contains(.traitItalic)
             || lname.contains("italic") || lname.contains("oblique")
         let block = (attrs[EditorAttr.block] as? String).flatMap(EditorBlock.init(rawValue:)) ?? .p
         let wantBold = trait == .traitBold ? !isBold : isBold

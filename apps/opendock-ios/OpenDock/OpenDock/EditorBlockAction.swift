@@ -37,16 +37,19 @@ import UIKit
                 // their symbolic traits — we detect by strokeWidth (our
                 // synthetic-bold signal) + fallback face-name, otherwise
                 // block transitions silently strip inline bold.
+                let hasObliqueness = (attrs[.obliqueness] as? CGFloat ?? 0) > 0
                 let bold = hasStroke
                     || f.fontDescriptor.symbolicTraits.contains(.traitBold)
                     || f.fontName.lowercased().contains("semibold")
                     || f.fontName.lowercased().contains("bold")
-                let italic = f.fontDescriptor.symbolicTraits.contains(.traitItalic)
+                let italic = hasObliqueness
+                    || f.fontDescriptor.symbolicTraits.contains(.traitItalic)
                     || f.fontName.lowercased().contains("italic")
                     || f.fontName.lowercased().contains("oblique")
                 let new = block.attrs(bold: bold, italic: italic)
                 for (k, v) in new { m.addAttribute(k, value: v, range: sub) }
                 if !bold { m.removeAttribute(.strokeWidth, range: sub) }
+                if !italic { m.removeAttribute(.obliqueness, range: sub) }
             }
         }
 

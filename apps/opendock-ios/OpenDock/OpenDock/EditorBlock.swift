@@ -13,42 +13,27 @@ enum EditorBlock: String {
         let size: CGFloat
         let semibold: Bool
         switch self {
-        case .h1: size = 22; semibold = true
-        case .h2: size = 18; semibold = true
-        case .h3: size = 16; semibold = true
-        default: size = 16; semibold = false
+        case .h1: size = 26; semibold = true
+        case .h2: size = 22; semibold = true
+        case .h3: size = 19; semibold = true
+        default: size = 18; semibold = false
         }
         // Pick the face. For inline bold we intentionally stay on the
         // Regular face — inline bold is rendered via a synthetic
         // negative strokeWidth applied in `attrs()`, NOT by swapping
         // to Semibold. Otherwise Semibold + stroke stacks and bold+italic
         // ends up visibly heavier than bold alone (user-flagged).
-        // Semibold is still used for HEADING blocks (h1/h2/h3) since
-        // those don't get the synthetic stroke.
         let useSemiboldFace = semibold   // headings only
         let face = useSemiboldFace ? Theme.fontSemibold : Theme.fontName
-        var f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: useSemiboldFace ? .semibold : .regular)
-        if italic {
-            // Custom fonts (OpenAISans) don't register an italic variant
-            // in the font descriptor table, so withSymbolicTraits returns
-            // nil. Fall back to the system italic font at regular weight
-            // so italic renders; the synthetic bold stroke (set in attrs)
-            // will still fatten it when `bold` is true, keeping bold+italic
-            // visually consistent with bold alone.
-            if let d = f.fontDescriptor.withSymbolicTraits(.traitItalic) {
-                f = UIFont(descriptor: d, size: size)
-            } else {
-                // Regular-weight italic — let the synthetic stroke do
-                // the bolding, don't use system-bold-italic here.
-                f = UIFont.italicSystemFont(ofSize: size)
-                if useSemiboldFace,
-                   let bd = f.fontDescriptor.withSymbolicTraits([.traitItalic, .traitBold]) {
-                    // Heading + italic: use system bold italic since
-                    // headings don't get the synthetic stroke.
-                    f = UIFont(descriptor: bd, size: size)
-                }
-            }
-        }
+        let f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: useSemiboldFace ? .semibold : .regular)
+        // Italic is rendered via `.obliqueness` in `attrs()` (a
+        // skew-transform attribute on the attributed string) not via a
+        // font family swap. This keeps the font family constant across
+        // bold / bold+italic so the stroke weight looks identical —
+        // previously we fell back to italicSystemFont which had
+        // noticeably different stroke thickness from OpenAISans,
+        // making bold+italic appear heavier than bold alone.
+        _ = italic   // italic handled via obliqueness attribute
         return f
     }
 
@@ -67,17 +52,19 @@ enum EditorBlock: String {
         let isHeading = self == .h1 || self == .h2 || self == .h3
         if bold {
             // Synthetic bold via negative strokeWidth on top of the
-            // Regular face. -4.5 gives a clearly heavier stroke than
-            // Semibold-alone would (OpenAISans ships no Bold weight),
-            // and since the face itself is always Regular for inline
-            // bold, bold+italic won't compound to "extra-bold" like it
-            // did when we also swapped faces to Semibold.
+            // Regular face. Keeping the face constant (see font())
+            // means bold and bold+italic share the same stroke weight.
             a[.strokeWidth] = -4.5
             a[.foregroundColor] = UIColor(Theme.active)
         } else if isHeading {
             a[.foregroundColor] = UIColor(Theme.active)
         } else {
             a[.foregroundColor] = UIColor(Theme.text)
+        }
+        if italic {
+            // Skew-transform italic. Stays on the same font family so
+            // stroke weight is identical across bold / bold+italic.
+            a[.obliqueness] = 0.2
         }
         a[.paragraphStyle] = paragraphStyle
         return a

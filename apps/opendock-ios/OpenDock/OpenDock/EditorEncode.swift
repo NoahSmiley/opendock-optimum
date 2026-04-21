@@ -49,16 +49,18 @@ enum EditorEncode {
             }
             let raw = line.attributedSubstring(from: r).string
             let font = attrs[.font] as? UIFont
-            // Custom fonts (Inter Semibold) don't register .traitBold, so
-            // fall back to face-name + our synthetic-bold strokeWidth
-            // signal. Keeps save round-trips honest across all bold
-            // sources (toolbar, block-transition, decode).
+            // Custom fonts (OpenAISans) don't register .traitBold/.traitItalic,
+            // so fall back to face-name + our synthetic bold/italic signals
+            // (strokeWidth < 0 for bold, obliqueness > 0 for italic). Keeps
+            // save round-trips honest across all sources.
             let fname = font?.fontName.lowercased() ?? ""
             let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
+            let hasObliqueness = (attrs[.obliqueness] as? CGFloat ?? 0) > 0
             let bold = hasStroke
                 || (font?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false)
                 || fname.contains("bold")
-            let italic = (font?.fontDescriptor.symbolicTraits.contains(.traitItalic) ?? false)
+            let italic = hasObliqueness
+                || (font?.fontDescriptor.symbolicTraits.contains(.traitItalic) ?? false)
                 || fname.contains("italic") || fname.contains("oblique")
             let underline = (attrs[.underlineStyle] as? Int ?? 0) != 0
             let strike = (attrs[.strikethroughStyle] as? Int ?? 0) != 0

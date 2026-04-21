@@ -64,9 +64,11 @@ import UIKit
             // when the user scrolls long notes.
             rect.origin.y -= tv.contentOffset.y
             rect.origin.x -= tv.contentOffset.x
-            // Center an 18pt box vertically within the line fragment,
-            // left-aligned to the line's leading edge.
-            let boxY = rect.origin.y + (rect.size.height - 18) / 2
+            // Top-align the 18pt box with the line fragment so it
+            // visually centres against the cap-height of 16pt body text
+            // (ascender descender bias — centering within the full
+            // fragment pushes the box below the text baseline).
+            let boxY = rect.origin.y + 2
             let boxRect = CGRect(x: rect.origin.x, y: boxY, width: 18, height: 18)
             out.append(Box(index: range.location, rect: boxRect, checked: att.checked))
         }

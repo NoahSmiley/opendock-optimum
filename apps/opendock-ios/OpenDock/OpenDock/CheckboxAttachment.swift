@@ -20,13 +20,12 @@ final class CheckboxAttachment: NSTextAttachment {
 
     override func attachmentBounds(for textContainer: NSTextContainer?, proposedLineFragment lineFrag: CGRect,
                                    glyphPosition position: CGPoint, characterIndex charIndex: Int) -> CGRect {
-        // Height 32 forces each checklist line to be at least 32pt tall
-        // so consecutive boxes get ~14pt of breathing room between them
-        // (18pt box + 14pt slack). NSParagraphStyle.minimumLineHeight
-        // wasn't reliably respected by the layout manager across iOS
-        // versions; a tall attachment is. Width reservation is 26pt
-        // (18pt box + 8pt gap before the following text).
-        CGRect(x: 0, y: -7, width: 26, height: 32)
+        // Height 24 (18pt box + 6pt bottom breathing) is enough to show
+        // a visible gap between consecutive boxes without making the
+        // spacing feel loose. y = -4 pulls the top of the box up above
+        // the text baseline so the 18pt box visually centres with 16pt
+        // body text (cap-height ~11pt sits in the baseline→top region).
+        CGRect(x: 0, y: -4, width: 26, height: 24)
     }
 
     override func image(forBounds imageBounds: CGRect, textContainer: NSTextContainer?,
