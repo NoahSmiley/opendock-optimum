@@ -78,7 +78,7 @@ export function Editor({ onBack }: EditorProps) {
       <div className="editor-body">
         {preview
           ? <div className="editor-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }} />
-          : <RichEditor value={note.content} onChange={onChange} />}
+          : <RichEditor value={note.content} onChange={onChange} noteId={note.id} />}
       </div>
       <LinkedPanel anchor={{ kind: "note", id: note.id }} label="Linked cards" pickKind="card" />
       <div className="editor-footer">

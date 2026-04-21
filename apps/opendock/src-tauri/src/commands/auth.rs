@@ -17,18 +17,19 @@ pub async fn auth_status(state: State<'_, AuthState>) -> Result<AuthData, String
     if current.token.is_some() { return Ok(current); }
     #[cfg(debug_assertions)]
     {
-        if let Ok(uid) = std::env::var("DEV_BYPASS_USER_ID") {
-            if !uid.trim().is_empty() {
-                let data = AuthData {
-                    token: Some(format!("dev:{uid}")),
-                    user_id: Some(uid.clone()),
-                    email: Some("alex@athion.me".into()),
-                    display_name: Some("Alex Test".into()),
-                };
-                state.set(data.clone()).await;
-                return Ok(data);
-            }
-        }
+        // Debug-only: auto-authenticate as the dev bypass user so testing
+        // doesn't require signing in through Athion SSO. The backend must
+        // have ALLOW_DEV_BYPASS=1 and DEV_BYPASS_USER_ID set to the same
+        // uuid. Release builds strip this entirely.
+        let uid = "11111111-1111-1111-1111-111111111111";
+        let data = AuthData {
+            token: Some(format!("dev:{uid}")),
+            user_id: Some(uid.into()),
+            email: Some("alex@athion.me".into()),
+            display_name: Some("Alex Test".into()),
+        };
+        state.set(data.clone()).await;
+        return Ok(data);
     }
     let Some(token) = keyring::load() else { return Ok(AuthData::default()); };
     let client = reqwest::Client::new();

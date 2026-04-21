@@ -101,3 +101,16 @@ pub async fn cascade_delete(pool: &PgPool, r: EntityRef) -> ApiResult<()> {
     .bind(r.kind).bind(r.id).execute(pool).await?;
     Ok(())
 }
+
+/// Existing source='mention' links with the given anchor on either side.
+pub async fn mention_links_for(pool: &PgPool, anchor: EntityRef) -> ApiResult<Vec<EntityRef>> {
+    let rows: Vec<(EntityKind, Uuid, EntityKind, Uuid)> = sqlx::query_as(
+        "SELECT a_kind, a_id, b_kind, b_id FROM entity_links
+         WHERE source = 'mention' AND ((a_kind = $1 AND a_id = $2) OR (b_kind = $1 AND b_id = $2))",
+    )
+    .bind(anchor.kind).bind(anchor.id).fetch_all(pool).await?;
+    Ok(rows.into_iter().map(|(ak, ai, bk, bi)| {
+        if ak == anchor.kind && ai == anchor.id { EntityRef { kind: bk, id: bi } }
+        else { EntityRef { kind: ak, id: ai } }
+    }).collect())
+}

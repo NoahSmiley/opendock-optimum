@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EntityKind, EntityRef } from "@/types";
-import { useNotes } from "@/stores/notes";
-import { useBoards } from "@/stores/boards";
+import { useLinkCandidates, filterCandidates } from "@/lib/linkCandidates";
 
 interface LinkPickerDialogProps {
   anchor: EntityRef;
@@ -11,16 +10,14 @@ interface LinkPickerDialogProps {
   onCancel: () => void;
 }
 
-interface PickCandidate { id: string; title: string; context?: string }
-
 export function LinkPickerDialog({ anchor, pickKind, existingIds, onPick, onCancel }: LinkPickerDialogProps) {
   const [query, setQuery] = useState("");
-  const candidates = useCandidates(pickKind, anchor, existingIds);
+  const all = useLinkCandidates();
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return candidates.slice(0, 50);
-    return candidates.filter((c) => c.title.toLowerCase().includes(q) || (c.context ?? "").toLowerCase().includes(q)).slice(0, 50);
-  }, [candidates, query]);
+    const exclude = new Set(existingIds);
+    if (anchor.kind === pickKind) exclude.add(anchor.id);
+    return filterCandidates(all, { kind: pickKind, exclude, query, limit: 50 });
+  }, [all, pickKind, anchor.kind, anchor.id, existingIds, query]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
@@ -57,24 +54,3 @@ export function LinkPickerDialog({ anchor, pickKind, existingIds, onPick, onCanc
   );
 }
 
-function useCandidates(pickKind: EntityKind, anchor: EntityRef, existingIds: Set<string>): PickCandidate[] {
-  const notes = useNotes((s) => s.notes);
-  const detail = useBoards((s) => s.detail);
-  const boards = useBoards((s) => s.boards);
-  return useMemo(() => {
-    if (pickKind === "note") {
-      return notes
-        .filter((n) => !(anchor.kind === "note" && anchor.id === n.id))
-        .filter((n) => !existingIds.has(n.id))
-        .map((n) => ({ id: n.id, title: n.title || "Untitled" }));
-    }
-    // pickKind === "card": we only know cards for the currently-loaded board detail
-    const cards = detail?.cards ?? [];
-    const columns = detail?.columns ?? [];
-    const boardName = detail?.board.name ?? (boards[0]?.name ?? "");
-    return cards
-      .filter((c) => !(anchor.kind === "card" && anchor.id === c.id))
-      .filter((c) => !existingIds.has(c.id))
-      .map((c) => ({ id: c.id, title: c.title, context: `${boardName} / ${columns.find((col) => col.id === c.column_id)?.title ?? ""}` }));
-  }, [pickKind, notes, detail, boards, anchor.kind, anchor.id, existingIds]);
-}
