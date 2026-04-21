@@ -63,7 +63,7 @@ struct NoteEditorView: View {
         guard let n = note else { return }
         title = n.title
         if loadedContentFor != n.id {
-            attributed = MentionHTML.decode(n.content)
+            attributed = EditorDecode.decode(n.content)
             loadedContentFor = n.id
         }
     }
@@ -71,7 +71,7 @@ struct NoteEditorView: View {
     private func applyRemoteIfNotDirty() {
         guard !dirty, let n = note else { return }
         if n.title != title { title = n.title }
-        let incoming = MentionHTML.decode(n.content)
+        let incoming = EditorDecode.decode(n.content)
         if incoming.string != attributed.string { attributed = incoming }
     }
 
@@ -109,7 +109,7 @@ struct NoteEditorView: View {
         saveTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 400_000_000)
             if Task.isCancelled { return }
-            await store.update(noteId, title: title, content: MentionHTML.encode(attributed))
+            await store.update(noteId, title: title, content: EditorEncode.encode(attributed))
             dirty = false
         }
     }
@@ -117,6 +117,6 @@ struct NoteEditorView: View {
     private func flushPending() {
         guard dirty else { return }
         saveTask?.cancel()
-        Task { await store.update(noteId, title: title, content: MentionHTML.encode(attributed)) }
+        Task { await store.update(noteId, title: title, content: EditorEncode.encode(attributed)) }
     }
 }

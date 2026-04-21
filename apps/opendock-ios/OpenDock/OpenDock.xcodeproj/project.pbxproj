@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		40E01B5EF540498983ADAABF /* CheckboxAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95EBAADE0C704E5398B0A5E7 /* CheckboxAttachment.swift */; };
+		238096D3BC86471A95FFDFF4 /* EditorBlockAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E09504163649E99C7FA757 /* EditorBlockAction.swift */; };
+		95314AE464A54822B05B516E /* EditorDecode.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB169CF9F2F44C48461959F /* EditorDecode.swift */; };
+		5316E74CCA5F4A5CBF0FD349 /* EditorEncode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2945A1810AA4D7D855AA77A /* EditorEncode.swift */; };
+		BDE5AB96D6CC43088707FDD5 /* EditorBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D2B5D5913648AC8F6A9900 /* EditorBlock.swift */; };
 		05408C6A21DC40E39CC1D81E /* LinkPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */; };
 		1B34962030B54957B63FB862 /* LinkedEntitiesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */; };
 		E8DEE98F663D4EE59F51E51E /* LinksStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCFD2C432B040279FAE5531 /* LinksStore.swift */; };
@@ -15,7 +20,6 @@
 		F9042CBC0345448E98DD4E23 /* MyCardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D9770529640659690F0F6 /* MyCardsStore.swift */; };
 		5204179029EE44079FF7E999 /* MentionPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26AD839298A4C5CB69F6ED8 /* MentionPopoverView.swift */; };
 		C17C0CC8D3DE47599E0A14C1 /* MentionTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 345B84368A7F43238E1613DC /* MentionTextView.swift */; };
-		6E1F8BAA870A4D83A5BBB066 /* MentionHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B3AE6863DE4A1AAF93F090 /* MentionHTML.swift */; };
 		EC64502502A24A7BA928311A /* MentionAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261834C85E474199AD2E22FA /* MentionAttachment.swift */; };
 		00CA4070B0565EE63B8B0880 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18EEF0EF5FAA465BFB3073D /* ProfileView.swift */; };
 		024D7AD288DB2C5813FE5B09 /* AssigneeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8938B4B6FCFF57D16C580C70 /* AssigneeBadge.swift */; };
@@ -63,6 +67,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		95EBAADE0C704E5398B0A5E7 /* CheckboxAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxAttachment.swift; sourceTree = "<group>"; };
+		B5E09504163649E99C7FA757 /* EditorBlockAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorBlockAction.swift; sourceTree = "<group>"; };
+		ADB169CF9F2F44C48461959F /* EditorDecode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorDecode.swift; sourceTree = "<group>"; };
+		D2945A1810AA4D7D855AA77A /* EditorEncode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEncode.swift; sourceTree = "<group>"; };
+		08D2B5D5913648AC8F6A9900 /* EditorBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorBlock.swift; sourceTree = "<group>"; };
 		83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPickerSheet.swift; sourceTree = "<group>"; };
 		57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedEntitiesSection.swift; sourceTree = "<group>"; };
 		FDCFD2C432B040279FAE5531 /* LinksStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksStore.swift; sourceTree = "<group>"; };
@@ -71,7 +80,6 @@
 		EA2D9770529640659690F0F6 /* MyCardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyCardsStore.swift; sourceTree = "<group>"; };
 		C26AD839298A4C5CB69F6ED8 /* MentionPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionPopoverView.swift; sourceTree = "<group>"; };
 		345B84368A7F43238E1613DC /* MentionTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionTextView.swift; sourceTree = "<group>"; };
-		B8B3AE6863DE4A1AAF93F090 /* MentionHTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionHTML.swift; sourceTree = "<group>"; };
 		261834C85E474199AD2E22FA /* MentionAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionAttachment.swift; sourceTree = "<group>"; };
 		073F28A533D6FEEC44529DD3 /* MembersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersSheet.swift; sourceTree = "<group>"; };
 		0AD361D7B969F1FDB46FAE4E /* DragCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragCoordinator.swift; sourceTree = "<group>"; };
@@ -160,11 +168,15 @@
 				1C8DC963E74620F0D93DD77C /* BoardMembersSheet.swift */,
 				E86B02C13582A5CD024170BF /* BoardRow.swift */,
 				1E1BA76B50D4292531F2A06A /* BoardsAPI.swift */,
+				95EBAADE0C704E5398B0A5E7 /* CheckboxAttachment.swift */,
+				B5E09504163649E99C7FA757 /* EditorBlockAction.swift */,
+				ADB169CF9F2F44C48461959F /* EditorDecode.swift */,
+				D2945A1810AA4D7D855AA77A /* EditorEncode.swift */,
+				08D2B5D5913648AC8F6A9900 /* EditorBlock.swift */,
 				E7918D6CCB394972B1564446 /* EditorToolbar.swift */,
 				EA2D9770529640659690F0F6 /* MyCardsStore.swift */,
 				C26AD839298A4C5CB69F6ED8 /* MentionPopoverView.swift */,
 				345B84368A7F43238E1613DC /* MentionTextView.swift */,
-				B8B3AE6863DE4A1AAF93F090 /* MentionHTML.swift */,
 				261834C85E474199AD2E22FA /* MentionAttachment.swift */,
 				83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */,
 				57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */,
@@ -288,11 +300,15 @@
 				5962C7B8CC1AC1374B927E23 /* BoardMembersSheet.swift in Sources */,
 				8C59EACBF474808AD97AA364 /* BoardRow.swift in Sources */,
 				95552A2BE0CBDFA471ADCE46 /* BoardsAPI.swift in Sources */,
+				40E01B5EF540498983ADAABF /* CheckboxAttachment.swift in Sources */,
+				238096D3BC86471A95FFDFF4 /* EditorBlockAction.swift in Sources */,
+				95314AE464A54822B05B516E /* EditorDecode.swift in Sources */,
+				5316E74CCA5F4A5CBF0FD349 /* EditorEncode.swift in Sources */,
+				BDE5AB96D6CC43088707FDD5 /* EditorBlock.swift in Sources */,
 				65CBBCB3AC5E4C31A01CAD39 /* EditorToolbar.swift in Sources */,
 				F9042CBC0345448E98DD4E23 /* MyCardsStore.swift in Sources */,
 				5204179029EE44079FF7E999 /* MentionPopoverView.swift in Sources */,
 				C17C0CC8D3DE47599E0A14C1 /* MentionTextView.swift in Sources */,
-				6E1F8BAA870A4D83A5BBB066 /* MentionHTML.swift in Sources */,
 				EC64502502A24A7BA928311A /* MentionAttachment.swift in Sources */,
 				05408C6A21DC40E39CC1D81E /* LinkPickerSheet.swift in Sources */,
 				1B34962030B54957B63FB862 /* LinkedEntitiesSection.swift in Sources */,

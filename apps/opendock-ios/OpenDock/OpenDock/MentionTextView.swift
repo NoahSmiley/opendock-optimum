@@ -5,14 +5,13 @@ import UIKit
 struct MentionTriggerState: Equatable {
     var query: String
     var caretRect: CGRect
-    var atIndex: Int  // character index of the @ in the text view
+    var atIndex: Int
 }
 
-/// UIViewRepresentable wrapping UITextView so we can have:
-///  - atomic inline mention pills (via MentionAttachment)
-///  - backspace-deletes-whole-pill behaviour
-///  - `@` trigger detection with caret-anchored popover
-///  - HTML serialization that matches Tauri's pill shape
+/// UIViewRepresentable wrapping UITextView. Canonical attributed text lives
+/// on the text view; the SwiftUI binding mirrors it for persistence. A
+/// commit token prevents the binding's writeback from reentrantly rewriting
+/// the text view while the user is typing.
 struct MentionTextView: UIViewRepresentable {
     @Binding var attributed: NSAttributedString
     @Binding var trigger: MentionTriggerState?
@@ -20,59 +19,119 @@ struct MentionTextView: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    @MainActor static let bodyFont: UIFont = UIFont(name: Theme.fontName, size: 15) ?? UIFont.systemFont(ofSize: 15)
     @MainActor static let bodyColor: UIColor = UIColor(Theme.text)
-    @MainActor static var bodyAttrs: [NSAttributedString.Key: Any] { [.font: bodyFont, .foregroundColor: bodyColor] }
 
     func makeUIView(context: Context) -> UITextView {
         let tv = UITextView()
         tv.backgroundColor = .clear
         tv.textColor = Self.bodyColor
         tv.tintColor = Self.bodyColor
-        tv.font = Self.bodyFont
         tv.textContainerInset = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
         tv.keyboardDismissMode = .interactive
         tv.delegate = context.coordinator
-        tv.attributedText = Self.stamp(attributed)
-        tv.typingAttributes = Self.bodyAttrs
+        tv.layoutManager.delegate = context.coordinator
+        tv.attributedText = attributed
+        applyTypingAttributes(tv)
         tv.inputAccessoryView = EditorToolbar(textView: tv)
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        tap.cancelsTouchesInView = false
+        tv.addGestureRecognizer(tap)
+        context.coordinator.lastAssignedRevision = attributed.hash
         return tv
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
-        if !context.coordinator.isApplyingLocalChange && tv.attributedText != attributed {
-            let sel = tv.selectedRange
-            tv.attributedText = Self.stamp(attributed)
-            tv.typingAttributes = Self.bodyAttrs
-            tv.selectedRange = NSRange(location: min(sel.location, tv.text.count), length: 0)
+        let rev = attributed.hash
+        guard rev != context.coordinator.lastAssignedRevision else { return }
+        // Don't clobber the user's in-progress edit; we only apply external
+        // updates that arrive when the view is not editing.
+        guard !tv.isFirstResponder else {
+            context.coordinator.lastAssignedRevision = rev
+            return
         }
+        tv.attributedText = attributed
+        applyTypingAttributes(tv)
+        context.coordinator.lastAssignedRevision = rev
     }
 
-    /// Re-apply the base font + color to every non-attachment run so text
-    /// is never rendered with the system default (black on dark = invisible).
-    /// Attachments keep their own rendering (the pill image).
-    @MainActor static func stamp(_ s: NSAttributedString) -> NSAttributedString {
-        let m = NSMutableAttributedString(attributedString: s)
-        m.enumerateAttributes(in: NSRange(location: 0, length: m.length)) { attrs, range, _ in
-            if attrs[.attachment] != nil { return }
-            m.addAttributes(bodyAttrs, range: range)
+    /// Pick typing attributes from the char immediately before the caret so
+    /// continuing to type preserves whatever format is active there.
+    @MainActor func applyTypingAttributes(_ tv: UITextView) {
+        let loc = tv.selectedRange.location
+        if loc > 0 && loc <= tv.attributedText.length {
+            var stop: NSRange = NSRange(location: 0, length: 0)
+            let a = tv.attributedText.attributes(at: loc - 1, effectiveRange: &stop)
+            if a[.attachment] == nil {
+                var copy = a
+                copy[.foregroundColor] = Self.bodyColor
+                tv.typingAttributes = copy
+                return
+            }
         }
-        return m
+        // Default typing attrs: body text in current block.
+        let block = (tv.attributedText.length > 0
+                     ? tv.attributedText.attribute(EditorAttr.block, at: max(0, loc - 1), effectiveRange: nil) as? String
+                     : nil)
+            .flatMap { EditorBlock(rawValue: $0) } ?? .p
+        tv.typingAttributes = [
+            .font: block.font(bold: false, italic: false),
+            .foregroundColor: Self.bodyColor,
+            EditorAttr.block: block.rawValue,
+        ]
     }
 
-    final class Coordinator: NSObject, UITextViewDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, NSLayoutManagerDelegate {
         var parent: MentionTextView
-        var isApplyingLocalChange = false
+        var lastAssignedRevision: Int = 0
         init(_ parent: MentionTextView) { self.parent = parent }
 
-        func baseTypingAttributes(_ tv: UITextView) -> [NSAttributedString.Key: Any] { MentionTextView.bodyAttrs }
+        /// Backspace across a pill deletes the whole attachment atomically.
+        func textView(_ tv: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+            if text.isEmpty, range.length == 1, range.location > 0 {
+                let s = tv.attributedText.attributedSubstring(from: NSRange(location: range.location - 1, length: 1))
+                if s.attribute(.attachment, at: 0, effectiveRange: nil) is MentionAttachment {
+                    let wider = NSRange(location: range.location - 1, length: 1)
+                    let m = NSMutableAttributedString(attributedString: tv.attributedText)
+                    m.replaceCharacters(in: wider, with: "")
+                    tv.attributedText = m
+                    tv.selectedRange = NSRange(location: wider.location, length: 0)
+                    commitToParent(tv)
+                    return false
+                }
+            }
+            return true
+        }
 
-        /// Detect if the caret is inside an in-progress @query and report it.
-        func updateTrigger(_ tv: UITextView) {
+        func textViewDidChange(_ tv: UITextView) { commitToParent(tv); updateTrigger(tv) }
+        func textViewDidChangeSelection(_ tv: UITextView) {
+            parent.applyTypingAttributes(tv)
+            updateTrigger(tv)
+        }
+
+        /// Detect taps on a CheckboxAttachment and toggle its state.
+        @objc func handleTap(_ g: UITapGestureRecognizer) {
+            guard let tv = g.view as? UITextView else { return }
+            let point = g.location(in: tv)
+            let origin = CGPoint(x: point.x - tv.textContainerInset.left, y: point.y - tv.textContainerInset.top)
+            var frac: CGFloat = 0
+            let idx = tv.layoutManager.characterIndex(for: origin, in: tv.textContainer,
+                                                     fractionOfDistanceBetweenInsertionPoints: &frac)
+            guard idx >= 0, idx < tv.attributedText.length,
+                  tv.attributedText.attribute(.attachment, at: idx, effectiveRange: nil) is CheckboxAttachment else { return }
+            EditorBlockAction.toggleCheckbox(at: idx, in: tv)
+        }
+
+        @MainActor private func commitToParent(_ tv: UITextView) {
+            let s = tv.attributedText ?? NSAttributedString()
+            lastAssignedRevision = s.hash
+            parent.attributed = s
+            parent.onChange()
+        }
+
+        @MainActor private func updateTrigger(_ tv: UITextView) {
             let sel = tv.selectedRange
             guard sel.length == 0, sel.location > 0 else { parent.trigger = nil; return }
-            let ns = tv.text as NSString
-            let upto = ns.substring(to: sel.location)
+            let upto = (tv.text as NSString).substring(to: sel.location)
             guard let atRange = upto.range(of: "@", options: .backwards) else { parent.trigger = nil; return }
             let atIdx = upto.distance(from: upto.startIndex, to: atRange.lowerBound)
             if atIdx > 0 {
@@ -84,54 +143,19 @@ struct MentionTextView: UIViewRepresentable {
             let start = tv.position(from: tv.beginningOfDocument, offset: atIdx) ?? tv.beginningOfDocument
             let end = tv.position(from: tv.beginningOfDocument, offset: sel.location) ?? tv.beginningOfDocument
             let range = tv.textRange(from: start, to: end) ?? tv.textRange(from: end, to: end)!
-            let rect = tv.firstRect(for: range)
-            parent.trigger = MentionTriggerState(query: query, caretRect: tv.convert(rect, to: nil), atIndex: atIdx)
+            parent.trigger = MentionTriggerState(query: query, caretRect: tv.convert(tv.firstRect(for: range), to: nil), atIndex: atIdx)
         }
-
-        /// Backspace across a pill deletes the whole attachment as one unit.
-        func textView(_ tv: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-            if text.isEmpty, range.length == 1, range.location > 0 {
-                let s = tv.attributedText.attributedSubstring(from: NSRange(location: range.location - 1, length: 1))
-                if s.attribute(.attachment, at: 0, effectiveRange: nil) is MentionAttachment {
-                    let wider = NSRange(location: range.location - 1, length: 1)
-                    isApplyingLocalChange = true
-                    let m = NSMutableAttributedString(attributedString: tv.attributedText)
-                    m.replaceCharacters(in: wider, with: "")
-                    tv.attributedText = m
-                    tv.selectedRange = NSRange(location: wider.location, length: 0)
-                    parent.attributed = m
-                    parent.onChange()
-                    isApplyingLocalChange = false
-                    updateTrigger(tv)
-                    return false
-                }
-            }
-            return true
-        }
-
-        func textViewDidChange(_ tv: UITextView) {
-            tv.typingAttributes = baseTypingAttributes(tv)
-            isApplyingLocalChange = true
-            parent.attributed = tv.attributedText
-            parent.onChange()
-            isApplyingLocalChange = false
-            updateTrigger(tv)
-        }
-
-        func textViewDidChangeSelection(_ tv: UITextView) { updateTrigger(tv) }
     }
 }
 
-/// Convenience for inserting a mention at the active trigger range.
 @MainActor func insertMention(into tv: UITextView?, trigger: MentionTriggerState, kind: EntityKind, id: UUID, title: String) {
     guard let tv else { return }
-    let replaceRange = NSRange(location: trigger.atIndex, length: tv.selectedRange.location - trigger.atIndex)
+    let replace = NSRange(location: trigger.atIndex, length: tv.selectedRange.location - trigger.atIndex)
     let m = NSMutableAttributedString(attributedString: tv.attributedText)
-    let pill = NSAttributedString(attachment: MentionAttachment(kind: kind, targetId: id, title: title))
-    let joined = NSMutableAttributedString(attributedString: pill)
-    joined.append(NSAttributedString(string: "\u{00A0}", attributes: MentionTextView.bodyAttrs))
-    m.replaceCharacters(in: replaceRange, with: joined)
-    tv.attributedText = MentionTextView.stamp(m)
-    tv.selectedRange = NSRange(location: replaceRange.location + joined.length, length: 0)
-    tv.typingAttributes = MentionTextView.bodyAttrs
+    m.replaceCharacters(in: replace, with: "")
+    let pill = NSMutableAttributedString(attachment: MentionAttachment(kind: kind, targetId: id, title: title))
+    pill.append(NSAttributedString(string: "\u{00A0}", attributes: [.font: EditorBlock.p.font(bold: false, italic: false), .foregroundColor: MentionTextView.bodyColor]))
+    m.insert(pill, at: replace.location)
+    tv.attributedText = m
+    tv.selectedRange = NSRange(location: replace.location + pill.length, length: 0)
 }
