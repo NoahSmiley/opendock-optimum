@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import type { EntityKind, EntityRef, LinkedEntity } from "@/types";
 import { useLinks, selectLinks } from "@/stores/links";
 import { LinkPickerDialog } from "@/components/links/LinkPickerDialog";
@@ -13,7 +14,7 @@ export function LinkedPanel({ anchor, label, pickKind }: LinkedPanelProps) {
   const ensure = useLinks((s) => s.ensure);
   const detach = useLinks((s) => s.detach);
   const attach = useLinks((s) => s.attach);
-  const links = useLinks(selectLinks(anchor.kind, anchor.id));
+  const links = useLinks(useShallow(selectLinks(anchor.kind, anchor.id)));
   const [picking, setPicking] = useState(false);
 
   useEffect(() => { void ensure(anchor.kind, anchor.id); }, [anchor.kind, anchor.id, ensure]);

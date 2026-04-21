@@ -29,8 +29,10 @@ pub async fn verify_token(state: &AppState, token: &str) -> ApiResult<AthionUser
 }
 
 /// Dev-only shortcut: if the backend was started with `DEV_BYPASS_USER_ID`
-/// set and the incoming token is `dev:<that-uuid>`, load that user from the
-/// DB and skip Athion verification. Unset the env var in production.
+/// set AND `ALLOW_DEV_BYPASS=1`, accept tokens of the form `dev:<uuid>` and
+/// skip Athion verification. Requiring two env vars makes it much harder to
+/// enable this accidentally in production — a single misconfigured env var
+/// is not enough. Also logs a prominent warning at every bypass.
 async fn try_dev_bypass(state: &AppState, token: &str) -> ApiResult<Option<AthionUser>> {
     let Some(allowed) = state.dev_bypass_user else { return Ok(None); };
     let Some(rest) = token.strip_prefix("dev:") else { return Ok(None); };

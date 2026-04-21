@@ -15,9 +15,17 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
-        let dev_bypass_user = env::var("DEV_BYPASS_USER_ID").ok()
-            .filter(|s| !s.trim().is_empty())
-            .and_then(|s| Uuid::parse_str(s.trim()).ok());
+        // Bypass requires BOTH env vars. A single misconfigured var doesn't
+        // enable auth bypass — production just needs to not set ALLOW_DEV_BYPASS.
+        let allow = env::var("ALLOW_DEV_BYPASS").ok().as_deref() == Some("1");
+        let dev_bypass_user = if allow {
+            env::var("DEV_BYPASS_USER_ID").ok()
+                .filter(|s| !s.trim().is_empty())
+                .and_then(|s| Uuid::parse_str(s.trim()).ok())
+        } else { None };
+        if dev_bypass_user.is_some() {
+            tracing::warn!("DEV AUTH BYPASS ENABLED — accepts `dev:<uuid>` tokens. Do not use in production.");
+        }
         Ok(Self {
             database_url: env::var("DATABASE_URL")?,
             athion_verify_url: env::var("ATHION_VERIFY_URL")?,
