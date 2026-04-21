@@ -3,6 +3,7 @@ import SwiftUI
 struct BoardDetailView: View {
     @EnvironmentObject var store: BoardsStore
     @EnvironmentObject var auth: AuthStore
+    @EnvironmentObject var links: LinksStore
     let boardId: UUID
     @StateObject private var coord = DragCoordinator()
     @State private var newCardTitle = ""
@@ -89,10 +90,11 @@ struct BoardDetailView: View {
 
     private func startSocket() {
         guard let token = auth.token, socket == nil else { return }
-        socket = LiveSocket(scope: .board, id: boardId, token: token) { [store, uid = auth.userId] ev in
+        socket = LiveSocket(scope: .board, id: boardId, token: token) { [store, links, uid = auth.userId] ev in
             if case .cardUpserted(_, let actor, _) = ev, actor == uid { return }
             if case .cardDeleted(_, _, let actor) = ev, actor == uid { return }
             store.apply(event: ev)
+            links.apply(event: ev)
         }
         socket?.start()
     }

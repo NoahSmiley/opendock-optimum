@@ -41,6 +41,11 @@ extension LiveEvent {
         case "board_share_removed":
             let p = try decoder.decode(BoardIdActor.self, from: data)
             return .boardShareRemoved(boardId: p.boardId, actorId: p.actorId)
+        case "entity_link_changed":
+            let p = try decoder.decode(EntityLinkPayload.self, from: data)
+            let a = EntityRef(kind: EntityKind(rawValue: p.aKind) ?? .note, id: p.aId)
+            let b = EntityRef(kind: EntityKind(rawValue: p.bKind) ?? .note, id: p.bId)
+            return .entityLinkChanged(a: a, b: b, added: p.added, actorId: p.actorId)
         default:
             throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "unknown kind: \(env.kind)"))
         }
@@ -52,6 +57,11 @@ extension LiveEvent {
     private struct CardUpsertedPayload: Decodable { let boardId: UUID; let actorId: UUID; let card: Card }
     private struct CardDeletedPayload: Decodable { let boardId: UUID; let cardId: UUID; let actorId: UUID }
     private struct BoardIdActor: Decodable { let boardId: UUID; let actorId: UUID }
+    private struct EntityLinkPayload: Decodable {
+        let aKind: String; let aId: UUID
+        let bKind: String; let bId: UUID
+        let added: Bool; let actorId: UUID
+    }
 }
 
 extension JSONDecoder {

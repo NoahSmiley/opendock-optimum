@@ -1,6 +1,7 @@
 use crate::auth::extract::AuthUser;
-use crate::db::{board, card};
+use crate::db::{board, card, entity_link};
 use crate::dto::board::{Card, CreateCard, UpdateCard};
+use crate::dto::entity_link::{EntityKind, EntityRef};
 use crate::error::{ApiError, ApiResult};
 use crate::live::events::{LiveEvent, Room};
 use crate::state::AppState;
@@ -35,6 +36,7 @@ async fn update(State(s): State<AppState>, user: AuthUser, Path((id, card_id)): 
 async fn remove(State(s): State<AppState>, user: AuthUser, Path((id, card_id)): Path<(Uuid, Uuid)>) -> ApiResult<StatusCode> {
     if !board::is_member(&s.pool, id, user.0.id).await? { return Err(ApiError::NotFound); }
     card::delete(&s.pool, card_id, id).await?;
+    entity_link::cascade_delete(&s.pool, EntityRef { kind: EntityKind::Card, id: card_id }).await?;
     s.hub.publish(Room::Board { id }, LiveEvent::CardDeleted { board_id: id, card_id, actor_id: user.0.id });
     Ok(StatusCode::NO_CONTENT)
 }

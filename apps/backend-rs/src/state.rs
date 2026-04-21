@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::live::hub::Hub;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -9,6 +10,7 @@ pub struct AppState {
     pub athion_verify_url: String,
     pub http: reqwest::Client,
     pub hub: Hub,
+    pub dev_bypass_user: Option<Uuid>,
 }
 
 impl AppState {
@@ -22,6 +24,7 @@ impl AppState {
             athion_verify_url: cfg.athion_verify_url.clone(),
             http: reqwest::Client::new(),
             hub: Hub::new(),
+            dev_bypass_user: cfg.dev_bypass_user,
         })
     }
 }

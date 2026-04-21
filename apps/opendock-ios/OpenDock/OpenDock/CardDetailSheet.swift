@@ -29,6 +29,7 @@ struct CardDetailSheet: View {
                     .scrollContentBackground(.hidden).background(Theme.bg)
                     .padding(.horizontal, 16).padding(.top, 8)
                     .onChange(of: description) { _, _ in schedule() }
+                LinkedEntitiesSection(anchor: EntityRef(kind: .card, id: cardId), label: "Linked notes", pickKind: .note)
                 if let c = card {
                     Text("Updated \(c.updatedAt.formatted(date: .abbreviated, time: .shortened))")
                         .font(.custom(Theme.fontName, size: 11)).foregroundColor(Theme.ghost)

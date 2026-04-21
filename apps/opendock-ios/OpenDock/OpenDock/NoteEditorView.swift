@@ -3,6 +3,7 @@ import SwiftUI
 struct NoteEditorView: View {
     @EnvironmentObject var store: NotesStore
     @EnvironmentObject var auth: AuthStore
+    @EnvironmentObject var links: LinksStore
     @Environment(\.dismiss) var dismiss
     let noteId: UUID
     @State private var title = ""
@@ -29,6 +30,7 @@ struct NoteEditorView: View {
                 .scrollContentBackground(.hidden).padding(.horizontal, 16).padding(.top, 8)
                 .onChange(of: content) { _, _ in schedulePatch() }
 
+            LinkedEntitiesSection(anchor: EntityRef(kind: .note, id: noteId), label: "Linked cards", pickKind: .card)
             HStack(spacing: 8) {
                 Text("\(NoteFormat.wordCount(content)) words"); Text("·"); Text(dirty ? "editing" : "saved"); Spacer()
             }
@@ -60,8 +62,9 @@ struct NoteEditorView: View {
 
     private func startSocket() {
         guard let token = auth.token, socket == nil else { return }
-        socket = LiveSocket(scope: .note, id: noteId, token: token) { [store] ev in
+        socket = LiveSocket(scope: .note, id: noteId, token: token) { [store, links] ev in
             store.apply(event: ev)
+            links.apply(event: ev)
         }
         socket?.start()
     }

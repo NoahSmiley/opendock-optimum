@@ -16,6 +16,7 @@ pub enum LiveEvent {
     NoteShareRemoved { note_id: Uuid, actor_id: Uuid },
     BoardShareAdded { board_id: Uuid, actor_id: Uuid },
     BoardShareRemoved { board_id: Uuid, actor_id: Uuid },
+    EntityLinkChanged { a_kind: String, a_id: Uuid, b_kind: String, b_id: Uuid, added: bool, actor_id: Uuid },
 }
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize)]

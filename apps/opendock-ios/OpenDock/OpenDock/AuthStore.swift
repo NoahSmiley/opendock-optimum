@@ -14,6 +14,19 @@ class AuthStore: ObservableObject {
 
     func refresh() async {
         loading = true
+        #if DEBUG
+        if let bypassId = devBypassUserId() {
+            let token = "dev:\(bypassId.uuidString.lowercased())"
+            do {
+                let me = try await AuthService.fetchMe(token: token)
+                apply(token: token, id: me.id, email: me.email, displayName: me.displayName)
+                loading = false
+                return
+            } catch {
+                // fall through to normal flow
+            }
+        }
+        #endif
         if let saved = KeychainService.load() {
             do {
                 let me = try await AuthService.fetchMe(token: saved)
@@ -24,6 +37,14 @@ class AuthStore: ObservableObject {
         }
         loading = false
     }
+
+    #if DEBUG
+    /// Debug builds authenticate as this test user automatically, skipping
+    /// the login screen. Release builds strip this entirely via #if DEBUG.
+    private func devBypassUserId() -> UUID? {
+        UUID(uuidString: "11111111-1111-1111-1111-111111111111")
+    }
+    #endif
 
     func login(email: String, password: String) async {
         pending = true; error = nil

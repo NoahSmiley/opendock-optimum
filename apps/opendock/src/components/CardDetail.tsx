@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BoardMember, Card } from "@/types";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { LinkedPanel } from "@/components/links/LinkedPanel";
 
 interface CardDetailProps {
   card: Card;
@@ -51,6 +52,7 @@ export function CardDetail({ card, members, onUpdate, onAssign, onDelete, onClos
         </div>
         <textarea className="card-detail-body" value={description} onChange={(e) => setDescription(e.target.value)}
           onBlur={() => { if (description !== card.description) onUpdate({ description }); }} placeholder="Add a description..." />
+        <LinkedPanel anchor={{ kind: "card", id: card.id }} label="Linked notes" pickKind="note" />
         <div className="card-detail-meta">Updated {new Date(card.updated_at).toLocaleString()}</div>
       </div>
       {confirming && <ConfirmDialog title="Delete card?" message={`"${card.title}" will be permanently deleted.`}

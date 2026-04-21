@@ -1,5 +1,6 @@
 use crate::auth::extract::AuthUser;
-use crate::db::note;
+use crate::db::{entity_link, note};
+use crate::dto::entity_link::{EntityKind, EntityRef};
 use crate::dto::note::{CreateNote, Note, UpdateNote};
 use crate::error::ApiResult;
 use crate::live::events::{LiveEvent, Room};
@@ -35,6 +36,7 @@ async fn update(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>,
 
 async fn remove(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>) -> ApiResult<StatusCode> {
     note::delete(&s.pool, id, user.0.id).await?;
+    entity_link::cascade_delete(&s.pool, EntityRef { kind: EntityKind::Note, id }).await?;
     s.hub.publish(Room::Note { id }, LiveEvent::NoteDeleted { note_id: id, actor_id: user.0.id });
     Ok(StatusCode::NO_CONTENT)
 }

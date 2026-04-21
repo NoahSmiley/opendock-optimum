@@ -9,6 +9,7 @@ import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { MembersPanel } from "@/components/MembersPanel";
 import { RichEditor } from "@/components/notes/RichEditor";
+import { LinkedPanel } from "@/components/links/LinkedPanel";
 
 interface EditorProps { onBack: () => void }
 
@@ -79,6 +80,7 @@ export function Editor({ onBack }: EditorProps) {
           ? <div className="editor-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }} />
           : <RichEditor value={note.content} onChange={onChange} />}
       </div>
+      <LinkedPanel anchor={{ kind: "note", id: note.id }} label="Linked cards" pickKind="card" />
       <div className="editor-footer">
         <span>{words}w</span>
         <span>&middot;</span>

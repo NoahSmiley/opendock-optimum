@@ -1,6 +1,7 @@
 use crate::auth::extract::AuthUser;
-use crate::db::{board, board_members, card, column};
+use crate::db::{board, board_members, card, column, entity_link};
 use crate::dto::board::{AddBoardMember, Board, BoardDetail, BoardMember, CreateBoard, UpdateBoard};
+use crate::dto::entity_link::{EntityKind, EntityRef};
 use crate::error::{ApiError, ApiResult};
 use crate::live::events::{LiveEvent, Room};
 use crate::state::AppState;
@@ -48,6 +49,12 @@ async fn update(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>,
 }
 
 async fn remove(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>) -> ApiResult<StatusCode> {
+    // Gather card IDs then remove their entity_links before board::delete cascades the cards away.
+    let cards: Vec<(Uuid,)> = sqlx::query_as("SELECT id FROM board_cards WHERE board_id = $1")
+        .bind(id).fetch_all(&s.pool).await?;
+    for (card_id,) in cards {
+        entity_link::cascade_delete(&s.pool, EntityRef { kind: EntityKind::Card, id: card_id }).await?;
+    }
     board::delete(&s.pool, id, user.0.id).await?;
     s.hub.publish(Room::Board { id }, LiveEvent::BoardDeleted { board_id: id, actor_id: user.0.id });
     Ok(StatusCode::NO_CONTENT)

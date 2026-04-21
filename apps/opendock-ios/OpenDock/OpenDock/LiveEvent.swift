@@ -13,4 +13,5 @@ enum LiveEvent {
     case noteShareRemoved(noteId: UUID, actorId: UUID)
     case boardShareAdded(boardId: UUID, actorId: UUID)
     case boardShareRemoved(boardId: UUID, actorId: UUID)
+    case entityLinkChanged(a: EntityRef, b: EntityRef, added: Bool, actorId: UUID)
 }
