@@ -82,6 +82,13 @@ enum EditorBlock: String {
     @MainActor private var paragraphStyle: NSParagraphStyle {
         let ps = NSMutableParagraphStyle()
         ps.lineHeightMultiple = 1.2
+        // Checklist items get a small amount of extra trailing spacing
+        // so consecutive boxes don't visually touch. This is a paragraph
+        // -level property (gap AFTER the paragraph), not line-height —
+        // so it doesn't inflate individual lines or the caret height.
+        if self == .checklist || self == .ul || self == .ol {
+            ps.paragraphSpacing = 4
+        }
         return ps
     }
 }

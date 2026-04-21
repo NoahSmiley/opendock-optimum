@@ -54,23 +54,27 @@ import UIKit
             // attachment is 18pt tall even if the line is taller, so
             // consecutive boxes end up 18pt apart even when paragraph
             // style says 28pt.
-            var rect = tv.layoutManager.lineFragmentRect(
+            // Line fragment: full typographic row including leading.
+            // Used fragment (usedRectForTextContainer): tight bounding
+            // box of actually-drawn glyphs on that line.
+            let usedRect = tv.layoutManager.lineFragmentUsedRect(
                 forGlyphAt: glyphRange.location,
                 effectiveRange: nil
             )
             // Offset by the textContainerInset so we land on the visible
             // coordinate system, not the layout manager's.
+            var rect = usedRect
             rect.origin.x += tv.textContainerInset.left
             rect.origin.y += tv.textContainerInset.top
             // Account for scroll. Without this the box drifts off-screen
             // when the user scrolls long notes.
             rect.origin.y -= tv.contentOffset.y
             rect.origin.x -= tv.contentOffset.x
-            // Top-align the 18pt box with the line fragment so it
-            // visually centres against the cap-height of 16pt body text
-            // (ascender descender bias — centering within the full
-            // fragment pushes the box below the text baseline).
-            let boxY = rect.origin.y + 2
+            // Centre an 18pt box within the used-rect's vertical span.
+            // usedRect is the actual glyph ink + descender so centering
+            // on its middle aligns the box with the text's visual middle
+            // instead of drifting above or below the baseline.
+            let boxY = rect.origin.y + (rect.height - 18) / 2
             let boxRect = CGRect(x: rect.origin.x, y: boxY, width: 18, height: 18)
             out.append(Box(index: range.location, rect: boxRect, checked: att.checked))
         }
