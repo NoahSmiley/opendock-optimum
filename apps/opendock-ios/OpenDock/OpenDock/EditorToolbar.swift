@@ -1,106 +1,119 @@
+import SwiftUI
 import UIKit
 
-/// Floating accessory bar over the keyboard. Actions mutate the owning
-/// UITextView's attributedText. Inline marks (bold / italic / underline /
-/// strike) toggle on selection; block actions (H1/H2/H3/bullet/ordered/
-/// checklist) transform the block on the current line.
-@MainActor final class EditorToolbar: UIView {
-    weak var textView: UITextView?
+/// Inline editor toolbar rendered as a SwiftUI subview of NoteEditorView,
+/// sitting directly above the LinkedEntitiesSection. Previously this was a
+/// UIKit inputAccessoryView attached to the text view's keyboard — that
+/// didn't render at all without the software keyboard up, and collided
+/// visually with the tab bar when it did. Rendering inline makes it
+/// always-present and avoids the keyboard-presence dependency.
+///
+/// Actions mutate the owning UITextView's attributedText. Inline marks
+/// (bold / italic / underline / strike) toggle on selection or flip the
+/// typing attributes when the cursor is collapsed. Block actions
+/// (H1/H2/bullet/ordered/checklist) transform the block on the current line.
+@MainActor struct EditorToolbarView: View {
+    let textView: () -> UITextView?
 
-    init(textView: UITextView) {
-        self.textView = textView
-        super.init(frame: CGRect(x: 0, y: 0, width: 0, height: 44))
-        backgroundColor = UIColor(Theme.input)
-        autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        build()
-    }
-    required init?(coder: NSCoder) { fatalError() }
-
-    private func build() {
-        let scroll = UIScrollView()
-        scroll.translatesAutoresizingMaskIntoConstraints = false
-        scroll.showsHorizontalScrollIndicator = false
-        addSubview(scroll)
-        let stack = UIStackView()
-        stack.axis = .horizontal; stack.spacing = 2; stack.alignment = .center
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.isLayoutMarginsRelativeArrangement = true
-        stack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8)
-        scroll.addSubview(stack)
-        NSLayoutConstraint.activate([
-            scroll.leadingAnchor.constraint(equalTo: leadingAnchor),
-            scroll.trailingAnchor.constraint(equalTo: trailingAnchor),
-            scroll.topAnchor.constraint(equalTo: topAnchor),
-            scroll.bottomAnchor.constraint(equalTo: bottomAnchor),
-            stack.leadingAnchor.constraint(equalTo: scroll.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: scroll.trailingAnchor),
-            stack.topAnchor.constraint(equalTo: scroll.topAnchor),
-            stack.bottomAnchor.constraint(equalTo: scroll.bottomAnchor),
-            stack.heightAnchor.constraint(equalTo: scroll.heightAnchor),
-        ])
-        let specs: [(String, Selector)] = [
-            ("bold", #selector(tapBold)),
-            ("italic", #selector(tapItalic)),
-            ("underline", #selector(tapUnderline)),
-            ("strikethrough", #selector(tapStrike)),
-            ("textformat.size.larger", #selector(tapH1)),
-            ("textformat.size", #selector(tapH2)),
-            ("textformat", #selector(tapH3)),
-            ("text.alignleft", #selector(tapPara)),
-            ("list.bullet", #selector(tapBullet)),
-            ("list.number", #selector(tapOrdered)),
-            ("checklist", #selector(tapChecklist)),
-            ("keyboard.chevron.compact.down", #selector(tapDismiss)),
-        ]
-        for (s, a) in specs { stack.addArrangedSubview(button(symbol: s, action: a)) }
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                btn(symbol: "bold") { flipTrait(.traitBold) }
+                btn(symbol: "italic") { flipTrait(.traitItalic) }
+                btn(symbol: "underline") { toggleAttr(.underlineStyle, on: NSUnderlineStyle.single.rawValue) }
+                btn(symbol: "strikethrough") { toggleAttr(.strikethroughStyle, on: NSUnderlineStyle.single.rawValue) }
+                divider
+                btn(symbol: "textformat.size.larger") { setBlock(.h1) }
+                btn(symbol: "textformat.size") { setBlock(.h2) }
+                btn(symbol: "textformat") { setBlock(.h3) }
+                btn(symbol: "text.alignleft") { setBlock(.p) }
+                divider
+                btn(symbol: "list.bullet") { setBlock(.ul) }
+                btn(symbol: "list.number") { setBlock(.ol) }
+                btn(symbol: "checklist") { setBlock(.checklist) }
+            }
+            .padding(.horizontal, 12)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: 40)
+        .background(Theme.input)
+        .overlay(Rectangle().fill(Theme.border).frame(height: 0.5), alignment: .top)
+        // Subtle right-edge fade so users can see there's more content
+        // beyond the visible buttons. The toolbar is scrollable but with
+        // no indicator it looks like a fixed clipped row otherwise.
+        .overlay(alignment: .trailing) {
+            LinearGradient(
+                colors: [Theme.input.opacity(0), Theme.input],
+                startPoint: .leading, endPoint: .trailing
+            )
+            .frame(width: 24)
+            .allowsHitTesting(false)
+        }
     }
 
-    private func button(symbol: String, action: Selector) -> UIButton {
-        let b = UIButton(type: .system)
-        b.setImage(UIImage(systemName: symbol), for: .normal)
-        b.tintColor = UIColor(Theme.text)
-        b.widthAnchor.constraint(equalToConstant: 38).isActive = true
-        b.heightAnchor.constraint(equalToConstant: 38).isActive = true
-        b.addTarget(self, action: action, for: .touchUpInside)
-        return b
+    private var divider: some View {
+        Rectangle().fill(Theme.border).frame(width: 0.5, height: 20)
+            .padding(.horizontal, 2)
+    }
+
+    private func btn(symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(Theme.text)
+                .frame(width: 36, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - inline marks
 
-    @objc private func tapBold() { toggleFontTrait(.traitBold) }
-    @objc private func tapItalic() { toggleFontTrait(.traitItalic) }
-    @objc private func tapUnderline() { toggleAttr(.underlineStyle, on: NSUnderlineStyle.single.rawValue) }
-    @objc private func tapStrike() { toggleAttr(.strikethroughStyle, on: NSUnderlineStyle.single.rawValue) }
-
-    private func toggleFontTrait(_ trait: UIFontDescriptor.SymbolicTraits) {
-        guard let tv = textView else { return }
+    /// Apply or remove a bold/italic trait. Custom fonts (Inter) don't
+    /// register italic variants in their descriptor tables, so we can't
+    /// just flip `symbolicTraits` — that returns nil for italic on the
+    /// Theme font. Route through `EditorBlock.font(bold:italic:)` which
+    /// falls back to the system italic face when the custom font lacks one.
+    private func flipTrait(_ trait: UIFontDescriptor.SymbolicTraits) {
+        guard let tv = textView() else { return }
         let r = tv.selectedRange
-        if r.length == 0 { flipTypingTrait(tv, trait); return }
+        if r.length == 0 {
+            var attrs = tv.typingAttributes
+            let base = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
+            attrs[.font] = fontByFlipping(trait, on: base, in: attrs)
+            tv.typingAttributes = attrs
+            return
+        }
         let m = NSMutableAttributedString(attributedString: tv.attributedText)
-        m.enumerateAttribute(.font, in: r, options: []) { v, sub, _ in
-            let base = (v as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
-            var t = base.fontDescriptor.symbolicTraits
-            if t.contains(trait) { t.remove(trait) } else { t.insert(trait) }
-            let d = base.fontDescriptor.withSymbolicTraits(t) ?? base.fontDescriptor
-            m.addAttribute(.font, value: UIFont(descriptor: d, size: base.pointSize), range: sub)
+        m.enumerateAttributes(in: r, options: []) { sub, range, _ in
+            let base = (sub[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
+            m.addAttribute(.font, value: fontByFlipping(trait, on: base, in: sub), range: range)
         }
         tv.attributedText = m
         tv.selectedRange = r
         tv.delegate?.textViewDidChange?(tv)
     }
 
-    private func flipTypingTrait(_ tv: UITextView, _ trait: UIFontDescriptor.SymbolicTraits) {
-        var attrs = tv.typingAttributes
-        let base = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
-        var t = base.fontDescriptor.symbolicTraits
-        if t.contains(trait) { t.remove(trait) } else { t.insert(trait) }
-        let d = base.fontDescriptor.withSymbolicTraits(t) ?? base.fontDescriptor
-        attrs[.font] = UIFont(descriptor: d, size: base.pointSize)
-        tv.typingAttributes = attrs
+    private func fontByFlipping(_ trait: UIFontDescriptor.SymbolicTraits,
+                                on base: UIFont,
+                                in attrs: [NSAttributedString.Key: Any]) -> UIFont {
+        // Custom fonts (Inter Semibold / italic fallbacks) don't reliably
+        // expose their traits via fontDescriptor.symbolicTraits — the face
+        // name is a more trustworthy signal.
+        let curTraits = base.fontDescriptor.symbolicTraits
+        let lname = base.fontName.lowercased()
+        let isBold = curTraits.contains(.traitBold)
+            || lname.contains("semibold") || lname.contains("bold")
+        let isItalic = curTraits.contains(.traitItalic)
+            || lname.contains("italic") || lname.contains("oblique")
+        let block = (attrs[EditorAttr.block] as? String).flatMap(EditorBlock.init(rawValue:)) ?? .p
+        let wantBold = trait == .traitBold ? !isBold : isBold
+        let wantItalic = trait == .traitItalic ? !isItalic : isItalic
+        return block.font(bold: wantBold, italic: wantItalic)
     }
 
     private func toggleAttr(_ key: NSAttributedString.Key, on value: Int) {
-        guard let tv = textView else { return }
+        guard let tv = textView() else { return }
         let r = tv.selectedRange
         if r.length == 0 {
             var attrs = tv.typingAttributes
@@ -119,17 +132,8 @@ import UIKit
 
     // MARK: - block actions
 
-    @objc private func tapPara() { setBlock(.p) }
-    @objc private func tapH1() { setBlock(.h1) }
-    @objc private func tapH2() { setBlock(.h2) }
-    @objc private func tapH3() { setBlock(.h3) }
-    @objc private func tapBullet() { setBlock(.ul) }
-    @objc private func tapOrdered() { setBlock(.ol) }
-    @objc private func tapChecklist() { setBlock(.checklist) }
-    @objc private func tapDismiss() { textView?.resignFirstResponder() }
-
     private func setBlock(_ block: EditorBlock) {
-        guard let tv = textView else { return }
+        guard let tv = textView() else { return }
         EditorBlockAction.set(block, in: tv)
     }
 }

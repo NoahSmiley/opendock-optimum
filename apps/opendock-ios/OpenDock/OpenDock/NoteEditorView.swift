@@ -17,6 +17,7 @@ struct NoteEditorView: View {
     @State private var saveTask: Task<Void, Never>?
     @State private var socket: LiveSocket?
     @State private var loadedContentFor: UUID?
+    @StateObject private var tvRef = TextViewRef()
 
     private var note: Note? { store.notes.first { $0.id == noteId } }
 
@@ -28,8 +29,10 @@ struct NoteEditorView: View {
                     .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 2)
                     .onChange(of: title) { _, _ in schedulePatch() }
                 Rectangle().fill(Theme.border).frame(height: 0.5).padding(.horizontal, 20).padding(.top, 8)
-                MentionTextView(attributed: $attributed, trigger: $trigger, onChange: schedulePatch)
+                MentionTextView(attributed: $attributed, trigger: $trigger, onChange: schedulePatch, ref: tvRef)
                     .padding(.horizontal, 4).padding(.top, 4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EditorToolbarView(textView: { tvRef.textView })
                 LinkedEntitiesSection(anchor: EntityRef(kind: .note, id: noteId), label: "Linked cards", pickKind: .card)
                 HStack(spacing: 8) {
                     Text("\(attributed.string.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count) words")

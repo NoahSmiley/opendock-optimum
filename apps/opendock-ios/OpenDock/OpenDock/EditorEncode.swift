@@ -49,8 +49,14 @@ enum EditorEncode {
             }
             let raw = line.attributedSubstring(from: r).string
             let font = attrs[.font] as? UIFont
-            let bold = font?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false
-            let italic = font?.fontDescriptor.symbolicTraits.contains(.traitItalic) ?? false
+            // Custom fonts (Inter Semibold) don't register .traitBold, so
+            // fall back to face-name inspection — matches the toolbar and
+            // block-action paths and keeps save round-trips honest.
+            let fname = font?.fontName.lowercased() ?? ""
+            let bold = (font?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false)
+                || fname.contains("semibold") || fname.contains("bold")
+            let italic = (font?.fontDescriptor.symbolicTraits.contains(.traitItalic) ?? false)
+                || fname.contains("italic") || fname.contains("oblique")
             let underline = (attrs[.underlineStyle] as? Int ?? 0) != 0
             let strike = (attrs[.strikethroughStyle] as? Int ?? 0) != 0
             var s = escape(raw)

@@ -12,10 +12,18 @@ struct MentionTriggerState: Equatable {
 /// on the text view; the SwiftUI binding mirrors it for persistence. A
 /// commit token prevents the binding's writeback from reentrantly rewriting
 /// the text view while the user is typing.
+/// Shared reference to the live UITextView so SwiftUI siblings (e.g. the
+/// inline EditorToolbarView) can manipulate its attributedText directly.
+/// Never written to by SwiftUI's diff — only assigned once from makeUIView.
+@MainActor final class TextViewRef: ObservableObject {
+    weak var textView: UITextView?
+}
+
 struct MentionTextView: UIViewRepresentable {
     @Binding var attributed: NSAttributedString
     @Binding var trigger: MentionTriggerState?
     let onChange: () -> Void
+    let ref: TextViewRef
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -32,11 +40,12 @@ struct MentionTextView: UIViewRepresentable {
         tv.layoutManager.delegate = context.coordinator
         tv.attributedText = attributed
         applyTypingAttributes(tv)
-        tv.inputAccessoryView = EditorToolbar(textView: tv)
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.cancelsTouchesInView = false
+        tap.delegate = context.coordinator
         tv.addGestureRecognizer(tap)
         context.coordinator.lastAssignedRevision = attributed.hash
+        ref.textView = tv
         return tv
     }
 
@@ -80,10 +89,12 @@ struct MentionTextView: UIViewRepresentable {
         ]
     }
 
-    final class Coordinator: NSObject, UITextViewDelegate, NSLayoutManagerDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, NSLayoutManagerDelegate, UIGestureRecognizerDelegate {
         var parent: MentionTextView
         var lastAssignedRevision: Int = 0
         init(_ parent: MentionTextView) { self.parent = parent }
+
+        func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 
         /// Backspace across a pill deletes the whole attachment atomically.
         func textView(_ tv: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {

@@ -18,8 +18,20 @@ enum EditorBlock: String {
         }
         let face = (semibold || bold) ? Theme.fontSemibold : Theme.fontName
         var f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: (semibold || bold) ? .semibold : .regular)
-        if italic, let d = f.fontDescriptor.withSymbolicTraits(.traitItalic) {
-            f = UIFont(descriptor: d, size: size)
+        if italic {
+            // Custom fonts (Inter etc.) often don't register an italic
+            // variant in the font descriptor table, so withSymbolicTraits
+            // returns nil. Fall back to the system italic font at the same
+            // weight so italic actually renders.
+            if let d = f.fontDescriptor.withSymbolicTraits(.traitItalic) {
+                f = UIFont(descriptor: d, size: size)
+            } else {
+                f = UIFont.italicSystemFont(ofSize: size)
+                if bold || semibold,
+                   let bd = f.fontDescriptor.withSymbolicTraits([.traitItalic, .traitBold]) {
+                    f = UIFont(descriptor: bd, size: size)
+                }
+            }
         }
         return f
     }

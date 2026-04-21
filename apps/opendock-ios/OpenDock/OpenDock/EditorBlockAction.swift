@@ -24,8 +24,16 @@ import UIKit
             m.enumerateAttributes(in: lineRange) { attrs, sub, _ in
                 if attrs[.attachment] != nil { return }
                 let f = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
+                // Custom fonts (Inter Semibold) don't register .traitBold in
+                // their symbolic traits — we have to recognise them by face
+                // name instead, otherwise block transitions silently strip
+                // inline bold from every custom-font run.
                 let bold = f.fontDescriptor.symbolicTraits.contains(.traitBold)
+                    || f.fontName.lowercased().contains("semibold")
+                    || f.fontName.lowercased().contains("bold")
                 let italic = f.fontDescriptor.symbolicTraits.contains(.traitItalic)
+                    || f.fontName.lowercased().contains("italic")
+                    || f.fontName.lowercased().contains("oblique")
                 m.addAttribute(.font, value: block.font(bold: bold, italic: italic), range: sub)
             }
         }
