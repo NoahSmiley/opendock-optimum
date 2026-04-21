@@ -64,6 +64,39 @@ class BoardsStore: ObservableObject {
         } catch { self.error = "\(error)" }
     }
 
+    func renameColumn(boardId: UUID, columnId: UUID, title: String) async {
+        do {
+            let fresh = try await BoardsAPI.updateColumn(boardId, columnId: columnId, body: UpdateColumnBody(title: title, position: nil))
+            if detail?.board.id == boardId, let i = detail?.columns.firstIndex(where: { $0.id == columnId }) {
+                detail?.columns[i] = fresh
+            }
+        } catch { self.error = "\(error)" }
+    }
+
+    func deleteColumn(boardId: UUID, columnId: UUID) async {
+        do {
+            try await BoardsAPI.deleteColumn(boardId, columnId: columnId)
+            if detail?.board.id == boardId {
+                detail?.columns.removeAll { $0.id == columnId }
+                detail?.cards.removeAll { $0.columnId == columnId }
+            }
+        } catch { self.error = "\(error)" }
+    }
+
+    func reorderColumn(boardId: UUID, columnId: UUID, toPosition: Int) async {
+        guard var d = detail, d.board.id == boardId else { return }
+        guard let col = d.columns.first(where: { $0.id == columnId }) else { return }
+        let snapshot = d
+        var siblings = d.columns.filter { $0.id != columnId }.sorted { $0.position < $1.position }
+        let clamped = max(0, min(toPosition, siblings.count))
+        siblings.insert(col, at: clamped)
+        for (i, var c) in siblings.enumerated() { c.position = i; siblings[i] = c }
+        d.columns = siblings
+        detail = d
+        do { _ = try await BoardsAPI.updateColumn(boardId, columnId: columnId, body: UpdateColumnBody(title: nil, position: clamped)) }
+        catch { detail = snapshot; self.error = "\(error)" }
+    }
+
     func addBoardMember(_ boardId: UUID, email: String) async -> Bool {
         do { try await BoardsAPI.addMember(boardId, email: email); await loadDetail(boardId); return true }
         catch { self.error = "\(error)"; return false }
@@ -85,7 +118,23 @@ class BoardsStore: ObservableObject {
             else { detail?.cards.append(card) }
         case .cardDeleted(let bid, let cid, _) where detail?.board.id == bid:
             detail?.cards.removeAll { $0.id == cid }
+        case .boardUpdated(let bid, _, let patch) where detail?.board.id == bid:
+            applyBoardPatch(patch)
         default: break
+        }
+    }
+
+    private func applyBoardPatch(_ data: Data) {
+        struct Envelope: Decodable { let patch: Patch }
+        struct Patch: Decodable { let column: BoardColumn?; let removedColumnId: UUID? }
+        guard let env = try? JSONDecoder.live().decode(Envelope.self, from: data) else { return }
+        if let col = env.patch.column {
+            if let i = detail?.columns.firstIndex(where: { $0.id == col.id }) { detail?.columns[i] = col }
+            else { detail?.columns.append(col) }
+        }
+        if let removedId = env.patch.removedColumnId {
+            detail?.columns.removeAll { $0.id == removedId }
+            detail?.cards.removeAll { $0.columnId == removedId }
         }
     }
 }

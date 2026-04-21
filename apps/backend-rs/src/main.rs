@@ -33,6 +33,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(routes::boards::router(state.clone()))
         .merge(routes::board_columns::router(state.clone()))
         .merge(routes::board_cards::router(state.clone()))
+        .merge(routes::entity_links::router(state.clone()))
         .merge(live::ws::router(state.clone()))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());

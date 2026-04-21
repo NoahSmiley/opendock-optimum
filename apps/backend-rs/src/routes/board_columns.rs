@@ -1,6 +1,7 @@
 use crate::auth::extract::AuthUser;
-use crate::db::{board, column};
+use crate::db::{board, column, entity_link};
 use crate::dto::board::{Column, CreateColumn, UpdateColumn};
+use crate::dto::entity_link::{EntityKind, EntityRef};
 use crate::error::{ApiError, ApiResult};
 use crate::live::events::{LiveEvent, Room};
 use crate::state::AppState;
@@ -36,6 +37,12 @@ async fn create(State(s): State<AppState>, user: AuthUser, Path(id): Path<Uuid>,
 
 async fn remove(State(s): State<AppState>, user: AuthUser, Path((id, column_id)): Path<(Uuid, Uuid)>) -> ApiResult<StatusCode> {
     if !board::is_member(&s.pool, id, user.0.id).await? { return Err(ApiError::NotFound); }
+    // Remove entity_links for cards in this column before column::delete cascades them away.
+    let cards: Vec<(Uuid,)> = sqlx::query_as("SELECT id FROM board_cards WHERE column_id = $1")
+        .bind(column_id).fetch_all(&s.pool).await?;
+    for (card_id,) in cards {
+        entity_link::cascade_delete(&s.pool, EntityRef { kind: EntityKind::Card, id: card_id }).await?;
+    }
     column::delete(&s.pool, column_id, id).await?;
     let patch = serde_json::json!({"removed_column_id": column_id});
     s.hub.publish(Room::Board { id }, LiveEvent::BoardUpdated { board_id: id, actor_id: user.0.id, patch });

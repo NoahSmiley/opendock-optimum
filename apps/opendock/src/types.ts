@@ -72,3 +72,14 @@ export interface BoardDetail {
   cards: Card[];
   members: BoardMember[];
 }
+
+export type EntityKind = "note" | "card";
+export interface EntityRef { kind: EntityKind; id: string }
+export interface LinkedEntity {
+  link_id: string;
+  kind: EntityKind;
+  id: string;
+  title: string;
+  context: string | null;
+  source: string;
+}

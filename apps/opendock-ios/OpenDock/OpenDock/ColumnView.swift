@@ -12,6 +12,14 @@ struct ColumnView: View {
     let onSubmit: () -> Void
     let onCancel: () -> Void
     let onOpen: (UUID) -> Void
+    let onMoveLeft: () -> Void
+    let onMoveRight: () -> Void
+    let canMoveLeft: Bool
+    let canMoveRight: Bool
+
+    @State private var renameTitle: String = ""
+    @State private var showingRename = false
+    @State private var showingDelete = false
 
     var isTargeted: Bool { coord.targetColumn == col.id && coord.active != nil }
 
@@ -24,6 +32,23 @@ struct ColumnView: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(isTargeted ? Theme.elevated.opacity(0.7) : Theme.elevated))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(isTargeted ? Theme.active.opacity(0.3) : Theme.borderStrong, lineWidth: isTargeted ? 1 : 0.5))
             .padding(.horizontal, 6).padding(.vertical, 12)
+            .alert("Rename column", isPresented: $showingRename) {
+                TextField("Title", text: $renameTitle)
+                Button("Cancel", role: .cancel) {}
+                Button("Save") {
+                    let t = renameTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !t.isEmpty else { return }
+                    Task { await store.renameColumn(boardId: boardId, columnId: col.id, title: t) }
+                }
+            }
+            .alert("Delete column?", isPresented: $showingDelete) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    Task { await store.deleteColumn(boardId: boardId, columnId: col.id) }
+                }
+            } message: {
+                Text("“\(col.title)” and all its cards will be permanently deleted.")
+            }
     }
 
     private var header: some View {
@@ -34,6 +59,16 @@ struct ColumnView: View {
             Button(action: onAdd) { Image(systemName: "plus").font(.system(size: 13, weight: .light)).foregroundColor(Theme.faint) }
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
+        .contentShape(Rectangle())
+        .contextMenu {
+            Button {
+                renameTitle = col.title
+                showingRename = true
+            } label: { Label("Rename", systemImage: "pencil") }
+            if canMoveLeft { Button(action: onMoveLeft) { Label("Move left", systemImage: "arrow.left") } }
+            if canMoveRight { Button(action: onMoveRight) { Label("Move right", systemImage: "arrow.right") } }
+            Button(role: .destructive) { showingDelete = true } label: { Label("Delete", systemImage: "trash") }
+        }
     }
 
     private var cardsList: some View {

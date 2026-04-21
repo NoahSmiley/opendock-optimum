@@ -3,6 +3,10 @@ import Foundation
 struct CreateBoardBody: Encodable { let name: String }
 struct UpdateBoardBody: Encodable { var name: String?; var pinned: Bool? }
 struct CreateColumnBody: Encodable { let title: String }
+struct UpdateColumnBody: Encodable {
+    var title: String?
+    var position: Int?
+}
 struct CreateCardBody: Encodable { let columnId: UUID; let title: String }
 struct UpdateCardBody: Encodable {
     var title: String?
@@ -22,6 +26,12 @@ enum BoardsAPI {
 
     static func createColumn(_ boardId: UUID, title: String) async throws -> BoardColumn {
         try await APIClient.shared.post("\(path(boardId))/columns", body: CreateColumnBody(title: title))
+    }
+    static func updateColumn(_ boardId: UUID, columnId: UUID, body: UpdateColumnBody) async throws -> BoardColumn {
+        try await APIClient.shared.patch("\(path(boardId))/columns/\(columnId.uuidString.lowercased())", body: body)
+    }
+    static func deleteColumn(_ boardId: UUID, columnId: UUID) async throws {
+        try await APIClient.shared.delete("\(path(boardId))/columns/\(columnId.uuidString.lowercased())")
     }
     static func createCard(_ boardId: UUID, columnId: UUID, title: String) async throws -> Card {
         try await APIClient.shared.post("\(path(boardId))/cards", body: CreateCardBody(columnId: columnId, title: title))

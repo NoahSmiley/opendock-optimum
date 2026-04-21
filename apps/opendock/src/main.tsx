@@ -9,6 +9,7 @@ import "@/styles/overlays.css";
 import "@/styles/responsive.css";
 import "@/styles/login.css";
 import "@/styles/members.css";
+import "@/styles/links.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

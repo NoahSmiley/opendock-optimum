@@ -15,6 +15,21 @@ pub async fn auth_login(state: State<'_, AuthState>, email: String, password: St
 pub async fn auth_status(state: State<'_, AuthState>) -> Result<AuthData, String> {
     let current = state.get().await;
     if current.token.is_some() { return Ok(current); }
+    #[cfg(debug_assertions)]
+    {
+        if let Ok(uid) = std::env::var("DEV_BYPASS_USER_ID") {
+            if !uid.trim().is_empty() {
+                let data = AuthData {
+                    token: Some(format!("dev:{uid}")),
+                    user_id: Some(uid.clone()),
+                    email: Some("alex@athion.me".into()),
+                    display_name: Some("Alex Test".into()),
+                };
+                state.set(data.clone()).await;
+                return Ok(data);
+            }
+        }
+    }
     let Some(token) = keyring::load() else { return Ok(AuthData::default()); };
     let client = reqwest::Client::new();
     match flow::fetch_me(&client, &token).await {

@@ -5,6 +5,7 @@ struct OpenDockApp: App {
     @StateObject private var auth = AuthStore()
     @StateObject private var notesStore = NotesStore()
     @StateObject private var boardsStore = BoardsStore()
+    @StateObject private var linksStore = LinksStore()
 
     var body: some Scene {
         WindowGroup {
@@ -12,6 +13,7 @@ struct OpenDockApp: App {
                 .environmentObject(auth)
                 .environmentObject(notesStore)
                 .environmentObject(boardsStore)
+                .environmentObject(linksStore)
                 .preferredColorScheme(.dark)
                 .task {
                     APIClient.shared.auth = auth
@@ -25,6 +27,7 @@ struct RootView: View {
     @EnvironmentObject var auth: AuthStore
     @EnvironmentObject var notes: NotesStore
     @EnvironmentObject var boards: BoardsStore
+    @EnvironmentObject var links: LinksStore
     @State private var inbox: LiveSocket?
 
     var body: some View {
@@ -38,7 +41,7 @@ struct RootView: View {
                 Task { await notes.load(); await boards.loadBoards() }
                 startInbox()
             } else {
-                notes.reset(); boards.reset()
+                notes.reset(); boards.reset(); links.clear()
                 inbox?.stop(); inbox = nil
             }
         }
@@ -46,9 +49,10 @@ struct RootView: View {
 
     private func startInbox() {
         guard let token = auth.token, let uid = auth.userId, inbox == nil else { return }
-        inbox = LiveSocket(scope: .user, id: uid, token: token) { [notes, boards] ev in
+        inbox = LiveSocket(scope: .user, id: uid, token: token) { [notes, boards, links] ev in
             notes.apply(event: ev)
             boards.apply(event: ev)
+            links.apply(event: ev)
         }
         inbox?.start()
     }

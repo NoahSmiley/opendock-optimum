@@ -12,4 +12,5 @@ export type LiveEvent =
   | { kind: "board_share_added"; board_id: string; actor_id: string }
   | { kind: "board_share_removed"; board_id: string; actor_id: string }
   | { kind: "card_upserted"; board_id: string; actor_id: string; card: Card }
-  | { kind: "card_deleted"; board_id: string; card_id: string; actor_id: string };
+  | { kind: "card_deleted"; board_id: string; card_id: string; actor_id: string }
+  | { kind: "entity_link_changed"; a_kind: "note" | "card"; a_id: string; b_kind: "note" | "card"; b_id: string; added: boolean; actor_id: string };

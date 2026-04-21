@@ -1,6 +1,7 @@
 pub mod board_cards;
 pub mod board_columns;
 pub mod boards;
+pub mod entity_links;
 pub mod health;
 pub mod me;
 pub mod note_members;

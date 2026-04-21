@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05408C6A21DC40E39CC1D81E /* LinkPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */; };
+		1B34962030B54957B63FB862 /* LinkedEntitiesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */; };
+		E8DEE98F663D4EE59F51E51E /* LinksStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCFD2C432B040279FAE5531 /* LinksStore.swift */; };
+		B3C200361A3942278A9088A4 /* LinksAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BFAD85BAC434E9CFE1708 /* LinksAPI.swift */; };
 		00CA4070B0565EE63B8B0880 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18EEF0EF5FAA465BFB3073D /* ProfileView.swift */; };
 		024D7AD288DB2C5813FE5B09 /* AssigneeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8938B4B6FCFF57D16C580C70 /* AssigneeBadge.swift */; };
 		05E4257F99C270AEFBD349D5 /* BoardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686D85BDB4EE25B273844E76 /* BoardDetailView.swift */; };
@@ -53,6 +57,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPickerSheet.swift; sourceTree = "<group>"; };
+		57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedEntitiesSection.swift; sourceTree = "<group>"; };
+		FDCFD2C432B040279FAE5531 /* LinksStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksStore.swift; sourceTree = "<group>"; };
+		CC9BFAD85BAC434E9CFE1708 /* LinksAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksAPI.swift; sourceTree = "<group>"; };
 		073F28A533D6FEEC44529DD3 /* MembersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembersSheet.swift; sourceTree = "<group>"; };
 		0AD361D7B969F1FDB46FAE4E /* DragCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragCoordinator.swift; sourceTree = "<group>"; };
 		0E17F299E023026FD2714D61 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -140,6 +148,10 @@
 				1C8DC963E74620F0D93DD77C /* BoardMembersSheet.swift */,
 				E86B02C13582A5CD024170BF /* BoardRow.swift */,
 				1E1BA76B50D4292531F2A06A /* BoardsAPI.swift */,
+				83ECBE32E20C473897AD2364 /* LinkPickerSheet.swift */,
+				57D7F5381B724B64A8F52F7D /* LinkedEntitiesSection.swift */,
+				FDCFD2C432B040279FAE5531 /* LinksStore.swift */,
+				CC9BFAD85BAC434E9CFE1708 /* LinksAPI.swift */,
 				E943E12501F84B9CA8E335E0 /* BoardsListView.swift */,
 				2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */,
 				12C74A0F84A9964CB0EEF84F /* BoardsStore+Cards.swift */,
@@ -258,6 +270,10 @@
 				5962C7B8CC1AC1374B927E23 /* BoardMembersSheet.swift in Sources */,
 				8C59EACBF474808AD97AA364 /* BoardRow.swift in Sources */,
 				95552A2BE0CBDFA471ADCE46 /* BoardsAPI.swift in Sources */,
+				05408C6A21DC40E39CC1D81E /* LinkPickerSheet.swift in Sources */,
+				1B34962030B54957B63FB862 /* LinkedEntitiesSection.swift in Sources */,
+				E8DEE98F663D4EE59F51E51E /* LinksStore.swift in Sources */,
+				B3C200361A3942278A9088A4 /* LinksAPI.swift in Sources */,
 				5C467E7477D8E4CB3B197229 /* BoardsListView.swift in Sources */,
 				7B1A6411E26823A3B840DB9E /* BoardsStore+Cards.swift in Sources */,
 				774BC903D5F946BDB0E7566C /* BoardsStore.swift in Sources */,

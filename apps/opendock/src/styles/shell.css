@@ -1,5 +1,6 @@
 /* @athion/style — shell: nav rail, tool list, search */
-.shell { display: flex; height: 100%; }
+.shell { display: flex; height: 100%; position: relative; }
+.window-drag { position: absolute; top: 0; left: 0; right: 0; height: 32px; -webkit-app-region: drag; pointer-events: none; z-index: 100; }
 .nav-rail { width: 120px; background: var(--a-bg); border-right: 1px solid var(--a-border); display: flex; flex-direction: column; padding: 56px 16px 20px; -webkit-app-region: drag; flex-shrink: 0; }
 .nav-tools { display: flex; flex-direction: column; gap: 2px; -webkit-app-region: no-drag; }
 .nav-tool { font: 13px var(--a-font); color: var(--a-text-ghost); padding: 6px 0; transition: color 0.15s; text-align: left; }
@@ -29,7 +30,7 @@
 .tool-list-new-input { width: 100%; font: 13px var(--a-font); background: var(--a-bg-input); border: 1px solid var(--a-border-strong); padding: 8px 10px; color: var(--a-text); outline: none; margin-bottom: 8px; }
 .tool-list-new-input:focus { border-color: var(--a-text-faint); }
 
-.list-item { padding: 14px 20px; cursor: pointer; border-bottom: 0.5px solid var(--a-border); }
+.list-item { padding: 14px 20px; cursor: pointer; border-bottom: 0.5px solid var(--a-border); user-select: none; -webkit-user-select: none; }
 .list-item:last-child { border-bottom: none; }
 .list-item:active { opacity: 0.7; }
 .list-item-title { font: 500 16px var(--a-font); color: var(--a-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
