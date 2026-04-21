@@ -251,10 +251,27 @@ struct MentionTextView: UIViewRepresentable {
         /// placeholders as the user pans the text view.
         func scrollViewDidScroll(_ sv: UIScrollView) { parent.onScroll?() }
 
-        /// Legacy tap handler — no longer used for checkboxes (overlay
-        /// owns those taps now) but kept as a placeholder for any future
-        /// tap-based attachment behaviour.
-        @objc func handleTap(_ g: UITapGestureRecognizer) {}
+        /// Tap gesture on the UITextView. The SwiftUI CheckboxOverlay
+        /// is hit-test-transparent (otherwise it blocks scroll) so
+        /// checkbox taps come through here instead. Detect hits on a
+        /// CheckboxAttachment's glyph region and toggle its `checked`
+        /// state; the overlay re-renders the animated state change.
+        @objc func handleTap(_ g: UITapGestureRecognizer) {
+            guard let tv = g.view as? UITextView else { return }
+            let point = g.location(in: tv)
+            let origin = CGPoint(x: point.x - tv.textContainerInset.left,
+                                 y: point.y - tv.textContainerInset.top)
+            var frac: CGFloat = 0
+            let idx = tv.layoutManager.characterIndex(
+                for: origin,
+                in: tv.textContainer,
+                fractionOfDistanceBetweenInsertionPoints: &frac
+            )
+            guard idx >= 0, idx < tv.attributedText.length,
+                  tv.attributedText.attribute(.attachment, at: idx, effectiveRange: nil) is CheckboxAttachment
+            else { return }
+            EditorBlockAction.toggleCheckbox(at: idx, in: tv)
+        }
 
         @MainActor private func commitToParent(_ tv: UITextView) {
             let s = tv.attributedText ?? NSAttributedString()

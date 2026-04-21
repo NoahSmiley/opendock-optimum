@@ -19,20 +19,22 @@ import UIKit
     let scrollRevision: Int
 
     var body: some View {
-        GeometryReader { _ in
-            ZStack(alignment: .topLeading) {
-                Color.clear
-                ForEach(checkboxes(), id: \.index) { box in
-                    CheckboxButton(checked: box.checked) {
-                        if let tv = textView() {
-                            EditorBlockAction.toggleCheckbox(at: box.index, in: tv)
-                        }
-                    }
+        // The overlay is PURELY visual. Hit-testing is disabled for
+        // the whole subtree so scroll / tap / selection gestures flow
+        // through to the UITextView beneath it. Checkbox taps are
+        // routed via a UITapGestureRecognizer on the UITextView
+        // (handled in MentionTextView.Coordinator.handleTap) which
+        // toggles the attachment's `checked` state; the resulting
+        // attributed-text change bumps the revision and this view
+        // re-renders with the new checked/unchecked visuals.
+        ZStack(alignment: .topLeading) {
+            ForEach(checkboxes(), id: \.index) { box in
+                CheckboxButton(checked: box.checked) { }
+                    .frame(width: 26, height: 26)
                     .position(x: box.rect.midX, y: box.rect.midY)
-                }
             }
         }
-        .allowsHitTesting(true)
+        .allowsHitTesting(false)
     }
 
     private struct Box { let index: Int; let rect: CGRect; let checked: Bool }
