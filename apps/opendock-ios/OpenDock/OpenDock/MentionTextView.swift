@@ -78,30 +78,39 @@ struct MentionTextView: UIViewRepresentable {
         context.coordinator.lastAssignedRevision = rev
     }
 
-    /// Pick typing attributes from the char immediately before the caret so
-    /// continuing to type preserves whatever format is active there.
+    /// Update typing attributes to match the BLOCK the caret now lives
+    /// in. We only refresh the block-level attributes (font, block tag,
+    /// paragraph style) and never touch the inline marks (strokeWidth,
+    /// obliqueness, underline, strikethrough, foregroundColor) — those
+    /// belong to the toolbar toggle state which this method would
+    /// otherwise clobber every time the selection moves, including
+    /// immediately after a user taps Bold or Italic (toolbar tap
+    /// triggers a brief resign/regain first-responder cycle that
+    /// fires a selection-change event).
     @MainActor func applyTypingAttributes(_ tv: UITextView) {
         let loc = tv.selectedRange.location
-        if loc > 0 && loc <= tv.attributedText.length {
-            var stop: NSRange = NSRange(location: 0, length: 0)
-            let a = tv.attributedText.attributes(at: loc - 1, effectiveRange: &stop)
-            if a[.attachment] == nil {
-                var copy = a
-                copy[.foregroundColor] = Self.bodyColor
-                tv.typingAttributes = copy
-                return
-            }
+        let block: EditorBlock
+        if tv.attributedText.length > 0,
+           let raw = tv.attributedText.attribute(EditorAttr.block, at: max(0, loc - 1), effectiveRange: nil) as? String,
+           let b = EditorBlock(rawValue: raw) {
+            block = b
+        } else {
+            block = .p
         }
-        // Default typing attrs: body text in current block.
-        let block = (tv.attributedText.length > 0
-                     ? tv.attributedText.attribute(EditorAttr.block, at: max(0, loc - 1), effectiveRange: nil) as? String
-                     : nil)
-            .flatMap { EditorBlock(rawValue: $0) } ?? .p
-        tv.typingAttributes = [
-            .font: block.font(bold: false, italic: false),
-            .foregroundColor: Self.bodyColor,
-            EditorAttr.block: block.rawValue,
-        ]
+        var typing = tv.typingAttributes
+        // Detect if the user currently has inline-bold / inline-italic
+        // active via the toolbar-authored attributes, and rebuild the
+        // font to match the new block while preserving those traits.
+        let hasStroke = (typing[.strokeWidth] as? CGFloat ?? 0) < 0
+        let hasObliqueness = (typing[.obliqueness] as? CGFloat ?? 0) > 0
+        typing[.font] = block.font(bold: hasStroke, italic: hasObliqueness)
+        typing[EditorAttr.block] = block.rawValue
+        typing[.paragraphStyle] = block.attrs(bold: hasStroke, italic: hasObliqueness)[.paragraphStyle]
+        // Foreground colour: preserve active-color on bold runs and
+        // heading blocks; otherwise fall back to body color.
+        let isHeading = block == .h1 || block == .h2 || block == .h3
+        typing[.foregroundColor] = (hasStroke || isHeading) ? UIColor(Theme.active) : Self.bodyColor
+        tv.typingAttributes = typing
     }
 
     final class Coordinator: NSObject, UITextViewDelegate, NSLayoutManagerDelegate, UIGestureRecognizerDelegate {

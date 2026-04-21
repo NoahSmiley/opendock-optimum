@@ -70,32 +70,18 @@ enum EditorBlock: String {
         return a
     }
 
-    /// Paragraph style per block — controls vertical breathing room so
-    /// consecutive list / checklist lines aren't jammed against each
-    /// other. Mirrors Tauri's `.check-item { padding: 4px 0 }`.
-    ///
-    /// We use `lineHeightMultiple` + `paragraphSpacing` together: the
-    /// multiple adds a constant line-height bump per line (actually
-    /// visible in layout, unlike bare `paragraphSpacingBefore` which
-    /// NSLayoutManager ignores when the block is a single glyph line),
-    /// and the trailing spacing adds a final gap after each paragraph.
+    /// Paragraph style per block. Only `lineHeightMultiple` — NO
+    /// `minimumLineHeight` or `paragraphSpacing`. Earlier rounds added
+    /// both to push checkboxes apart, but that also inflated every
+    /// body/heading line's height and inflated the caret (UITextView
+    /// pulls caret height from line-height), plus added awkward gaps
+    /// between empty paragraphs. Line-height multiple at 1.2 gives
+    /// enough breathing for body text without over-inflating, and
+    /// checklist gap is now handled via CheckboxAttachment's own
+    /// `attachmentBounds` (see that file) rather than paragraph style.
     @MainActor private var paragraphStyle: NSParagraphStyle {
         let ps = NSMutableParagraphStyle()
-        switch self {
-        case .ul, .ol, .checklist:
-            // `minimumLineHeight` guarantees the line is at least this tall
-            // regardless of glyph height. Paired with paragraphSpacing this
-            // gives a reliable gap between consecutive list items that
-            // `lineHeightMultiple` alone can't because the checkbox glyph
-            // is fixed at 18pt.
-            ps.minimumLineHeight = 28
-            ps.paragraphSpacing = 6
-        case .h1, .h2, .h3:
-            ps.lineHeightMultiple = 1.2
-            ps.paragraphSpacing = 4
-        case .p:
-            ps.lineHeightMultiple = 1.2
-        }
+        ps.lineHeightMultiple = 1.2
         return ps
     }
 }
