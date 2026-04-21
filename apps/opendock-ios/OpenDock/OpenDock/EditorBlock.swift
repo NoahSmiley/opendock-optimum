@@ -18,19 +18,33 @@ enum EditorBlock: String {
         case .h3: size = 16; semibold = true
         default: size = 16; semibold = false
         }
-        let face = (semibold || bold) ? Theme.fontSemibold : Theme.fontName
-        var f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: (semibold || bold) ? .semibold : .regular)
+        // Pick the face. For inline bold we intentionally stay on the
+        // Regular face — inline bold is rendered via a synthetic
+        // negative strokeWidth applied in `attrs()`, NOT by swapping
+        // to Semibold. Otherwise Semibold + stroke stacks and bold+italic
+        // ends up visibly heavier than bold alone (user-flagged).
+        // Semibold is still used for HEADING blocks (h1/h2/h3) since
+        // those don't get the synthetic stroke.
+        let useSemiboldFace = semibold   // headings only
+        let face = useSemiboldFace ? Theme.fontSemibold : Theme.fontName
+        var f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: useSemiboldFace ? .semibold : .regular)
         if italic {
-            // Custom fonts (Inter etc.) often don't register an italic
-            // variant in the font descriptor table, so withSymbolicTraits
-            // returns nil. Fall back to the system italic font at the same
-            // weight so italic actually renders.
+            // Custom fonts (OpenAISans) don't register an italic variant
+            // in the font descriptor table, so withSymbolicTraits returns
+            // nil. Fall back to the system italic font at regular weight
+            // so italic renders; the synthetic bold stroke (set in attrs)
+            // will still fatten it when `bold` is true, keeping bold+italic
+            // visually consistent with bold alone.
             if let d = f.fontDescriptor.withSymbolicTraits(.traitItalic) {
                 f = UIFont(descriptor: d, size: size)
             } else {
+                // Regular-weight italic — let the synthetic stroke do
+                // the bolding, don't use system-bold-italic here.
                 f = UIFont.italicSystemFont(ofSize: size)
-                if bold || semibold,
+                if useSemiboldFace,
                    let bd = f.fontDescriptor.withSymbolicTraits([.traitItalic, .traitBold]) {
+                    // Heading + italic: use system bold italic since
+                    // headings don't get the synthetic stroke.
                     f = UIFont(descriptor: bd, size: size)
                 }
             }
@@ -52,9 +66,13 @@ enum EditorBlock: String {
         ]
         let isHeading = self == .h1 || self == .h2 || self == .h3
         if bold {
-            // -3 is a middleweight synthetic bold: heavier than Semibold
-            // alone, doesn't smear, matches browser bold-face weight.
-            a[.strokeWidth] = -3.0
+            // Synthetic bold via negative strokeWidth on top of the
+            // Regular face. -4.5 gives a clearly heavier stroke than
+            // Semibold-alone would (OpenAISans ships no Bold weight),
+            // and since the face itself is always Regular for inline
+            // bold, bold+italic won't compound to "extra-bold" like it
+            // did when we also swapped faces to Semibold.
+            a[.strokeWidth] = -4.5
             a[.foregroundColor] = UIColor(Theme.active)
         } else if isHeading {
             a[.foregroundColor] = UIColor(Theme.active)

@@ -45,7 +45,17 @@ import UIKit
         text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { v, range, _ in
             guard let att = v as? CheckboxAttachment else { return }
             let glyphRange = tv.layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
-            var rect = tv.layoutManager.boundingRect(forGlyphRange: glyphRange, in: tv.textContainer)
+            // Use lineFragmentRect (not boundingRect) to get the full
+            // typographic line including lineHeight + leading — that's
+            // what determines the Y spacing between consecutive boxes.
+            // boundingRect returns only the glyph box which for an 18pt
+            // attachment is 18pt tall even if the line is taller, so
+            // consecutive boxes end up 18pt apart even when paragraph
+            // style says 28pt.
+            var rect = tv.layoutManager.lineFragmentRect(
+                forGlyphAt: glyphRange.location,
+                effectiveRange: nil
+            )
             // Offset by the textContainerInset so we land on the visible
             // coordinate system, not the layout manager's.
             rect.origin.x += tv.textContainerInset.left
@@ -54,10 +64,11 @@ import UIKit
             // when the user scrolls long notes.
             rect.origin.y -= tv.contentOffset.y
             rect.origin.x -= tv.contentOffset.x
-            // The attachment reserves 26pt; the actual box is 18pt —
-            // sit it on the left side of that reservation.
-            rect.size = CGSize(width: 18, height: 18)
-            out.append(Box(index: range.location, rect: rect, checked: att.checked))
+            // Center an 18pt box vertically within the line fragment,
+            // left-aligned to the line's leading edge.
+            let boxY = rect.origin.y + (rect.size.height - 18) / 2
+            let boxRect = CGRect(x: rect.origin.x, y: boxY, width: 18, height: 18)
+            out.append(Box(index: range.location, rect: boxRect, checked: att.checked))
         }
         return out
     }
