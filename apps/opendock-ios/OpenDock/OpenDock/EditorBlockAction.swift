@@ -32,24 +32,19 @@ import UIKit
             m.enumerateAttributes(in: lineRange) { attrs, sub, _ in
                 if attrs[.attachment] != nil { return }
                 let f = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
-                let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
-                // Custom fonts (Inter Semibold) don't register .traitBold in
-                // their symbolic traits — we detect by strokeWidth (our
-                // synthetic-bold signal) + fallback face-name, otherwise
-                // block transitions silently strip inline bold.
-                let hasObliqueness = (attrs[.obliqueness] as? CGFloat ?? 0) > 0
-                let bold = hasStroke
-                    || f.fontDescriptor.symbolicTraits.contains(.traitBold)
-                    || f.fontName.lowercased().contains("semibold")
-                    || f.fontName.lowercased().contains("bold")
-                let italic = hasObliqueness
-                    || f.fontDescriptor.symbolicTraits.contains(.traitItalic)
-                    || f.fontName.lowercased().contains("italic")
-                    || f.fontName.lowercased().contains("oblique")
+                // Read bold / italic from face name — OpenAISans ships
+                // real Bold / BoldItalic / RegularItalic faces, so the
+                // font name is the source of truth. No more synthetic
+                // strokeWidth / obliqueness attributes to strip.
+                let lname = f.fontName.lowercased()
+                let bold = lname.contains("bold")
+                let italic = lname.contains("italic")
                 let new = block.attrs(bold: bold, italic: italic)
                 for (k, v) in new { m.addAttribute(k, value: v, range: sub) }
-                if !bold { m.removeAttribute(.strokeWidth, range: sub) }
-                if !italic { m.removeAttribute(.obliqueness, range: sub) }
+                // Clear any legacy stroke / obliqueness left over from
+                // notes created before the real-font migration.
+                m.removeAttribute(.strokeWidth, range: sub)
+                m.removeAttribute(.obliqueness, range: sub)
             }
         }
 

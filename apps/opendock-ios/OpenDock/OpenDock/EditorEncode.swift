@@ -49,19 +49,16 @@ enum EditorEncode {
             }
             let raw = line.attributedSubstring(from: r).string
             let font = attrs[.font] as? UIFont
-            // Custom fonts (OpenAISans) don't register .traitBold/.traitItalic,
-            // so fall back to face-name + our synthetic bold/italic signals
-            // (strokeWidth < 0 for bold, obliqueness > 0 for italic). Keeps
-            // save round-trips honest across all sources.
+            // Face name is the source of truth for bold / italic since
+            // OpenAISans ships real Bold + Italic + BoldItalic faces.
+            // We also honour legacy strokeWidth / obliqueness attrs from
+            // pre-real-font notes so their HTML still round-trips
+            // correctly; new runs use font face only.
             let fname = font?.fontName.lowercased() ?? ""
             let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
             let hasObliqueness = (attrs[.obliqueness] as? CGFloat ?? 0) > 0
-            let bold = hasStroke
-                || (font?.fontDescriptor.symbolicTraits.contains(.traitBold) ?? false)
-                || fname.contains("bold")
-            let italic = hasObliqueness
-                || (font?.fontDescriptor.symbolicTraits.contains(.traitItalic) ?? false)
-                || fname.contains("italic") || fname.contains("oblique")
+            let bold = fname.contains("bold") || hasStroke
+            let italic = fname.contains("italic") || hasObliqueness
             let underline = (attrs[.underlineStyle] as? Int ?? 0) != 0
             let strike = (attrs[.strikethroughStyle] as? Int ?? 0) != 0
             var s = escape(raw)

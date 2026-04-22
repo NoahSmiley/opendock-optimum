@@ -105,9 +105,11 @@ import UIKit
     // MARK: - inline marks
 
     /// Apply or remove a bold/italic trait. Routes through
-    /// `EditorBlock.attrs(bold:italic:)` so the synthetic strokeWidth +
-    /// brighter foreground that make bold visible (vs. barely-heavier
-    /// Semibold alone) come along for the ride.
+    /// `EditorBlock.attrs(bold:italic:)` which picks the right real
+    /// font face (Bold / BoldItalic / RegularItalic / Regular) — no
+    /// synthetic stroke or skew. Face name inspection reads the
+    /// current run's bold/italic state; flipping the requested trait
+    /// then rebuilds the full attribute set.
     private func flipTrait(_ trait: UIFontDescriptor.SymbolicTraits) {
         guard let tv = textView() else { return }
         let r = tv.selectedRange
@@ -115,11 +117,6 @@ import UIKit
             var attrs = tv.typingAttributes
             let new = attrsByFlipping(trait, in: attrs)
             for (k, v) in new { attrs[k] = v }
-            // strokeWidth / obliqueness must be actively removed when
-            // unbolding or un-italicising; otherwise the typing
-            // attribute sticks forever.
-            if new[.strokeWidth] == nil { attrs.removeValue(forKey: .strokeWidth) }
-            if new[.obliqueness] == nil { attrs.removeValue(forKey: .obliqueness) }
             tv.typingAttributes = attrs
             return
         }
@@ -127,33 +124,23 @@ import UIKit
         m.enumerateAttributes(in: r, options: []) { sub, range, _ in
             let new = attrsByFlipping(trait, in: sub)
             for (k, v) in new { m.addAttribute(k, value: v, range: range) }
-            if new[.strokeWidth] == nil { m.removeAttribute(.strokeWidth, range: range) }
-            if new[.obliqueness] == nil { m.removeAttribute(.obliqueness, range: range) }
         }
         tv.attributedText = m
         tv.selectedRange = r
         tv.delegate?.textViewDidChange?(tv)
     }
 
-    /// Given the existing attribute dict and the trait being flipped,
-    /// return a fresh attribute set for this run. Inspects the font name
-    /// rather than symbolicTraits since custom fonts don't register bold
-    /// reliably.
+    /// Read bold / italic state from the current run's font face, then
+    /// flip the requested trait and rebuild attrs from the target block.
+    /// OpenAISans ships real Bold + Italic + BoldItalic variants so we
+    /// can detect from the registered face name — `symbolicTraits` on
+    /// named custom faces isn't always populated, but the face name is.
     private func attrsByFlipping(_ trait: UIFontDescriptor.SymbolicTraits,
                                  in attrs: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
         let base = (attrs[.font] as? UIFont) ?? EditorBlock.p.font(bold: false, italic: false)
-        let curTraits = base.fontDescriptor.symbolicTraits
         let lname = base.fontName.lowercased()
-        // strokeWidth < 0 is the canonical bold signal we set; fall back
-        // to face-name + symbolicTraits for runs created elsewhere.
-        let hasStroke = (attrs[.strokeWidth] as? CGFloat ?? 0) < 0
-        let hasObliqueness = (attrs[.obliqueness] as? CGFloat ?? 0) > 0
-        let isBold = hasStroke
-            || curTraits.contains(.traitBold)
-            || lname.contains("semibold") || lname.contains("bold")
-        let isItalic = hasObliqueness
-            || curTraits.contains(.traitItalic)
-            || lname.contains("italic") || lname.contains("oblique")
+        let isBold = lname.contains("bold")   // matches Bold + BoldItalic
+        let isItalic = lname.contains("italic")
         let block = (attrs[EditorAttr.block] as? String).flatMap(EditorBlock.init(rawValue:)) ?? .p
         let wantBold = trait == .traitBold ? !isBold : isBold
         let wantItalic = trait == .traitItalic ? !isItalic : isItalic

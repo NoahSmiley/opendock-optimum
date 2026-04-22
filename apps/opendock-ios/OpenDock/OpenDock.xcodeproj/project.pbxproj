@@ -53,6 +53,13 @@
 		9C980968BB938A19F69BCCB2 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6E6CD666981BCC191EF111 /* Theme.swift */; };
 		A26CE052B4A9A3E8C6D2F39E /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E786D8BAFA6518DFDEF243AD /* AuthStore.swift */; };
 		A7A4A56EC00F0BE0CF7A6B71 /* OpenAISans-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */; };
+		3F79411F639E07BCECBD5FB0 /* OpenAISans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 99DF4D2BF47ACAAD81F173C3 /* OpenAISans-BoldItalic.ttf */; };
+		3F49651FA0694A1CAB091634 /* OpenAISans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 19DBB3AC5DA10C2AC59A0F7B /* OpenAISans-Bold.ttf */; };
+		A7ABE089FBC546744B8E5541 /* OpenAISans-SemiboldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4AAF105B2168BB3BCFFE374 /* OpenAISans-SemiboldItalic.ttf */; };
+		EF3C9E856400074F8BF5769E /* OpenAISans-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4B63E11A524598A3EEC23A75 /* OpenAISans-MediumItalic.ttf */; };
+		3BF8EE7A685146A0F91A1921 /* OpenAISans-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 10C993CBF8C435B6F823609E /* OpenAISans-LightItalic.ttf */; };
+		2F87B5A061C0A924134F82A6 /* OpenAISans-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D60D44945DD3D34E0BDD73D2 /* OpenAISans-Light.ttf */; };
+		DE8CB35A769DE1DF11AE4279 /* OpenAISans-RegularItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 02A686CE9DE61E0C83520BEC /* OpenAISans-RegularItalic.ttf */; };
 		B42DAD11EFE09EA2D07648A8 /* MembersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073F28A533D6FEEC44529DD3 /* MembersSheet.swift */; };
 		BDE88739E036ABBDE5094BCD /* DragOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F8B846728AC5B559718EF0 /* DragOverlay.swift */; };
 		C21E37C7A409303268309636 /* ColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219DF57BD62CEF8A263611AF /* ColumnView.swift */; };
@@ -93,6 +100,13 @@
 		219DF57BD62CEF8A263611AF /* ColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnView.swift; sourceTree = "<group>"; };
 		24CD7B3ACBF8892E1E4DA98A /* NoteFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteFormat.swift; sourceTree = "<group>"; };
 		2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Semibold.ttf"; sourceTree = "<group>"; };
+		99DF4D2BF47ACAAD81F173C3 /* OpenAISans-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-BoldItalic.ttf"; sourceTree = "<group>"; };
+		19DBB3AC5DA10C2AC59A0F7B /* OpenAISans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Bold.ttf"; sourceTree = "<group>"; };
+		F4AAF105B2168BB3BCFFE374 /* OpenAISans-SemiboldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-SemiboldItalic.ttf"; sourceTree = "<group>"; };
+		4B63E11A524598A3EEC23A75 /* OpenAISans-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-MediumItalic.ttf"; sourceTree = "<group>"; };
+		10C993CBF8C435B6F823609E /* OpenAISans-LightItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-LightItalic.ttf"; sourceTree = "<group>"; };
+		D60D44945DD3D34E0BDD73D2 /* OpenAISans-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-Light.ttf"; sourceTree = "<group>"; };
+		02A686CE9DE61E0C83520BEC /* OpenAISans-RegularItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "OpenAISans-RegularItalic.ttf"; sourceTree = "<group>"; };
 		2C4313D5ACAF6AE27CE64D02 /* BoardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardsStore.swift; sourceTree = "<group>"; };
 		2E94FF84C4FF920B57FA013F /* NotesAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesAPI.swift; sourceTree = "<group>"; };
 		4105E951680CBD8520EA4CCD /* NoteRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteRow.swift; sourceTree = "<group>"; };
@@ -153,6 +167,13 @@
 				B7CB54C5E4CED7CD8936432D /* OpenAISans-Medium.ttf */,
 				C37BAA3A09300DB73892A0C3 /* OpenAISans-Regular.ttf */,
 				2BA925A3E30390D6304F0547 /* OpenAISans-Semibold.ttf */,
+				99DF4D2BF47ACAAD81F173C3 /* OpenAISans-BoldItalic.ttf */,
+				19DBB3AC5DA10C2AC59A0F7B /* OpenAISans-Bold.ttf */,
+				F4AAF105B2168BB3BCFFE374 /* OpenAISans-SemiboldItalic.ttf */,
+				4B63E11A524598A3EEC23A75 /* OpenAISans-MediumItalic.ttf */,
+				10C993CBF8C435B6F823609E /* OpenAISans-LightItalic.ttf */,
+				D60D44945DD3D34E0BDD73D2 /* OpenAISans-Light.ttf */,
+				02A686CE9DE61E0C83520BEC /* OpenAISans-RegularItalic.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -283,6 +304,13 @@
 				2B1336DB67EC186687EB1B41 /* OpenAISans-Medium.ttf in Resources */,
 				EDC53B62850BD161E6D720AA /* OpenAISans-Regular.ttf in Resources */,
 				A7A4A56EC00F0BE0CF7A6B71 /* OpenAISans-Semibold.ttf in Resources */,
+				3F79411F639E07BCECBD5FB0 /* OpenAISans-BoldItalic.ttf in Resources */,
+				3F49651FA0694A1CAB091634 /* OpenAISans-Bold.ttf in Resources */,
+				A7ABE089FBC546744B8E5541 /* OpenAISans-SemiboldItalic.ttf in Resources */,
+				EF3C9E856400074F8BF5769E /* OpenAISans-MediumItalic.ttf in Resources */,
+				3BF8EE7A685146A0F91A1921 /* OpenAISans-LightItalic.ttf in Resources */,
+				2F87B5A061C0A924134F82A6 /* OpenAISans-Light.ttf in Resources */,
+				DE8CB35A769DE1DF11AE4279 /* OpenAISans-RegularItalic.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -15,8 +15,15 @@ enum Theme {
     static let error = Color(red: 0.8, green: 0.267, blue: 0.267)
 
     static let fontName = "OpenAISans-Regular"
+    static let fontRegularItalic = "OpenAISans-RegularItalic"
     static let fontMedium = "OpenAISans-Medium"
+    static let fontMediumItalic = "OpenAISans-MediumItalic"
     static let fontSemibold = "OpenAISans-Semibold"
+    static let fontSemiboldItalic = "OpenAISans-SemiboldItalic"
+    static let fontBold = "OpenAISans-Bold"
+    static let fontBoldItalic = "OpenAISans-BoldItalic"
+    static let fontLight = "OpenAISans-Light"
+    static let fontLightItalic = "OpenAISans-LightItalic"
     static let fontMono = "Menlo"
 
     @MainActor static func setupGlobal() {

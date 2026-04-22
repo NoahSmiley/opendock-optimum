@@ -6,86 +6,52 @@ import UIKit
 enum EditorBlock: String {
     case p, h1, h2, h3, ul, ol, checklist
 
-    /// Font to stamp on body text in this block. Sizes mirror the Tauri
-    /// `.rich-editor` CSS: H1 22 / H2 18 / H3 16, body bumped to 16 for
-    /// comfortable reading on mobile (was 15, user flagged as too small).
+    /// Real font face for the given block + inline marks. OpenAISans
+    /// ships the full weight family (Regular through Bold, with Italic
+    /// variants at every weight), so bold and italic are selected via
+    /// named faces instead of synthetic strokeWidth / obliqueness
+    /// transforms. This keeps bold and bold+italic at matching weights
+    /// and avoids the layer of hacks that made earlier renders look off.
     @MainActor func font(bold: Bool, italic: Bool) -> UIFont {
         let size: CGFloat
-        let semibold: Bool
+        let headingSemibold: Bool
         switch self {
-        case .h1: size = 26; semibold = true
-        case .h2: size = 22; semibold = true
-        case .h3: size = 19; semibold = true
-        default: size = 18; semibold = false
+        case .h1: size = 26; headingSemibold = true
+        case .h2: size = 22; headingSemibold = true
+        case .h3: size = 19; headingSemibold = true
+        default: size = 18; headingSemibold = false
         }
-        // Pick the face. For inline bold we intentionally stay on the
-        // Regular face — inline bold is rendered via a synthetic
-        // negative strokeWidth applied in `attrs()`, NOT by swapping
-        // to Semibold. Otherwise Semibold + stroke stacks and bold+italic
-        // ends up visibly heavier than bold alone (user-flagged).
-        let useSemiboldFace = semibold   // headings only
-        let face = useSemiboldFace ? Theme.fontSemibold : Theme.fontName
-        let f = UIFont(name: face, size: size) ?? UIFont.systemFont(ofSize: size, weight: useSemiboldFace ? .semibold : .regular)
-        // Italic is rendered via `.obliqueness` in `attrs()` (a
-        // skew-transform attribute on the attributed string) not via a
-        // font family swap. This keeps the font family constant across
-        // bold / bold+italic so the stroke weight looks identical —
-        // previously we fell back to italicSystemFont which had
-        // noticeably different stroke thickness from OpenAISans,
-        // making bold+italic appear heavier than bold alone.
-        _ = italic   // italic handled via obliqueness attribute
-        return f
+        let name: String
+        if bold {
+            name = italic ? Theme.fontBoldItalic : Theme.fontBold
+        } else if headingSemibold {
+            name = italic ? Theme.fontSemiboldItalic : Theme.fontSemibold
+        } else {
+            name = italic ? Theme.fontRegularItalic : Theme.fontName
+        }
+        return UIFont(name: name, size: size)
+            ?? UIFont.systemFont(ofSize: size, weight: bold ? .bold : (headingSemibold ? .semibold : .regular))
     }
 
     /// Full attribute set for body text in this block with the given
-    /// inline marks. Inline bold is rendered with a negative strokeWidth
-    /// (synthetic bold — the OpenAI Sans family only ships Regular /
-    /// Medium / Semibold, so Semibold alone is too subtle) AND a brighter
-    /// foreground to mirror Tauri's `strong { font-weight:700; color:
-    /// var(--a-text-active); }`. Headings already use Semibold by block
-    /// and inherit `Theme.active` via the toolbar/decode paths.
+    /// inline marks. Since bold and italic now come from real font
+    /// faces, `attrs()` only decides foreground colour (brighter for
+    /// bold / heading text, matching Tauri's `strong { color: active }`)
+    /// and attaches the paragraph style.
     @MainActor func attrs(bold: Bool, italic: Bool) -> [NSAttributedString.Key: Any] {
         var a: [NSAttributedString.Key: Any] = [
             .font: font(bold: bold, italic: italic),
             EditorAttr.block: rawValue,
         ]
         let isHeading = self == .h1 || self == .h2 || self == .h3
-        if bold {
-            // Synthetic bold via negative strokeWidth on top of the
-            // Regular face. Keeping the face constant (see font())
-            // means bold and bold+italic share the same stroke weight.
-            a[.strokeWidth] = -4.5
-            a[.foregroundColor] = UIColor(Theme.active)
-        } else if isHeading {
-            a[.foregroundColor] = UIColor(Theme.active)
-        } else {
-            a[.foregroundColor] = UIColor(Theme.text)
-        }
-        if italic {
-            // Skew-transform italic. Stays on the same font family so
-            // stroke weight is identical across bold / bold+italic.
-            a[.obliqueness] = 0.2
-        }
+        a[.foregroundColor] = (bold || isHeading) ? UIColor(Theme.active) : UIColor(Theme.text)
         a[.paragraphStyle] = paragraphStyle
         return a
     }
 
-    /// Paragraph style per block. Only `lineHeightMultiple` — NO
-    /// `minimumLineHeight` or `paragraphSpacing`. Earlier rounds added
-    /// both to push checkboxes apart, but that also inflated every
-    /// body/heading line's height and inflated the caret (UITextView
-    /// pulls caret height from line-height), plus added awkward gaps
-    /// between empty paragraphs. Line-height multiple at 1.2 gives
-    /// enough breathing for body text without over-inflating, and
-    /// checklist gap is now handled via CheckboxAttachment's own
-    /// `attachmentBounds` (see that file) rather than paragraph style.
     @MainActor private var paragraphStyle: NSParagraphStyle {
         let ps = NSMutableParagraphStyle()
         ps.lineHeightMultiple = 1.2
-        // Checklist items get a small amount of extra trailing spacing
-        // so consecutive boxes don't visually touch. This is a paragraph
-        // -level property (gap AFTER the paragraph), not line-height —
-        // so it doesn't inflate individual lines or the caret height.
         if self == .checklist || self == .ul || self == .ol {
             ps.paragraphSpacing = 4
         }

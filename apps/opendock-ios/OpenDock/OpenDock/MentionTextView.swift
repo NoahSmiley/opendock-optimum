@@ -118,13 +118,12 @@ struct MentionTextView: UIViewRepresentable {
 
     /// Update typing attributes to match the BLOCK the caret now lives
     /// in. We only refresh the block-level attributes (font, block tag,
-    /// paragraph style) and never touch the inline marks (strokeWidth,
-    /// obliqueness, underline, strikethrough, foregroundColor) — those
-    /// belong to the toolbar toggle state which this method would
-    /// otherwise clobber every time the selection moves, including
-    /// immediately after a user taps Bold or Italic (toolbar tap
-    /// triggers a brief resign/regain first-responder cycle that
-    /// fires a selection-change event).
+    /// paragraph style, color) and preserve the inline mark state —
+    /// which is now read from the current typing font's face name
+    /// (OpenAISans-Bold / OpenAISans-BoldItalic / OpenAISans-RegularItalic
+    /// / OpenAISans-Regular etc.). Toolbar toggles set the face
+    /// directly, and we re-compute the right face for the new block
+    /// while preserving bold / italic state.
     @MainActor func applyTypingAttributes(_ tv: UITextView) {
         let loc = tv.selectedRange.location
         let block: EditorBlock
@@ -136,18 +135,19 @@ struct MentionTextView: UIViewRepresentable {
             block = .p
         }
         var typing = tv.typingAttributes
-        // Detect if the user currently has inline-bold / inline-italic
-        // active via the toolbar-authored attributes, and rebuild the
-        // font to match the new block while preserving those traits.
-        let hasStroke = (typing[.strokeWidth] as? CGFloat ?? 0) < 0
-        let hasObliqueness = (typing[.obliqueness] as? CGFloat ?? 0) > 0
-        typing[.font] = block.font(bold: hasStroke, italic: hasObliqueness)
+        let curFontName = ((typing[.font] as? UIFont)?.fontName ?? "").lowercased()
+        let wantBold = curFontName.contains("bold")
+        let wantItalic = curFontName.contains("italic")
+        typing[.font] = block.font(bold: wantBold, italic: wantItalic)
         typing[EditorAttr.block] = block.rawValue
-        typing[.paragraphStyle] = block.attrs(bold: hasStroke, italic: hasObliqueness)[.paragraphStyle]
-        // Foreground colour: preserve active-color on bold runs and
-        // heading blocks; otherwise fall back to body color.
+        typing[.paragraphStyle] = block.attrs(bold: wantBold, italic: wantItalic)[.paragraphStyle]
         let isHeading = block == .h1 || block == .h2 || block == .h3
-        typing[.foregroundColor] = (hasStroke || isHeading) ? UIColor(Theme.active) : Self.bodyColor
+        typing[.foregroundColor] = (wantBold || isHeading) ? UIColor(Theme.active) : Self.bodyColor
+        // Clear any legacy synthetic mark attrs from old notes so new
+        // runs don't double-apply stroke/obliqueness on top of the real
+        // Bold / Italic face.
+        typing.removeValue(forKey: .strokeWidth)
+        typing.removeValue(forKey: .obliqueness)
         tv.typingAttributes = typing
     }
 
