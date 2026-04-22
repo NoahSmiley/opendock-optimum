@@ -16,18 +16,26 @@ export function LinkedPanel({ anchor, label, pickKind }: LinkedPanelProps) {
   const attach = useLinks((s) => s.attach);
   const links = useLinks(useShallow(selectLinks(anchor.kind, anchor.id)));
   const [picking, setPicking] = useState(false);
+  // Collapsed by default. User toggles. Always clickable, even at zero.
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => { void ensure(anchor.kind, anchor.id); }, [anchor.kind, anchor.id, ensure]);
 
   return (
     <div className="linked-panel">
       <div className="linked-panel-head">
-        <span className="linked-panel-label">{label}</span>
+        <button
+          className="linked-panel-label-btn"
+          onClick={() => setExpanded((x) => !x)}
+          aria-expanded={expanded}
+        >
+          <span className={`linked-panel-chevron${expanded ? " open" : ""}`}>&rsaquo;</span>
+          <span className="linked-panel-label">{label}</span>
+          <span className="linked-panel-count">{links.length}</span>
+        </button>
         <button className="linked-panel-add" onClick={() => setPicking(true)}>+ Link</button>
       </div>
-      {links.length === 0 ? (
-        <div className="linked-panel-empty">None linked yet.</div>
-      ) : (
+      {expanded && links.length > 0 && (
         <ul className="linked-panel-list">
           {links.map((l) => <LinkRow key={l.link_id} anchor={anchor} link={l} onRemove={() => detach(anchor, l)} />)}
         </ul>

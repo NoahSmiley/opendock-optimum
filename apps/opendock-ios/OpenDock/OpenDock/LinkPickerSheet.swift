@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LinkPickerSheet: View {
     @EnvironmentObject var notes: NotesStore
-    @EnvironmentObject var boards: BoardsStore
+    @EnvironmentObject var myCards: MyCardsStore
     @Environment(\.dismiss) private var dismiss
     let anchor: EntityRef
     let pickKind: EntityKind
@@ -20,16 +20,10 @@ struct LinkPickerSheet: View {
                 .filter { !existing.contains($0.id) }
                 .map { Candidate(id: $0.id, title: $0.title.isEmpty ? "Untitled" : $0.title, context: nil) }
         case .card:
-            let cards = boards.detail?.cards ?? []
-            let columns = boards.detail?.columns ?? []
-            let boardName = boards.detail?.board.name ?? ""
-            return cards
+            return myCards.cards
                 .filter { !(anchor.kind == .card && anchor.id == $0.id) }
                 .filter { !existing.contains($0.id) }
-                .map { card in
-                    let col = columns.first { $0.id == card.columnId }?.title ?? ""
-                    return Candidate(id: card.id, title: card.title, context: "\(boardName) / \(col)")
-                }
+                .map { c in Candidate(id: c.id, title: c.title, context: "\(c.boardName) / \(c.columnTitle)") }
         }
     }
 
@@ -81,6 +75,7 @@ struct LinkPickerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { Button("Cancel") { dismiss() }.foregroundColor(Theme.active) }
             }
+            .task { if pickKind == .card { await myCards.refresh() } }
         }
     }
 }

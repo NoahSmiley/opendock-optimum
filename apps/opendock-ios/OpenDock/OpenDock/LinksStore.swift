@@ -3,6 +3,10 @@ import Foundation
 @MainActor
 final class LinksStore: ObservableObject {
     @Published private(set) var cache: [EntityRef: [LinkedEntity]] = [:]
+    /// Anchors we've confirmed a successful fetch for. Kept separate from
+    /// `cache` so that a failed first fetch (network error, auth race)
+    /// doesn't poison the cache with `[]` and short-circuit future attempts.
+    private var loaded: Set<EntityRef> = []
 
     func links(for kind: EntityKind, id: UUID) -> [LinkedEntity] {
         cache[EntityRef(kind: kind, id: id)] ?? []
@@ -10,15 +14,14 @@ final class LinksStore: ObservableObject {
 
     func ensure(_ kind: EntityKind, _ id: UUID) async {
         let ref = EntityRef(kind: kind, id: id)
-        if cache[ref] != nil { return }
-        do { cache[ref] = try await LinksAPI.list(kind, id) }
-        catch { cache[ref] = [] }
+        if loaded.contains(ref) { return }
+        do { cache[ref] = try await LinksAPI.list(kind, id); loaded.insert(ref) }
+        catch { /* try again next time */ }
     }
 
     func refresh(_ kind: EntityKind, _ id: UUID) async {
         let ref = EntityRef(kind: kind, id: id)
-        guard cache[ref] != nil else { return }
-        do { cache[ref] = try await LinksAPI.list(kind, id) }
+        do { cache[ref] = try await LinksAPI.list(kind, id); loaded.insert(ref) }
         catch { /* leave stale */ }
     }
 
@@ -41,5 +44,5 @@ final class LinksStore: ObservableObject {
         }
     }
 
-    func clear() { cache = [:] }
+    func clear() { cache = [:]; loaded = [] }
 }

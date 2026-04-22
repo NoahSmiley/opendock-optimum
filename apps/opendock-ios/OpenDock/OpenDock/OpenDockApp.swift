@@ -6,6 +6,7 @@ struct OpenDockApp: App {
     @StateObject private var notesStore = NotesStore()
     @StateObject private var boardsStore = BoardsStore()
     @StateObject private var linksStore = LinksStore()
+    @StateObject private var myCardsStore = MyCardsStore()
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +15,7 @@ struct OpenDockApp: App {
                 .environmentObject(notesStore)
                 .environmentObject(boardsStore)
                 .environmentObject(linksStore)
+                .environmentObject(myCardsStore)
                 .preferredColorScheme(.dark)
                 .task {
                     APIClient.shared.auth = auth
@@ -28,6 +30,7 @@ struct RootView: View {
     @EnvironmentObject var notes: NotesStore
     @EnvironmentObject var boards: BoardsStore
     @EnvironmentObject var links: LinksStore
+    @EnvironmentObject var myCards: MyCardsStore
     @State private var inbox: LiveSocket?
 
     var body: some View {
@@ -38,10 +41,10 @@ struct RootView: View {
         }
         .onChange(of: auth.isAuthed) { _, authed in
             if authed {
-                Task { await notes.load(); await boards.loadBoards() }
+                Task { await notes.load(); await boards.loadBoards(); await myCards.ensure() }
                 startInbox()
             } else {
-                notes.reset(); boards.reset(); links.clear()
+                notes.reset(); boards.reset(); links.clear(); myCards.clear()
                 inbox?.stop(); inbox = nil
             }
         }
@@ -49,10 +52,11 @@ struct RootView: View {
 
     private func startInbox() {
         guard let token = auth.token, let uid = auth.userId, inbox == nil else { return }
-        inbox = LiveSocket(scope: .user, id: uid, token: token) { [notes, boards, links] ev in
+        inbox = LiveSocket(scope: .user, id: uid, token: token) { [notes, boards, links, myCards] ev in
             notes.apply(event: ev)
             boards.apply(event: ev)
             links.apply(event: ev)
+            myCards.apply(event: ev)
         }
         inbox?.start()
     }
