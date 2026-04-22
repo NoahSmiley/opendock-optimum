@@ -204,11 +204,20 @@ struct MentionTextView: UIViewRepresentable {
             // list head after UIKit inserts the newline.
             if text == "\n", range.length == 0 {
                 pendingListContinuation = listStateForReturn(tv, at: range.location)
+                pendingNewlineReset = true
             } else {
                 pendingListContinuation = nil
             }
             return true
         }
+
+        /// Set when the user just typed a newline; consumed by
+        /// `textViewDidChange` to strip inline marks (bold, italic,
+        /// underline, strikethrough) from the NEW line's typing
+        /// attributes. Without this, U / S / bold state bleeds from
+        /// line to line — if you underline line 1, line 2 inherits
+        /// the underline even though you never asked for it.
+        var pendingNewlineReset: Bool = false
 
         /// State captured in `shouldChangeTextIn` and consumed by the
         /// matching `textViewDidChange` — used to auto-continue list
@@ -240,8 +249,36 @@ struct MentionTextView: UIViewRepresentable {
 
         func textViewDidChange(_ tv: UITextView) {
             consumePendingListContinuation(tv)
+            consumePendingNewlineReset(tv)
             commitToParent(tv)
             updateTrigger(tv)
+        }
+
+        /// After a newline is inserted, clear all inline-mark typing
+        /// attributes so the new line starts plain. Without this, any
+        /// bold / italic / underline / strikethrough / foreground-color
+        /// the user had active on the previous line bleeds into the new
+        /// line's typing attributes and appears on the next typed char.
+        private func consumePendingNewlineReset(_ tv: UITextView) {
+            guard pendingNewlineReset else { return }
+            pendingNewlineReset = false
+            // Rebuild typing attrs for the current block (Return may
+            // have moved us into a list with paragraph styling) with
+            // NO inline marks active.
+            let loc = tv.selectedRange.location
+            let block: EditorBlock = {
+                guard tv.attributedText.length > 0,
+                      let raw = tv.attributedText.attribute(EditorAttr.block, at: max(0, loc - 1), effectiveRange: nil) as? String,
+                      let b = EditorBlock(rawValue: raw)
+                else { return .p }
+                return b
+            }()
+            var typing = block.attrs(bold: false, italic: false)
+            typing.removeValue(forKey: .underlineStyle)
+            typing.removeValue(forKey: .strikethroughStyle)
+            typing.removeValue(forKey: .strokeWidth)
+            typing.removeValue(forKey: .obliqueness)
+            tv.typingAttributes = typing
         }
 
         /// If `shouldChangeTextIn` spotted a Return inside a list block,
