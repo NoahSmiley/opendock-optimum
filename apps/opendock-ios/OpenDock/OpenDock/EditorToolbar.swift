@@ -92,13 +92,14 @@ import UIKit
         tv.smartQuotesType = autocorrect ? .yes : .no
         tv.smartDashesType = autocorrect ? .yes : .no
         tv.smartInsertDeleteType = autocorrect ? .yes : .no
-        // Toggle first-responder to pick up the new input traits —
-        // iOS ignores in-place changes while the keyboard is up.
+        // `reloadInputViews()` is iOS's canonical way to force the
+        // keyboard to re-read its text-input traits. The
+        // resignFirstResponder → becomeFirstResponder dance we used
+        // before was too fast for iOS to actually tear down the
+        // cached keyboard, so autocorrect state never updated on
+        // the live UITextView even though the trait values were set.
         if tv.isFirstResponder {
-            tv.resignFirstResponder()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                tv.becomeFirstResponder()
-            }
+            tv.reloadInputViews()
         }
     }
 

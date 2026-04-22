@@ -24,6 +24,15 @@ enum EditorDecode {
         // Checklist lines get a leading tappable checkbox attachment.
         if b.block == .checklist {
             line.append(NSAttributedString(attachment: CheckboxAttachment(checked: b.checked)))
+        } else if b.block == .ul || b.block == .ol {
+            // UL / OL lines get a visible bullet / number prefix
+            // reconstructed on decode. The prefix is tagged with
+            // EditorAttr.listMarker so encode strips it back out on
+            // save — round trip stays stable.
+            let markerText = b.block == .ul ? "•\u{00A0}" : "1.\u{00A0}"
+            let markerAttrs = b.block.attrs(bold: false, italic: false)
+                .merging([EditorAttr.listMarker: true]) { _, new in new }
+            line.append(NSAttributedString(string: markerText, attributes: markerAttrs))
         }
         for run in parseInline(b.html) {
             switch run {

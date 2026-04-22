@@ -42,6 +42,10 @@ enum EditorEncode {
         var out = ""
         line.enumerateAttributes(in: NSRange(location: 0, length: line.length)) { attrs, r, _ in
             if attrs[.attachment] is CheckboxAttachment { return }  // drawn via block wrapper
+            // Skip the leading bullet / number marker chars on ul / ol
+            // lines — the <ul><li> / <ol><li> wrapping is what renders
+            // the marker in HTML; the stored marker text is editor-only.
+            if (attrs[EditorAttr.listMarker] as? Bool) == true { return }
             if let att = attrs[.attachment] as? MentionAttachment {
                 out += "<span class=\"mention\" contenteditable=\"false\" data-kind=\"\(att.kind.rawValue)\" " +
                     "data-id=\"\(att.targetId.uuidString.lowercased())\">@\(escape(att.title))</span>"

@@ -61,6 +61,20 @@ import UIKit
             box.addAttributes(boxAttrs, range: NSRange(location: 0, length: box.length))
             m.insert(box, at: lineStart)
             newCaret += 1
+        } else if block == .ul || block == .ol {
+            // Prepend a visible marker so bullet / numbered items read
+            // as lists in the editor. HTML encode strips this prefix
+            // before wrapping the line in <ul><li>…</li></ul> so the
+            // marker never double-renders on save/reload. Tagged with
+            // EditorMarker.isListMarker so encode can identify and
+            // remove it cleanly, and with the block attr so Return
+            // auto-continue and HTML round-trip preserve the block.
+            let markerText = block == .ul ? "•\u{00A0}" : "1.\u{00A0}"
+            let markerAttrs = block.attrs(bold: false, italic: false)
+                .merging([EditorAttr.listMarker: true]) { _, new in new }
+            let marker = NSAttributedString(string: markerText, attributes: markerAttrs)
+            m.insert(marker, at: lineStart)
+            newCaret += markerText.count
         }
 
         tv.attributedText = m

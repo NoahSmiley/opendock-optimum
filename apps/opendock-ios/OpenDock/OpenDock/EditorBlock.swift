@@ -65,4 +65,7 @@ enum EditorAttr {
     static let block = NSAttributedString.Key("opendock.block")
     /// For checklist blocks, whether the line is checked.
     static let checked = NSAttributedString.Key("opendock.checked")
+    /// True for the leading bullet / number characters on ul / ol
+    /// lines — encode skips these chars so HTML stays clean.
+    static let listMarker = NSAttributedString.Key("opendock.listMarker")
 }
