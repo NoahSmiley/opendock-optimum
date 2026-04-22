@@ -4,14 +4,40 @@ import UIKit
 /// removing a leading checkbox attachment as the type demands. Rewrites
 /// every non-attachment run's font to match the new block.
 @MainActor enum EditorBlockAction {
-    static func set(_ block: EditorBlock, in tv: UITextView) {
+    static func set(_ requestedBlock: EditorBlock, in tv: UITextView) {
         let m = NSMutableAttributedString(attributedString: tv.attributedText)
         let (start, end, caret) = lineRange(tv)
         var lineStart = start, lineEnd = end, newCaret = caret
 
+        // If the user taps the SAME list button they're already on
+        // (bullet on a ul line, checklist on a checklist line, etc.)
+        // toggle the line back to a plain paragraph — matches Tauri
+        // and Apple Notes behaviour. Otherwise apply the requested
+        // block as-is.
+        let block: EditorBlock = {
+            guard lineStart < m.length,
+                  let raw = m.attribute(EditorAttr.block, at: lineStart, effectiveRange: nil) as? String,
+                  let cur = EditorBlock(rawValue: raw),
+                  cur == requestedBlock
+            else { return requestedBlock }
+            return .p
+        }()
+
         // If the line already starts with a checkbox, drop it.
         if lineStart < m.length,
            m.attribute(.attachment, at: lineStart, effectiveRange: nil) is CheckboxAttachment {
+            m.deleteCharacters(in: NSRange(location: lineStart, length: 1))
+            lineEnd -= 1
+            if newCaret > lineStart { newCaret -= 1 }
+        }
+
+        // Strip any existing list-marker prefix (• or 1. with their
+        // trailing nbsp). Walks forward past contiguous listMarker
+        // characters so re-tapping the same bullet button doesn't
+        // stack more markers onto the line — previously doing so
+        // ended up with "••  foo" / "1. 1.  foo".
+        while lineStart < m.length,
+              (m.attribute(EditorAttr.listMarker, at: lineStart, effectiveRange: nil) as? Bool) == true {
             m.deleteCharacters(in: NSRange(location: lineStart, length: 1))
             lineEnd -= 1
             if newCaret > lineStart { newCaret -= 1 }

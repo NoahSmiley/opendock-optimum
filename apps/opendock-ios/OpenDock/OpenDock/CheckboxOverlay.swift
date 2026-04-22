@@ -73,8 +73,14 @@ import UIKit
             // indented a couple of points past the body-text column;
             // anchoring to `textContainerInset.left` keeps both aligned.
             let boxX = tv.textContainerInset.left
-            // Centre an 18pt box within the used-rect's vertical span.
-            let boxY = rect.origin.y + (rect.height - 18) / 2
+            // Align the box to the top of the used rect with a 2pt
+            // nudge downward. Centering within the full line fragment
+            // pushed the box visually below the text — the fragment
+            // includes leading/paragraphSpacing on the bottom, so the
+            // middle of the fragment is below the middle of the text
+            // ink. Top-anchoring keeps the box cap-aligned with the
+            // next-line text.
+            let boxY = rect.origin.y + 2
             let boxRect = CGRect(x: boxX, y: boxY, width: 18, height: 18)
             out.append(Box(index: range.location, rect: boxRect, checked: att.checked))
         }

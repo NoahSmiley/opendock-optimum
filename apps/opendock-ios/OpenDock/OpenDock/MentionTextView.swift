@@ -237,10 +237,18 @@ struct MentionTextView: UIViewRepresentable {
                   let block = EditorBlock(rawValue: raw),
                   block == .checklist || block == .ul || block == .ol
             else { return nil }
-            // Content length excluding a leading checklist attachment.
+            // Content length excluding any leading list decoration —
+            // a checklist attachment OR the listMarker chars for a
+            // ul / ol line. Without advancing past the marker, an
+            // empty bullet line (just "• ") looked non-empty and the
+            // user couldn't exit the list by pressing Return twice.
             var contentStart = lineStart
             if block == .checklist, contentStart < tv.attributedText.length,
                tv.attributedText.attribute(.attachment, at: contentStart, effectiveRange: nil) is CheckboxAttachment {
+                contentStart += 1
+            }
+            while contentStart < tv.attributedText.length,
+                  (tv.attributedText.attribute(EditorAttr.listMarker, at: contentStart, effectiveRange: nil) as? Bool) == true {
                 contentStart += 1
             }
             let empty = lineEnd <= contentStart
@@ -295,18 +303,22 @@ struct MentionTextView: UIViewRepresentable {
             guard caret > 0 else { return }
 
             if state.isEmptyLine {
-                // Empty checklist/list line + Return → exit to a plain
-                // paragraph. Strip the leading checkbox attachment on
-                // the prior empty line if any.
+                // Empty list/checklist line + Return → exit to a plain
+                // paragraph. Strip any leading checkbox attachment AND
+                // any list-marker chars that were on the prior line so
+                // the empty line becomes a truly plain paragraph.
                 let m = NSMutableAttributedString(attributedString: tv.attributedText)
-                // Remove the checkbox attachment that was on the empty line.
                 if state.block == .checklist,
                    state.lineStart < m.length,
                    m.attribute(.attachment, at: state.lineStart, effectiveRange: nil) is CheckboxAttachment {
                     m.deleteCharacters(in: NSRange(location: state.lineStart, length: 1))
                 }
+                while state.lineStart < m.length,
+                      (m.attribute(EditorAttr.listMarker, at: state.lineStart, effectiveRange: nil) as? Bool) == true {
+                    m.deleteCharacters(in: NSRange(location: state.lineStart, length: 1))
+                }
                 // Strip any residual block attribute on the line that
-                // held the checkbox and on the fresh \n just inserted.
+                // held the decoration and on the fresh \n just inserted.
                 let end = min(m.length, state.lineStart + 2)
                 if state.lineStart < end {
                     m.removeAttribute(EditorAttr.block, range: NSRange(location: state.lineStart, length: end - state.lineStart))
@@ -339,6 +351,18 @@ struct MentionTextView: UIViewRepresentable {
                 m.insert(box, at: caret)
                 tv.attributedText = m
                 tv.selectedRange = NSRange(location: caret + box.length, length: 0)
+            } else if state.block == .ul || state.block == .ol {
+                // UL / OL auto-continue needs a fresh visible marker
+                // on the new line. Without this, pressing Return on a
+                // bullet line produced a blank "ul"-tagged line with
+                // no visible "•" prefix — reads as an empty row.
+                let markerText = state.block == .ul ? "•\u{00A0}" : "1.\u{00A0}"
+                let markerAttrs = blockAttrs
+                    .merging([EditorAttr.listMarker: true]) { _, new in new }
+                let marker = NSAttributedString(string: markerText, attributes: markerAttrs)
+                m.insert(marker, at: caret)
+                tv.attributedText = m
+                tv.selectedRange = NSRange(location: caret + marker.length, length: 0)
             } else {
                 tv.attributedText = m
                 tv.selectedRange = NSRange(location: caret, length: 0)
