@@ -110,7 +110,60 @@ import UIKit
         for (k, v) in seed { typing[k] = v }
         typing.removeValue(forKey: .strokeWidth)
         tv.typingAttributes = typing
+        renumberOrderedLists(in: tv)
         tv.delegate?.textViewDidChange?(tv)
+    }
+
+    /// Walk the document, find consecutive lines tagged .ol, and rewrite
+    /// each line's leading marker to its running 1-based index. Resets
+    /// the counter any time a non-.ol line (or the start of the doc) is
+    /// encountered, so several independent ordered lists are numbered
+    /// independently. Called after any change that could add, remove,
+    /// or reorder OL items (block apply, Return auto-continue, toggle).
+    static func renumberOrderedLists(in tv: UITextView) {
+        let attr = tv.attributedText ?? NSAttributedString()
+        guard attr.length > 0 else { return }
+        let m = NSMutableAttributedString(attributedString: attr)
+        let ns = attr.string as NSString
+        // Walk line-by-line.
+        var cursor = 0
+        var counter = 0
+        var dirty = false
+        while cursor < ns.length {
+            let nl = ns.range(of: "\n", range: NSRange(location: cursor, length: ns.length - cursor))
+            let lineEnd = nl.location == NSNotFound ? ns.length : nl.location
+            let lineStart = cursor
+            cursor = (nl.location == NSNotFound) ? ns.length : nl.location + 1
+            // Determine this line's block.
+            let blockRaw = lineStart < m.length
+                ? m.attribute(EditorAttr.block, at: lineStart, effectiveRange: nil) as? String
+                : nil
+            if blockRaw == EditorBlock.ol.rawValue {
+                counter += 1
+                // Find the run of listMarker characters at line start.
+                var markerEnd = lineStart
+                while markerEnd < lineEnd,
+                      (m.attribute(EditorAttr.listMarker, at: markerEnd, effectiveRange: nil) as? Bool) == true {
+                    markerEnd += 1
+                }
+                let desired = "\(counter).\u{00A0}"
+                let current = m.attributedSubstring(from: NSRange(location: lineStart, length: markerEnd - lineStart)).string
+                if current != desired {
+                    let attrs = EditorBlock.ol.attrs(bold: false, italic: false)
+                        .merging([EditorAttr.listMarker: true]) { _, new in new }
+                    m.replaceCharacters(in: NSRange(location: lineStart, length: markerEnd - lineStart),
+                                        with: NSAttributedString(string: desired, attributes: attrs))
+                    dirty = true
+                }
+            } else {
+                counter = 0   // non-OL line resets the numbering run
+            }
+        }
+        if dirty {
+            let sel = tv.selectedRange
+            tv.attributedText = m
+            tv.selectedRange = NSRange(location: min(sel.location, m.length), length: 0)
+        }
     }
 
     /// Toggle the `checked` state of the checklist line whose checkbox sits at `loc`.

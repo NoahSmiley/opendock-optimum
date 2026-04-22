@@ -372,6 +372,12 @@ struct MentionTextView: UIViewRepresentable {
             var typing = state.block.attrs(bold: false, italic: false)
             typing.removeValue(forKey: .strokeWidth)
             tv.typingAttributes = typing
+            // Renumber the whole document's ordered-list runs so each
+            // line gets its correct 1-based index (item 2 of 3 → "2.",
+            // not "1.").
+            if state.block == .ol {
+                EditorBlockAction.renumberOrderedLists(in: tv)
+            }
         }
         func textViewDidChangeSelection(_ tv: UITextView) {
             parent.applyTypingAttributes(tv)
